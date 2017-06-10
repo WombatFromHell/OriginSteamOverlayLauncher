@@ -17,6 +17,8 @@ Notes
 =====
 If you wish to use additional arguments with your game executable you should edit the "OriginSteamOverlayLauncher.ini" that is created after running the wrapper once.
 
+IMPORTANT: For many Origin titles you'll still have to disable the Origin in-game overlay so that Steam's overlay can function. Only the Steam developers can permanently address the conflict between their overlay and Origin's overlay.
+
 
 Credits
 =======
