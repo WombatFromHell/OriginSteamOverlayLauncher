@@ -15,31 +15,6 @@ namespace OriginSteamOverlayLauncher
         public String GameArgs { get; set; }
     }
 
-    class ProcessSpinner
-    {// just a utility wrapper class
-        public Process SpunProcess { get; set; }
-        public int Id { get { return SpunProcess.Id; } }
-        public String MainWindowTitle { get { return SpunProcess.MainWindowTitle; } }
-        public IntPtr MainWindowHandle { get { return SpunProcess.MainWindowHandle; } }
-
-        public Process SpinProcess(String exePath, String exeArgs)
-        {
-            SpunProcess = new Process();
-            SpunProcess.StartInfo.FileName = exePath;
-            SpunProcess.StartInfo.Arguments = exeArgs;
-            SpunProcess.StartInfo.UseShellExecute = true;
-            SpunProcess.Start();
-
-            return SpunProcess;
-        }
-
-        public Process StopProcess()
-        {
-            SpunProcess.Kill();
-            return SpunProcess;
-        }
-    }
-
     class Program
     {
         [STAThread]
@@ -71,7 +46,19 @@ namespace OriginSteamOverlayLauncher
 
         private static bool IsRunningPID(Int64 pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
 
-        private static int GetRunningPIDByName(String procName) { return Process.GetProcessesByName(procName).FirstOrDefault().Id; }
+        private static int GetRunningPIDByName(String procName)
+        {
+            Process tmpProc = Process.GetProcessesByName(procName).FirstOrDefault();
+            if (tmpProc != null)
+                return tmpProc.Id;
+            else
+                return 0;
+        }
+
+        private static Process RebindProcessByID(int PID)
+        {
+            return Process.GetProcessById(PID);
+        }
 
         private static void KillProcTreeByName(String procName)
         {
@@ -154,10 +141,13 @@ namespace OriginSteamOverlayLauncher
         {
             String launcherName = Path.GetFileNameWithoutExtension(setHnd.LauncherPath);
             String gameName = Path.GetFileNameWithoutExtension(setHnd.GamePath);
+            Process launcherProc = new Process();
+            Process gameProc = new Process();
 
             /*
              * Launcher Detection
              */
+
             if (IsRunning(launcherName))
             {// if the launcher is running before the game kill it so we can run it through Steam
                 Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
@@ -165,26 +155,69 @@ namespace OriginSteamOverlayLauncher
                 Thread.Sleep(3000); // pause a moment for the launcher to close
             }
 
-            ProcessSpinner launcherProc = new ProcessSpinner();
+            launcherProc.StartInfo.UseShellExecute = true;
+            launcherProc.StartInfo.FileName = setHnd.LauncherPath;
             Logger("OSOL", "Attempting to start the launcher, cmd: " + setHnd.LauncherPath);
-            launcherProc.SpinProcess(setHnd.LauncherPath, String.Empty);
-            Thread.Sleep(7000); // let the launcher load so steam can hook into it
+            launcherProc.Start();
 
+            int sanity_counter = 0;
+            while (launcherProc.MainWindowTitle.Length == 0
+                && sanity_counter <= 120)
+            {// wait up to 2 mins. for the launcher process
+                if (sanity_counter == 120)
+                {
+                    Logger("FATAL", "Could not detect the launcher process after waiting 2 mins, exiting!");
+                    return;
+                }
+
+                launcherProc.Refresh();
+                sanity_counter++;
+                Thread.Sleep(1000);
+            }
+            Logger("OSOL", "Detected the launcher process window at PID [" + launcherProc.Id + "] in " + sanity_counter + " sec.");
 
             /*
              * Game Post-Proxy Detection
              */
-            ProcessSpinner gameProc = new ProcessSpinner();
+            gameProc.StartInfo.UseShellExecute = true;
+            gameProc.StartInfo.FileName = setHnd.GamePath;
+            gameProc.StartInfo.Arguments = setHnd.GameArgs;
             Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
-            gameProc.SpinProcess(setHnd.GamePath, setHnd.GameArgs);
-            Thread.Sleep(10000); // let the game process load
-            int gamePID = GetRunningPIDByName(gameName);
+            gameProc.Start();
+            Thread.Sleep(3000); // wait for the proxy to close
+            
+            sanity_counter = 0;
+            int foundPID = GetRunningPIDByName(gameName);
+            while (foundPID == 0 && gameProc.Id != foundPID 
+                && sanity_counter <= 300)
+            {// actively attempt to reacquire process, wait up to 5 mins
+                if (sanity_counter == 300)
+                {
+                    Logger("FATAL", "Timed out while looking for game process, exiting! Internet connection or launcher issue?");
+                    return;
+                }
 
-            while (IsRunning(gameName) && gamePID > 0)
-            {
-                Thread.Sleep(1000); // sleep while game is running
+                foundPID = GetRunningPIDByName(gameName);
+                // only rebind process if we found something
+                if (foundPID != 0)
+                    gameProc = RebindProcessByID(foundPID);
+
+                sanity_counter++;
+                Thread.Sleep(1000);
             }
 
+            if (gameProc.Id != 0)
+                Logger("OSOL", "Detected the game process at PID [" + gameProc.Id + "] in " + sanity_counter + " sec.");
+            else
+            {
+                Logger("FATAL", "Lost track of the game process somehow, this shouldn't happen! Internet connection or launcher issue?");
+                return;
+            }
+
+            while (IsRunning(gameName))
+            {// sleep while game is running
+                Thread.Sleep(1000);
+            }
 
             /*
              * Post-Game Cleanup
