@@ -15,15 +15,21 @@ namespace ConsoleApp1
         {
             Process launcherproc = new Process();
             Process gameproc = new Process();
-            String launcherpath = string.Empty;
-            String gamepath = string.Empty;
-            String gameargs = string.Empty;
+            String launcherpath = String.Empty;
+            String gamepath = String.Empty;
+            String gameargs = String.Empty;
 
+            
             // INI Support , courtesy of: https://stackoverflow.com/questions/217902/reading-writing-an-ini-file
             IniFile myINI = new IniFile("OriginSteamOverlayLauncher.ini");
+            // overwrite/create log upon startup
+            File.WriteAllText("OriginSteamOverlayLauncher_Log.txt", String.Empty);
+
 
             if (!myINI.KeyExists("LauncherPath", "Paths"))
             {
+                logger("OSOL", "Couldn't find the config file, creating it and asking user for input...");
+
                 // we don't have paths set in the ini, let's ask the user
                 OpenFileDialog file = new OpenFileDialog();
                 file.Title = "Choose the path of Launcher .exe";
@@ -52,8 +58,8 @@ namespace ConsoleApp1
                 }
                 else
                 {
-                    myINI.Write("GamePath", string.Empty, "Paths");
-                    myINI.Write("GameArgs", string.Empty, "Paths");
+                    myINI.Write("GamePath", String.Empty, "Paths");
+                    myINI.Write("GameArgs", String.Empty, "Paths");
                 }
             }
             else
@@ -64,19 +70,28 @@ namespace ConsoleApp1
             }
 
             if (launcherpath.Length <= 0)
-                throw new System.IO.FileNotFoundException("No Launcher path set, check the INI file!");
+            {
+                logger("FATAL", "No Launcher path set, check the INI file!");
+                return;
+            }
             if (gamepath.Length <= 0)
-                throw new System.IO.FileNotFoundException("No Game path set, check the INI file!");
+            {
+                logger("FATAL", "No Game path set, check the INI file!");
+                return;
+            }
             
-            if (Process.GetProcessesByName(Path.GetFileNameWithoutExtension(launcherpath)).Any())
+            if (IsRunning(Path.GetFileNameWithoutExtension(launcherpath)))
             {// if the launcher is running before the game, kill it so we can run it through Steam
-                KillProcByName(Path.GetFileNameWithoutExtension(launcherpath));
+                logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
+                KillProcTreeByName(Path.GetFileNameWithoutExtension(launcherpath));
                 Thread.Sleep(2000); // pause a moment for the launcher to close
             }
+
 
             // start the launcher
             launcherproc.StartInfo.FileName = launcherpath;
             launcherproc.StartInfo.UseShellExecute = true;
+            logger("OSOL", "Attempting to start the launcher, cmd: " + launcherpath);
             launcherproc.Start();
             
             Thread.Sleep(5000); // let the launcher load so steam can hook into it
@@ -88,35 +103,53 @@ namespace ConsoleApp1
             if (gameargs.Length > 0)
                 gameproc.StartInfo.Arguments = gameargs;
 
+            logger("OSOL", "Launching game, cmd: " + gamepath + " " + gameargs);
             gameproc.Start();
             Thread.Sleep(5000); // let the game process load
 
             // check once if game EXE is running, if not, try running it again
-            if (!Process.GetProcessesByName(Path.GetFileNameWithoutExtension(gamepath)).Any())
+            if (!IsRunning(Path.GetFileNameWithoutExtension(gamepath)))
             {
+                logger("OSOL", "Unable to find game process, trying to relaunch...");
                 gameproc.Start();
                 Thread.Sleep(10000); // wait a little longer this time to be safe
             }
 
-            while (Process.GetProcessesByName(Path.GetFileNameWithoutExtension(gamepath)).Any())
+            while (IsRunning(Path.GetFileNameWithoutExtension(gamepath)))
             {
                 Thread.Sleep(1000); // sleep while game is running
             }
 
+
             // game has exited, double check that the launcher is still running
-            if (Process.GetProcesses().Any(x => x.Id == launcherproc.Id))
+            if (IsRunningPID(launcherproc.Id))
             {
                 Thread.Sleep(5000); // let Origin sync with the cloud
-                KillProcByName(Path.GetFileNameWithoutExtension(launcherpath)); // kill the launcher now that the game is closed
+                logger("OSOL", "Game exited, killing launcher instance and cleaning up...");
+                KillProcTreeByName(Path.GetFileNameWithoutExtension(launcherpath)); // kill the launcher now that the game is closed
             }
         }
 
-        static private void KillProcByName(string procName)
+        private static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
+
+        private static bool IsRunningPID(Int64 pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
+
+        private static int GetRunningPIDByName(String procName) { return Process.GetProcessesByName(procName).FirstOrDefault().Id; }
+
+        private static void KillProcTreeByName(String procName)
         {
             Process[] foundProcs = Process.GetProcessesByName(procName);
             foreach (Process proc in foundProcs)
             {
                 proc.Kill();
+            }
+        }
+
+        private static void logger(String cause, String message)
+        {
+            using (StreamWriter stream = File.AppendText("OriginSteamOverlayLauncher_Log.txt"))
+            {
+                stream.Write("[{0}] [{1}] {2}\r\n", DateTime.Now.ToUniversalTime(), cause, message);
             }
         }
     }
