@@ -37,6 +37,8 @@ namespace OriginSteamOverlayLauncher
                 {
                     ProcessLauncher(curSet);
                 }
+                else
+                    Logger("FATAL", "INI file invalid or file paths are bad, exiting!");
             }
             else
                 ProcessLauncher(curSet);
