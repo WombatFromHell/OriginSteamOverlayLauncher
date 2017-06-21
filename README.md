@@ -15,18 +15,18 @@ How To Use
 
 Notes
 =====
-**IMPORTANT: For many Origin titles you'll still have to disable the Origin in-game overlay so that Steam's overlay can function. Having both enabled at the same time WILL break functionality of either Origin, Steam, or in the worst cases both. Only the Steam developers can permanently address the conflict between their overlay and Origin's overlay.**
+**IMPORTANT: (As of v1.02) It is possible to run both the Origin overlay and the Steam overlay together, but it can be a potential cause of crashes if you have another overlay hook like Afterburner/RTSS on top of it. Venture onward at your own risk!**
 
-If you wish to use additional arguments with your game executable you should edit the "OriginSteamOverlayLauncher.ini" that is created after running the wrapper once.
+If you wish to use additional arguments with your game executable you should edit the "OriginSteamOverlayLauncher.ini", and change the setting "GameArgs" to whatever command line options are necessary. This setting is created after running OSOL and choosing your paths.
+
+(As of v1.02) If you run into any games that don't launch properly by default, either because of overlay problems or just not launching at all via OSOL, you can edit the "OriginSteamOverlayLauncher.ini" after setting your paths and change the "LauncherMode" setting to "LauncherOnly" (no quotes).
 
 
 Known Issues
 ============
-* There may be a few games that launch through Origin that require an Origin URL instead of an executable. Currently, this wrapper only supports titles that have a game executable that can open Origin.
+If you have issues with games not launching with the Steam Overlay and are using a recent AMD graphics device you may need to disable the "AMD External Events" service.
 
-* If you experience severe sluggishness in the BPM overlay, or input being sent to both the game and the Origin launcher, try setting a framelimiter (either through RTSS/Afterburner or via your GPU vendor software).
-
-If you have issues with games not launching with the Steam Overlay, and are using a recent AMD graphics device you may need to disable the "AMD External Events" service. NOTE: This will break FreeSync functionality, but allow the Steam Overlay to hook into Origin games:
+NOTE: This will break FreeSync functionality, but allow the Steam Overlay to hook into Origin games:
 
 * Run "services.msc".
 * Browse down to the "AMD External Events" service.

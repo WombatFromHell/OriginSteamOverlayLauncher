@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -18,6 +19,14 @@ namespace OriginSteamOverlayLauncher
 
     class Program
     {
+        // for BringToFront() support
+        [DllImport("user32.dll")]
+        public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+        [DllImport("user32.dll")]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+        public const int SW_SHOWDEFAULT = 10;
+        public const int SW_SHOW = 5;
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -43,6 +52,13 @@ namespace OriginSteamOverlayLauncher
             }
             else
                 ProcessLauncher(curSet);
+        }
+
+        private static void BringToFront(IntPtr wHnd)
+        {// force the window handle owner to restore and activate to focus
+            ShowWindowAsync(wHnd, SW_SHOWDEFAULT);
+            ShowWindowAsync(wHnd, SW_SHOW);
+            SetForegroundWindow(wHnd);
         }
 
         private static bool StringEquals(String input, String comparator)
@@ -106,12 +122,26 @@ namespace OriginSteamOverlayLauncher
             // check options
             if (iniHnd.Read("LauncherMode", "Options") != String.Empty
                 && StringEquals(iniHnd.Read("LauncherMode", "Options"), "Normal")
-                || StringEquals(iniHnd.Read("LauncherMode", "Options"), "Proxy"))
+                || StringEquals(iniHnd.Read("LauncherMode", "Options"), "LauncherOnly"))
             {
+                /*
+                 * "LauncherMode" can have two options:
+                 *     "Normal": launches Origin, launches the game (using the options provided by the user),
+                 *         waits for the game to close, then closes Origin.
+                 *     "LauncherOnly": launches Origin, waits for the game to be executed by the user, waits
+                 *         for the game to close, then closes Origin.
+                 *         
+                 *     Note: 'LauncherOnly' is intended to provide extra compatibility when some games don't
+                 *     work properly with the BPM overlay. This is to work around a Steam regression involving
+                 *     hooking Origin titles launched through the Origin2 launcher.
+                 */
                 setHnd.LauncherMode = iniHnd.Read("LauncherMode", "Options");
             }
             else
-                iniHnd.Write("LauncherMode", "Normal", "Options"); // autocorrect
+            {// autocorrect for the user
+                iniHnd.Write("LauncherMode", "Normal", "Options");
+                setHnd.LauncherMode = "Normal";
+            }
 
             if (File.Exists(setHnd.LauncherPath)
                 && File.Exists(setHnd.GamePath))
@@ -163,6 +193,7 @@ namespace OriginSteamOverlayLauncher
         {
             String launcherName = Path.GetFileNameWithoutExtension(setHnd.LauncherPath);
             String gameName = Path.GetFileNameWithoutExtension(setHnd.GamePath);
+            String launcherMode = setHnd.LauncherMode;
             Process launcherProc = new Process();
             Process gameProc = new Process();
 
@@ -198,20 +229,30 @@ namespace OriginSteamOverlayLauncher
             }
             Logger("OSOL", "Detected the launcher process window at PID [" + launcherProc.Id + "] in " + sanity_counter + " sec.");
 
+            // force the launcher window to activate before the game to avoid BPM hooking issues
+            Thread.Sleep(5000); // wait for the BPM overlay notification
+            BringToFront(launcherProc.MainWindowHandle);
+
             /*
              * Game Post-Proxy Detection
              */
-            gameProc.StartInfo.UseShellExecute = true;
-            gameProc.StartInfo.FileName = setHnd.GamePath;
-            gameProc.StartInfo.Arguments = setHnd.GameArgs;
-            Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
-            gameProc.Start();
-            Thread.Sleep(3000); // wait for the proxy to close
+
+            if (StringEquals(launcherMode, "Normal"))
+            {// only run game ourselves if the user asks
+                gameProc.StartInfo.UseShellExecute = true;
+                gameProc.StartInfo.FileName = setHnd.GamePath;
+                gameProc.StartInfo.Arguments = setHnd.GameArgs;
+                Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
+                gameProc.Start();
+                Thread.Sleep(3000); // wait for the proxy to close
+            }
+            else
+                Logger("OSOL", "Searching for the game process, waiting up to 5 minutes...");
             
+
             sanity_counter = 0;
-            int foundPID = GetRunningPIDByName(gameName);
-            while (foundPID == 0 && gameProc.Id != foundPID 
-                && sanity_counter <= 300)
+            int foundPID = 0;
+            while (foundPID == 0 && sanity_counter <= 300)
             {// actively attempt to reacquire process, wait up to 5 mins
                 if (sanity_counter == 300)
                 {
