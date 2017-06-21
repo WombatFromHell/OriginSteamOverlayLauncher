@@ -13,6 +13,7 @@ namespace OriginSteamOverlayLauncher
         public String LauncherPath { get; set; }
         public String GamePath { get; set; }
         public String GameArgs { get; set; }
+        public String LauncherMode { get; set; }
     }
 
     class Program
@@ -42,6 +43,14 @@ namespace OriginSteamOverlayLauncher
             }
             else
                 ProcessLauncher(curSet);
+        }
+
+        private static bool StringEquals(String input, String comparator)
+        {// support function for checking string equality using Ordinal comparison
+            if (input != String.Empty && String.Equals(input, comparator, StringComparison.OrdinalIgnoreCase))
+                return true;
+            else
+                return false;
         }
 
         private static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
@@ -94,6 +103,16 @@ namespace OriginSteamOverlayLauncher
             if (iniHnd.Read("GameArgs", "Paths") != String.Empty)
                 setHnd.GameArgs = iniHnd.Read("GameArgs", "Paths");
 
+            // check options
+            if (iniHnd.Read("LauncherMode", "Options") != String.Empty
+                && StringEquals(iniHnd.Read("LauncherMode", "Options"), "Normal")
+                || StringEquals(iniHnd.Read("LauncherMode", "Options"), "Proxy"))
+            {
+                setHnd.LauncherMode = iniHnd.Read("LauncherMode", "Options");
+            }
+            else
+                iniHnd.Write("LauncherMode", "Normal", "Options"); // autocorrect
+
             if (File.Exists(setHnd.LauncherPath)
                 && File.Exists(setHnd.GamePath))
                 return true; // should be able to use it
@@ -136,6 +155,7 @@ namespace OriginSteamOverlayLauncher
             {
                 setHnd.LauncherPath = file.FileName;
                 iniHnd.Write("LauncherPath", setHnd.LauncherPath, "Paths");
+                iniHnd.Write("LauncherMode", "Normal", "Options");
             }
         }
 
