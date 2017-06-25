@@ -1,0 +1,8 @@
+# explicitly ignore all build directories
+/.vs/**
+/.git/**
+/OriginSteamOverlayLauncher/obj/**
+/OriginSteamOverlayLauncher/bin/**
+# permit only source code
+!/OriginSteamOverlayLauncher/*
+!/OriginSteamOverlayLauncher/Properties/*
