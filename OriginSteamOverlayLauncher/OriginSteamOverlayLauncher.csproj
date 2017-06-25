@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">
@@ -84,4 +85,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /y $(SolutionDir)\README.md $(TargetDir)\
+del /q $(TargetDir)\OriginSteamOverlayLauncher.zip
+"C:\Program Files\7-Zip\7z.exe" a $(TargetDir)\OriginSteamOverlayLauncher.zip $(TargetDir)\OriginSteamOverlayLauncher.exe $(TargetDir)\README.md</PostBuildEvent>
+  </PropertyGroup>
 </Project>

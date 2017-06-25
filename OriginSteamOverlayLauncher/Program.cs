@@ -115,8 +115,12 @@ namespace OriginSteamOverlayLauncher
             
             if (iniHnd.Read("LauncherPath", "Paths") != String.Empty)
                 setHnd.LauncherPath = iniHnd.Read("LauncherPath", "Paths");
+
             if (iniHnd.Read("LauncherURI", "Paths") != String.Empty)
                 setHnd.LauncherURI = iniHnd.Read("LauncherURI", "Paths");
+            else
+                iniHnd.Write("LauncherURI", String.Empty, "Paths");
+
             if (iniHnd.Read("LauncherPath", "Paths") != String.Empty)
                 setHnd.GamePath = iniHnd.Read("GamePath", "Paths");
             if (iniHnd.Read("GameArgs", "Paths") != String.Empty)
@@ -223,18 +227,23 @@ namespace OriginSteamOverlayLauncher
 
             int sanity_counter = 0;
             int launcherPID = 0;
-            while (launcherPID == 0 && sanity_counter <= 120)
+            while (sanity_counter <= 120)
             {// wait up to 2 mins. for the launcher process
                 if (sanity_counter == 120)
                 {
                     Logger("FATAL", "Could not detect the launcher process after waiting 2 mins, exiting!");
                     return;
                 }
-
-                launcherPID = GetRunningPIDByName(launcherName);
+                                
                 // only rebind process if we found something
-                if (launcherPID != 0)
+                if (GetRunningPIDByName(launcherName) != 0)
+                {
+                    launcherPID = GetRunningPIDByName(launcherName);
                     launcherProc = RebindProcessByID(launcherPID);
+                    if (launcherProc.MainWindowHandle != IntPtr.Zero
+                        && launcherProc.MainWindowTitle.Length > 0)
+                        break; // we probably found our real window
+                }
                 
                 sanity_counter++;
                 Thread.Sleep(1000);
@@ -246,7 +255,7 @@ namespace OriginSteamOverlayLauncher
             }
             else
             {
-                Logger("FATAL", "Cannot find main window handle of launcher process at PID [" + launcherProc.Id + "]!");
+                Logger("FATAL", "Cannot find main window handle of launcher process at PID [" + launcherProc.Id + "], perhaps the wrong launcher exe?");
                 return;
             }
 
@@ -266,6 +275,22 @@ namespace OriginSteamOverlayLauncher
                 Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
                 gameProc.Start();
                 Thread.Sleep(3000); // wait for the proxy to close
+            }
+            else if (StringEquals(launcherMode, "URI"))
+            {
+                gameProc.StartInfo.UseShellExecute = true;
+                gameProc.StartInfo.FileName = setHnd.LauncherURI;
+                try
+                {// we can't control what will happen so try to catch exceptions
+                    Logger("OSOL", "Launching URI: " + setHnd.LauncherURI);
+                    gameProc.Start();
+                }
+                catch (Exception x)
+                {// catch any exceptions and dump to log
+                    Logger("OSOL", "Failed to launch URI [" + setHnd.LauncherURI + "] double check your launcher installation");
+                    Logger("OSOL", "Exception dump follows: ");
+                    Logger("EXCEPT", x.ToString());
+                }
             }
             else
                 Logger("OSOL", "Searching for the game process, waiting up to 5 minutes...");
