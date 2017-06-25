@@ -12,6 +12,7 @@ namespace OriginSteamOverlayLauncher
     class Settings
     {// externalize our config variables for encapsulation
         public String LauncherPath { get; set; }
+        public String LauncherURI { get; set; }
         public String GamePath { get; set; }
         public String GameArgs { get; set; }
         public String LauncherMode { get; set; }
@@ -114,6 +115,8 @@ namespace OriginSteamOverlayLauncher
             
             if (iniHnd.Read("LauncherPath", "Paths") != String.Empty)
                 setHnd.LauncherPath = iniHnd.Read("LauncherPath", "Paths");
+            if (iniHnd.Read("LauncherURI", "Paths") != String.Empty)
+                setHnd.LauncherURI = iniHnd.Read("LauncherURI", "Paths");
             if (iniHnd.Read("LauncherPath", "Paths") != String.Empty)
                 setHnd.GamePath = iniHnd.Read("GamePath", "Paths");
             if (iniHnd.Read("GameArgs", "Paths") != String.Empty)
@@ -122,12 +125,16 @@ namespace OriginSteamOverlayLauncher
             // check options
             if (iniHnd.Read("LauncherMode", "Options") != String.Empty
                 && StringEquals(iniHnd.Read("LauncherMode", "Options"), "Normal")
+                || StringEquals(iniHnd.Read("LauncherMode", "Options"), "URI")
                 || StringEquals(iniHnd.Read("LauncherMode", "Options"), "LauncherOnly"))
             {
                 /*
-                 * "LauncherMode" can have two options:
+                 * "LauncherMode" can have three options:
                  *     "Normal": launches Origin, launches the game (using the options provided by the user),
                  *         waits for the game to close, then closes Origin.
+                 *     "URI": launches the user specified launcher, executes the user specified launcher URI,
+                 *         waits for the user specified game to start, then closes the launcher when the game 
+                 *         exits.
                  *     "LauncherOnly": launches Origin, waits for the game to be executed by the user, waits
                  *         for the game to close, then closes Origin.
                  *         
@@ -185,6 +192,7 @@ namespace OriginSteamOverlayLauncher
             {
                 setHnd.LauncherPath = file.FileName;
                 iniHnd.Write("LauncherPath", setHnd.LauncherPath, "Paths");
+                iniHnd.Write("LauncherURI", setHnd.LauncherURI, "Paths");
                 iniHnd.Write("LauncherMode", "Normal", "Options");
             }
         }
@@ -214,8 +222,8 @@ namespace OriginSteamOverlayLauncher
             launcherProc.Start();
 
             int sanity_counter = 0;
-            while (launcherProc.MainWindowTitle.Length == 0
-                && sanity_counter <= 120)
+            int launcherPID = 0;
+            while (launcherPID == 0 && sanity_counter <= 120)
             {// wait up to 2 mins. for the launcher process
                 if (sanity_counter == 120)
                 {
@@ -223,11 +231,24 @@ namespace OriginSteamOverlayLauncher
                     return;
                 }
 
-                launcherProc.Refresh();
+                launcherPID = GetRunningPIDByName(launcherName);
+                // only rebind process if we found something
+                if (launcherPID != 0)
+                    launcherProc = RebindProcessByID(launcherPID);
+                
                 sanity_counter++;
                 Thread.Sleep(1000);
             }
-            Logger("OSOL", "Detected the launcher process window at PID [" + launcherProc.Id + "] in " + sanity_counter + " sec.");
+
+            if (launcherProc.MainWindowTitle.Length > 0)
+            {
+                Logger("OSOL", "Detected the launcher process window at PID [" + launcherProc.Id + "] in " + sanity_counter + " sec.");
+            }
+            else
+            {
+                Logger("FATAL", "Cannot find main window handle of launcher process at PID [" + launcherProc.Id + "]!");
+                return;
+            }
 
             // force the launcher window to activate before the game to avoid BPM hooking issues
             Thread.Sleep(5000); // wait for the BPM overlay notification
@@ -251,8 +272,8 @@ namespace OriginSteamOverlayLauncher
             
 
             sanity_counter = 0;
-            int foundPID = 0;
-            while (foundPID == 0 && sanity_counter <= 300)
+            int gamePID = 0;
+            while (gamePID == 0 && sanity_counter <= 300)
             {// actively attempt to reacquire process, wait up to 5 mins
                 if (sanity_counter == 300)
                 {
@@ -260,10 +281,10 @@ namespace OriginSteamOverlayLauncher
                     return;
                 }
 
-                foundPID = GetRunningPIDByName(gameName);
+                gamePID = GetRunningPIDByName(gameName);
                 // only rebind process if we found something
-                if (foundPID != 0)
-                    gameProc = RebindProcessByID(foundPID);
+                if (gamePID != 0)
+                    gameProc = RebindProcessByID(gamePID);
 
                 sanity_counter++;
                 Thread.Sleep(1000);
