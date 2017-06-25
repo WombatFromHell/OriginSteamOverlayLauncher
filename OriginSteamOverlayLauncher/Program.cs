@@ -16,6 +16,8 @@ namespace OriginSteamOverlayLauncher
         public String GamePath { get; set; }
         public String GameArgs { get; set; }
         public String LauncherMode { get; set; }
+
+        public String AssemblyPath = System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
     }
 
     class Program
@@ -166,12 +168,13 @@ namespace OriginSteamOverlayLauncher
             /*
              * Ask for the Game path
              */
-            OpenFileDialog file = new OpenFileDialog()
-            {
-                Title = "Choose the path of your game executable",
-                Filter = "EXE Files|*.exe|All Files|*.*",
-                InitialDirectory = System.Reflection.Assembly.GetExecutingAssembly().Location
-            };
+
+            bool iniExists = File.Exists(iniHnd.Path);
+
+            OpenFileDialog file = new OpenFileDialog();
+            file.Title = "Choose the path of your game executable";
+            file.Filter = "EXE Files|*.exe|All Files|*.*";
+            file.InitialDirectory = Path.GetDirectoryName(setHnd.AssemblyPath);
 
             if (file.ShowDialog() == DialogResult.OK
                 && File.Exists(file.FileName))
@@ -185,19 +188,33 @@ namespace OriginSteamOverlayLauncher
             /*
              * Ask for the Launcher path
              */
-            file = new OpenFileDialog()
-            {
-                Title = "Choose the path of the launcher executable (Origin)",
-                Filter = "EXE Files|*.exe|All Files|*.*",
-                InitialDirectory = System.Reflection.Assembly.GetExecutingAssembly().Location
-            };
+            file = new OpenFileDialog();
+            file.Title = "Choose the path of the launcher executable (Origin)";
+            file.Filter = "EXE Files|*.exe|All Files|*.*";
+            file.InitialDirectory = Path.GetDirectoryName(setHnd.AssemblyPath);
+
             if (file.ShowDialog() == DialogResult.OK
                 && File.Exists(file.FileName))
             {
                 setHnd.LauncherPath = file.FileName;
                 iniHnd.Write("LauncherPath", setHnd.LauncherPath, "Paths");
-                iniHnd.Write("LauncherURI", setHnd.LauncherURI, "Paths");
+                iniHnd.Write("LauncherURI", String.Empty, "Paths");
                 iniHnd.Write("LauncherMode", "Normal", "Options");
+            }
+
+            if (iniHnd.Read("LauncherPath", "Paths") == String.Empty
+                || iniHnd.Read("GamePath", "Paths") == String.Empty)
+            {// sanity check in case of cancelling the path inputs
+                Logger("FATAL", "The user cancelled the path chooser, we need valid paths so we're bailing!");
+                Process.GetCurrentProcess().Kill(); // bail!
+            }
+
+            // since we started fresh, we need to tell the user to restart
+            if (!iniExists)
+            {
+                Logger("OSOL", "Created the INI file from the path chooser, telling the user to restart...");
+                MessageBox.Show("The INI file didn't exist so we created it, we're exiting so you can re-run OSOL!", "Alert", MessageBoxButtons.OK, MessageBoxIcon.None, MessageBoxDefaultButton.Button1, (MessageBoxOptions)0x40000);
+                Process.GetCurrentProcess().Kill();
             }
         }
 
@@ -232,7 +249,7 @@ namespace OriginSteamOverlayLauncher
                 if (sanity_counter == 120)
                 {
                     Logger("FATAL", "Could not detect the launcher process after waiting 2 mins, exiting!");
-                    return;
+                    Process.GetCurrentProcess().Kill();
                 }
                                 
                 // only rebind process if we found something
@@ -303,7 +320,7 @@ namespace OriginSteamOverlayLauncher
                 if (sanity_counter == 300)
                 {
                     Logger("FATAL", "Timed out while looking for game process, exiting! Internet connection or launcher issue?");
-                    return;
+                    Process.GetCurrentProcess().Kill();
                 }
 
                 gamePID = GetRunningPIDByName(gameName);
@@ -320,7 +337,7 @@ namespace OriginSteamOverlayLauncher
             else
             {
                 Logger("FATAL", "Lost track of the game process somehow, this shouldn't happen! Internet connection or launcher issue?");
-                return;
+                Process.GetCurrentProcess().Kill();
             }
 
             while (IsRunning(gameName))
