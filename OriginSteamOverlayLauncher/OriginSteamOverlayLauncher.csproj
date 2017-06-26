@@ -90,4 +90,7 @@
 del /q $(TargetDir)\OriginSteamOverlayLauncher.zip
 "C:\Program Files\7-Zip\7z.exe" a $(TargetDir)\OriginSteamOverlayLauncher.zip $(TargetDir)\OriginSteamOverlayLauncher.exe $(TargetDir)\README.md</PostBuildEvent>
   </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>copy /y $(ProjectDir)\README.md $(SolutionDir)README.md</PreBuildEvent>
+  </PropertyGroup>
 </Project>
