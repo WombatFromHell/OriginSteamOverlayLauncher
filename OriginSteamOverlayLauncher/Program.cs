@@ -297,6 +297,7 @@ namespace OriginSteamOverlayLauncher
             {
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.LauncherURI;
+                Thread.Sleep(5000); // longer wait (~10s) for hooking some launchers
                 try
                 {// we can't control what will happen so try to catch exceptions
                     Logger("OSOL", "Launching URI: " + setHnd.LauncherURI);
