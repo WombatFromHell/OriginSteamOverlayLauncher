@@ -22,6 +22,9 @@ namespace OriginSteamOverlayLauncher
 
     class Program
     {
+        [DllImport("User32.dll", CharSet = CharSet.Unicode)]
+        public static extern int MessageBox(IntPtr hWnd, string msg, string caption, int type);
+
         // for BringToFront() support
         [DllImport("user32.dll")]
         public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
@@ -213,7 +216,7 @@ namespace OriginSteamOverlayLauncher
             if (!iniExists)
             {
                 Logger("OSOL", "Created the INI file from the path chooser, telling the user to restart...");
-                MessageBox.Show("The INI file didn't exist so we created it, we're exiting so you can re-run OSOL!", "Alert", MessageBoxButtons.OK, MessageBoxIcon.None, MessageBoxDefaultButton.Button1, (MessageBoxOptions)0x40000);
+                MessageBox(IntPtr.Zero, "INI file didn't exist, so we're creating it, please restart for normal behavior...", "Alert", (int)0x00001000L);
                 Process.GetCurrentProcess().Kill();
             }
         }
@@ -291,13 +294,13 @@ namespace OriginSteamOverlayLauncher
                 gameProc.StartInfo.Arguments = setHnd.GameArgs;
                 Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
                 gameProc.Start();
-                Thread.Sleep(3000); // wait for the proxy to close
+                Thread.Sleep(5000); // wait for the proxy to close
             }
             else if (StringEquals(launcherMode, "URI"))
             {
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.LauncherURI;
-                Thread.Sleep(5000); // longer wait (~10s) for hooking some launchers
+                Thread.Sleep(7000); // longer wait (~12s) for hooking some launchers
                 try
                 {// we can't control what will happen so try to catch exceptions
                     Logger("OSOL", "Launching URI: " + setHnd.LauncherURI);
@@ -316,7 +319,7 @@ namespace OriginSteamOverlayLauncher
 
             sanity_counter = 0;
             int gamePID = 0;
-            while (gamePID == 0 && sanity_counter <= 300)
+            while (sanity_counter <= 300)
             {// actively attempt to reacquire process, wait up to 5 mins
                 if (sanity_counter == 300)
                 {
@@ -324,10 +327,14 @@ namespace OriginSteamOverlayLauncher
                     Process.GetCurrentProcess().Kill();
                 }
 
-                gamePID = GetRunningPIDByName(gameName);
-                // only rebind process if we found something
-                if (gamePID != 0)
+                if (GetRunningPIDByName(gameName) != 0)
+                {// let's assume the game works similarly to our launcher (wrt proxies)
+                    gamePID = GetRunningPIDByName(gameName);
                     gameProc = RebindProcessByID(gamePID);
+                    if (gameProc.MainWindowHandle != IntPtr.Zero
+                        && gameProc.MainWindowTitle.Length > 0)
+                        break; // we probably found our real window
+                }
 
                 sanity_counter++;
                 Thread.Sleep(1000);
