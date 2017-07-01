@@ -192,7 +192,7 @@ namespace OriginSteamOverlayLauncher
              * Ask for the Launcher path
              */
             file = new OpenFileDialog();
-            file.Title = "Choose the path of the launcher executable (Origin)";
+            file.Title = "Choose the path of the launcher executable";
             file.Filter = "EXE Files|*.exe|All Files|*.*";
             file.InitialDirectory = Path.GetDirectoryName(setHnd.AssemblyPath);
 
