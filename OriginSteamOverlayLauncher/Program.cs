@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Permissions;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -15,7 +16,13 @@ namespace OriginSteamOverlayLauncher
         public String LauncherURI { get; set; }
         public String GamePath { get; set; }
         public String GameArgs { get; set; }
+
+        // options
         public String LauncherMode { get; set; }
+        public String PreLaunchExec { get; set; }
+        public String PreLaunchExecArgs { get; set; }
+        public String PostGameExec { get; set; }
+        public String PostGameExecArgs { get; set; }
 
         public String AssemblyPath = System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
     }
@@ -67,6 +74,22 @@ namespace OriginSteamOverlayLauncher
             SetForegroundWindow(wHnd);
         }
 
+        private static bool ValidatePath(String path)
+        {// run a sanity check to see if the input is a valid path
+            try
+            {
+                if (File.Exists(path))
+                    return true;
+            }
+            catch (Exception e)
+            {
+                Logger("WARNING", "Path validator failed on: [" + path + "], because: " + e.ToString());
+                return false;
+            }
+
+            return false;
+        }
+
         private static bool StringEquals(String input, String comparator)
         {// support function for checking string equality using Ordinal comparison
             if (input != String.Empty && String.Equals(input, comparator, StringComparison.OrdinalIgnoreCase))
@@ -112,27 +135,28 @@ namespace OriginSteamOverlayLauncher
 
         private static bool ValidateINI(Settings setHnd, IniFile iniHnd, String iniFilePath)
         {// INI Support, courtesy of: https://stackoverflow.com/questions/217902/reading-writing-an-ini-file
-            
+            bool stubbedSetting = false; // flag the user later if necessary
+
             if (!iniHnd.KeyExists("LauncherPath", "Paths"))
             {// just a quick check to see if the file is relatively sane
                 return false;
             }
             
-            if (iniHnd.Read("LauncherPath", "Paths") != String.Empty)
+            if (iniHnd.KeyExists("LauncherPath", "Paths"))
                 setHnd.LauncherPath = iniHnd.Read("LauncherPath", "Paths");
 
-            if (iniHnd.Read("LauncherURI", "Paths") != String.Empty)
+            if (iniHnd.KeyExists("LauncherURI", "Paths"))
                 setHnd.LauncherURI = iniHnd.Read("LauncherURI", "Paths");
             else
                 iniHnd.Write("LauncherURI", String.Empty, "Paths");
 
-            if (iniHnd.Read("LauncherPath", "Paths") != String.Empty)
+            if (iniHnd.KeyExists("GamePath", "Paths"))
                 setHnd.GamePath = iniHnd.Read("GamePath", "Paths");
-            if (iniHnd.Read("GameArgs", "Paths") != String.Empty)
+            if (iniHnd.KeyExists("GameArgs", "Paths"))
                 setHnd.GameArgs = iniHnd.Read("GameArgs", "Paths");
 
             // check options
-            if (iniHnd.Read("LauncherMode", "Options") != String.Empty
+            if (iniHnd.KeyExists("LauncherMode", "Options")
                 && StringEquals(iniHnd.Read("LauncherMode", "Options"), "Normal")
                 || StringEquals(iniHnd.Read("LauncherMode", "Options"), "URI")
                 || StringEquals(iniHnd.Read("LauncherMode", "Options"), "LauncherOnly"))
@@ -159,8 +183,42 @@ namespace OriginSteamOverlayLauncher
                 setHnd.LauncherMode = "Normal";
             }
 
-            if (File.Exists(setHnd.LauncherPath)
-                && File.Exists(setHnd.GamePath))
+            // pre-launcher/post-game script support
+            if (iniHnd.KeyExists("PreLaunchExec", "Options"))
+                setHnd.PreLaunchExec = iniHnd.Read("PreLaunchExec", "Options");
+            else if (!iniHnd.KeyExists("PreLaunchExec", "Options"))
+            {
+                iniHnd.Write("PreLaunchExec", String.Empty, "Options");
+                stubbedSetting = true;
+            }
+
+            if (iniHnd.KeyExists("PreLaunchExecArgs", "Options"))
+                setHnd.PreLaunchExecArgs = iniHnd.Read("PreLaunchExecArgs", "Options");
+            else if (!iniHnd.KeyExists("PreLaunchExecArgs", "Options"))
+                iniHnd.Write("PreLaunchExecArgs", String.Empty, "Options");
+
+            if (iniHnd.KeyExists("PostGameExec", "Options"))
+                setHnd.PostGameExec = iniHnd.Read("PostGameExec", "Options");
+            else if (!iniHnd.KeyExists("PostGameExec", "Options"))
+            {
+                iniHnd.Write("PostGameExec", String.Empty, "Options");
+                stubbedSetting = true;
+            }
+            
+            if (iniHnd.KeyExists("PostGameExecArgs", "Options"))
+                setHnd.PostGameExecArgs = iniHnd.Read("PostGameExecArgs", "Options");
+            else if (!iniHnd.KeyExists("PostGameExecArgs", "Options"))
+                iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
+
+            if (stubbedSetting)
+            {
+                Logger("OSOL", "Created new settings stubs in the INI file, telling the user to restart...");
+                MessageBox(IntPtr.Zero, "New settings have been added to the INI file since we last ran.\r\nOSOL should be restarted for normal behavior, exiting...", "Alert", (int)0x00001000L);
+                Process.GetCurrentProcess().Kill(); // bail early
+            }
+
+            if (ValidatePath(setHnd.LauncherPath)
+                && ValidatePath(setHnd.GamePath))
                 return true; // should be able to use it
 
             return false;
@@ -172,7 +230,7 @@ namespace OriginSteamOverlayLauncher
              * Ask for the Game path
              */
 
-            bool iniExists = File.Exists(iniHnd.Path);
+            bool iniExists = ValidatePath(iniHnd.Path);
 
             OpenFileDialog file = new OpenFileDialog();
             file.Title = "Choose the path of your game executable";
@@ -180,7 +238,7 @@ namespace OriginSteamOverlayLauncher
             file.InitialDirectory = Path.GetDirectoryName(setHnd.AssemblyPath);
 
             if (file.ShowDialog() == DialogResult.OK
-                && File.Exists(file.FileName))
+                && ValidatePath(file.FileName))
             {
                 setHnd.GamePath = file.FileName;
                 iniHnd.Write("GamePath", setHnd.GamePath, "Paths");
@@ -197,7 +255,7 @@ namespace OriginSteamOverlayLauncher
             file.InitialDirectory = Path.GetDirectoryName(setHnd.AssemblyPath);
 
             if (file.ShowDialog() == DialogResult.OK
-                && File.Exists(file.FileName))
+                && ValidatePath(file.FileName))
             {
                 setHnd.LauncherPath = file.FileName;
                 iniHnd.Write("LauncherPath", setHnd.LauncherPath, "Paths");
@@ -215,9 +273,44 @@ namespace OriginSteamOverlayLauncher
             // since we started fresh, we need to tell the user to restart
             if (!iniExists)
             {
+                // add in optional settings stubs for the user when starting fresh
+                iniHnd.Write("PreLaunchExec", String.Empty, "Options");
+                iniHnd.Write("PreLaunchExecArgs", String.Empty, "Options");
+                iniHnd.Write("PostGameExec", String.Empty, "Options");
+                iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
+
                 Logger("OSOL", "Created the INI file from the path chooser, telling the user to restart...");
-                MessageBox(IntPtr.Zero, "INI file didn't exist, so we're creating it, please restart for normal behavior...", "Alert", (int)0x00001000L);
+                MessageBox(IntPtr.Zero, "INI file didn't exist, so we're creating it.\r\nOSOL should be restarted for normal behavior, exiting...", "Alert", (int)0x00001000L);
                 Process.GetCurrentProcess().Kill();
+            }
+        }
+
+        private static void ExecuteExternalElevated(String filePath, String fileArgs)
+        {// generic process delegate for executing pre-launcher/post-game
+            try
+            {
+                Process execProc = new Process();
+
+                // sanity check our future process path first
+                if (ValidatePath(filePath))
+                {
+                    execProc.StartInfo.UseShellExecute = true;
+                    execProc.StartInfo.FileName = filePath;
+                    execProc.StartInfo.Arguments = fileArgs;
+                    execProc.StartInfo.Verb = "runas"; // ask the user for contextual UAC privs in case they need elevation
+                    Logger("OSOL", "Attempting to run external process: " + filePath + " " + fileArgs);
+                    execProc.Start();
+                    execProc.WaitForExit(); // idle waiting for outside process to return
+                    Logger("OSOL", "External process delegate returned, continuing...");
+                }
+                else
+                {
+                    Logger("WARNING", "External process path is invalid: " + filePath + " " + fileArgs);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger("WARNING", "Process delegate failed on [" + filePath + " " + fileArgs + "], due to: " + e.ToString());
             }
         }
 
@@ -239,6 +332,9 @@ namespace OriginSteamOverlayLauncher
                 KillProcTreeByName(launcherName);
                 Thread.Sleep(3000); // pause a moment for the launcher to close
             }
+
+            // ask a non-async delegate to run a process before the launcher
+            ExecuteExternalElevated(setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
 
             launcherProc.StartInfo.UseShellExecute = true;
             launcherProc.StartInfo.FileName = setHnd.LauncherPath;
@@ -361,6 +457,9 @@ namespace OriginSteamOverlayLauncher
                 Thread.Sleep(5000); // let Origin sync with the cloud
                 Logger("OSOL", "Game exited, killing launcher instance and cleaning up...");
                 KillProcTreeByName(launcherName);
+
+                // ask a non-async delegate to run a process after the game and launcher exit
+                ExecuteExternalElevated(setHnd.PostGameExec, setHnd.PostGameExecArgs);
             }
         }
     }

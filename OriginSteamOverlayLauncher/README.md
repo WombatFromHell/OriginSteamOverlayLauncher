@@ -17,9 +17,9 @@ Notes
 =====
 **IMPORTANT: (As of v1.02) It is possible to run both the Origin overlay and the Steam overlay together, but it can be a potential cause of crashes if you have another overlay like Afterburner/RTSS on top of it. You have been warned!**
 
-If you wish to use additional arguments with your game executable you should edit the "OriginSteamOverlayLauncher.ini", and change the setting "GameArgs" to whatever command line options are necessary. This setting is created after running OSOL and choosing your paths.
+(As of v1.04) OSOL now supports running a command before the launcher starts as well as after the game exits (before OSOL closes). Simply fill in the "PreLaunchExec" and "PostGameExec" options in the INI with a valid path to an executable of your choosing. This could be used, for example, to temporarily stop and restart the "AMD External Events Utility" service or some other problematic system service via a script before/after launching a game that requires it be disabled for overlay hooking to function properly.
 
-(As of v1.02) If you run into any games that don't launch properly by default, either because of overlay problems or just not launching at all via OSOL, you can edit the "OriginSteamOverlayLauncher.ini" after setting your paths and change the "LauncherMode" setting to "LauncherOnly" (no quotes).
+If you wish to use additional arguments with your game executable you should edit the "OriginSteamOverlayLauncher.ini", and change the setting "GameArgs" to whatever command line options are necessary. This setting is created after running OSOL and choosing your paths.
 
 (As of v1.03) OSOL now supports launcher URLs (like Battle.net and Origin), if you wish to use this feature you'll need to do the following:
 * Place "OriginSteamOverlayLauncher.exe" in the directory of the game you wish to launch.
@@ -45,17 +45,21 @@ Diablo 3            = battlenet://d3
 Starcraft           = battlenet://sc
 ```
 
+(As of v1.02) If you run into any games that don't launch properly by default, either because of overlay problems or just not launching at all via OSOL, you can edit the "OriginSteamOverlayLauncher.ini" after setting your paths and change the "LauncherMode" setting to "LauncherOnly" (no quotes).
+
+
+
 Known Issues
 ============
 If you have difficulty getting the Steam overlay to hook into your game when launching with OSOL please follow [these instructions](https://support.steampowered.com/kb_article.php?ref=9828-SFLZ-9289), and make sure OSOL and Steam are both running with the appropriate permissions (if Steam is running as Admin, make sure to run OSOL as Admin as well so that all processes spawned from it can be hooked by Steam). **This is important for older games (circa <2007).**
 
-If you have issues with games not launching with the Steam Overlay and are using a recent AMD graphics device you may need to disable the "AMD External Events" service.
-
-NOTE: This will break FreeSync functionality, but allow the Steam Overlay to hook into Origin games:
+If you have issues with games not launching with the Steam Overlay and are using a recent AMD graphics device you may need to disable the "AMD External Events Utility" service by following the instructions below:
 
 * Run "services.msc".
 * Browse down to the "AMD External Events" service.
-* Double-click it, change the startup type to "Disabled", and click "Stop" to disable the service.
+* Double-click it, change the startup type to "Disabled", and click "Stop" to disable the service, then click "OK" and exit the dialog.
+
+NOTE: This will break FreeSync functionality, but allow the Steam Overlay to hook into Origin games.
 
 
 How To Compile
