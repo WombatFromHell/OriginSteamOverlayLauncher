@@ -301,7 +301,7 @@ namespace OriginSteamOverlayLauncher
                     execProc.WaitForExit(); // idle waiting for outside process to return
                     Logger("OSOL", "External process delegate returned, continuing...");
                 }
-                else
+                else if (filePath != null && filePath.Length > 0)
                 {
                     Logger("WARNING", "External process path is invalid: " + filePath + " " + fileArgs);
                 }
