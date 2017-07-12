@@ -1,10 +1,8 @@
-﻿using OriginSteamOverlayLauncher;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -137,26 +135,26 @@ namespace OriginSteamOverlayLauncher
         {// INI Support, courtesy of: https://stackoverflow.com/questions/217902/reading-writing-an-ini-file
             bool stubbedSetting = false; // flag the user later if necessary
 
-            if (!iniHnd.KeyExists("LauncherPath", "Paths"))
+            if (!iniHnd.KeyPopulated("LauncherPath", "Paths"))
             {// just a quick check to see if the file is relatively sane
                 return false;
             }
             
-            if (iniHnd.KeyExists("LauncherPath", "Paths"))
+            if (iniHnd.KeyPopulated("LauncherPath", "Paths"))
                 setHnd.LauncherPath = iniHnd.Read("LauncherPath", "Paths");
 
-            if (iniHnd.KeyExists("LauncherURI", "Paths"))
+            if (iniHnd.KeyPopulated("LauncherURI", "Paths"))
                 setHnd.LauncherURI = iniHnd.Read("LauncherURI", "Paths");
             else
                 iniHnd.Write("LauncherURI", String.Empty, "Paths");
 
-            if (iniHnd.KeyExists("GamePath", "Paths"))
+            if (iniHnd.KeyPopulated("GamePath", "Paths"))
                 setHnd.GamePath = iniHnd.Read("GamePath", "Paths");
-            if (iniHnd.KeyExists("GameArgs", "Paths"))
+            if (iniHnd.KeyPopulated("GamePath", "Paths"))
                 setHnd.GameArgs = iniHnd.Read("GameArgs", "Paths");
 
             // check options
-            if (iniHnd.KeyExists("LauncherMode", "Options")
+            if (iniHnd.KeyPopulated("LauncherMode", "Options")
                 && StringEquals(iniHnd.Read("LauncherMode", "Options"), "Normal")
                 || StringEquals(iniHnd.Read("LauncherMode", "Options"), "URI")
                 || StringEquals(iniHnd.Read("LauncherMode", "Options"), "LauncherOnly"))
@@ -184,30 +182,30 @@ namespace OriginSteamOverlayLauncher
             }
 
             // pre-launcher/post-game script support
-            if (iniHnd.KeyExists("PreLaunchExec", "Options"))
+            if (iniHnd.KeyPopulated("PreLaunchExec", "Options"))
                 setHnd.PreLaunchExec = iniHnd.Read("PreLaunchExec", "Options");
-            else if (!iniHnd.KeyExists("PreLaunchExec", "Options"))
+            else if (!iniHnd.KeyExists("PreLaunchExec"))
             {
                 iniHnd.Write("PreLaunchExec", String.Empty, "Options");
                 stubbedSetting = true;
             }
 
-            if (iniHnd.KeyExists("PreLaunchExecArgs", "Options"))
+            if (iniHnd.KeyPopulated("PreLaunchExecArgs", "Options"))
                 setHnd.PreLaunchExecArgs = iniHnd.Read("PreLaunchExecArgs", "Options");
-            else if (!iniHnd.KeyExists("PreLaunchExecArgs", "Options"))
+            else if (!iniHnd.KeyExists("PreLaunchExecArgs"))
                 iniHnd.Write("PreLaunchExecArgs", String.Empty, "Options");
 
-            if (iniHnd.KeyExists("PostGameExec", "Options"))
+            if (iniHnd.KeyPopulated("PostGameExec", "Options"))
                 setHnd.PostGameExec = iniHnd.Read("PostGameExec", "Options");
-            else if (!iniHnd.KeyExists("PostGameExec", "Options"))
+            else if (!iniHnd.KeyExists("PostGameExec"))
             {
                 iniHnd.Write("PostGameExec", String.Empty, "Options");
                 stubbedSetting = true;
             }
             
-            if (iniHnd.KeyExists("PostGameExecArgs", "Options"))
+            if (iniHnd.KeyPopulated("PostGameExecArgs", "Options"))
                 setHnd.PostGameExecArgs = iniHnd.Read("PostGameExecArgs", "Options");
-            else if (!iniHnd.KeyExists("PostGameExecArgs", "Options"))
+            else if (!iniHnd.KeyExists("PostGameExecArgs"))
                 iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
 
             if (stubbedSetting)

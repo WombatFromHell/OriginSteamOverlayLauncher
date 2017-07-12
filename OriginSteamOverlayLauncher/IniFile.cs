@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -44,9 +45,22 @@ namespace OriginSteamOverlayLauncher
             Write(null, null, Section ?? EXE);
         }
 
-        public bool KeyExists(string Key, string Section = null)
+        public bool KeyPopulated(string Key, string Section = null)
         {
             return Read(Key, Section).Length > 0;
+        }
+
+        public bool KeyExists(string Key)
+        {
+            var element = File.ReadLines(this.Path)
+                        .SkipWhile(line => !line.Contains(Key + "="))
+                        .TakeWhile(line => line.Contains(Key + "="))
+                        .FirstOrDefault();
+
+            if (element != null && element.Length > 0)
+                return true;
+            else
+                return false;
         }
     }
 }
