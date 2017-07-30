@@ -70,8 +70,3 @@ If you wish to compile this project from github source, you'll need Visual Studi
 Credits
 =======
 Thanks to Dafzor and his bnetlauncher wrapper (http://madalien.com/stuff/bnetlauncher/) for giving me the idea to make this.
-
-
-Donations [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/JBrown749)
-=========
-If you find this project useful and you would like to donate toward on-going development you can use the link above. Any and all donations are much appreciated!

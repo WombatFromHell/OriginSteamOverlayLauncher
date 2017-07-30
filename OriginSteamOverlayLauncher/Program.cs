@@ -22,6 +22,8 @@ namespace OriginSteamOverlayLauncher
         public String PostGameExec { get; set; }
         public String PostGameExecArgs { get; set; }
 
+        public int PostGameWaitTime { get; set; }
+
         public String AssemblyPath = System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
     }
 
@@ -208,6 +210,24 @@ namespace OriginSteamOverlayLauncher
             else if (!iniHnd.KeyExists("PostGameExecArgs"))
                 iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
 
+            if (iniHnd.KeyPopulated("PostGameWaitTime", "Options"))
+            {// sanity check our string parse for int
+                Int32.TryParse(iniHnd.Read("PostGameWaitTime", "Options"), out int _waitTime);
+                if (_waitTime > 0)
+                    setHnd.PostGameWaitTime = _waitTime;
+                else
+                {
+                    setHnd.PostGameWaitTime = 7; // set to our default, 7s
+                    iniHnd.Write("PostGameWaitTime", setHnd.PostGameWaitTime.ToString(), "Options");
+                }
+            }
+            else if (!iniHnd.KeyExists("PostGameWaitTime"))
+            {
+                setHnd.PostGameWaitTime = 7; // sensible default
+                iniHnd.Write("PostGameWaitTime", setHnd.PostGameWaitTime.ToString(), "Options");
+                stubbedSetting = true;
+            }
+
             if (stubbedSetting)
             {
                 Logger("OSOL", "Created new settings stubs in the INI file, telling the user to restart...");
@@ -276,6 +296,7 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PreLaunchExecArgs", String.Empty, "Options");
                 iniHnd.Write("PostGameExec", String.Empty, "Options");
                 iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
+                iniHnd.Write("PostGameWaitTime", "7", "Options");
 
                 Logger("OSOL", "Created the INI file from the path chooser, telling the user to restart...");
                 MessageBox(IntPtr.Zero, "INI file didn't exist, so we're creating it.\r\nOSOL should be restarted for normal behavior, exiting...", "Alert", (int)0x00001000L);
@@ -452,7 +473,7 @@ namespace OriginSteamOverlayLauncher
              */
             if (IsRunningPID(launcherProc.Id))
             {// found the launcher left after the game exited
-                Thread.Sleep(5000); // let Origin sync with the cloud
+                Thread.Sleep(setHnd.PostGameWaitTime * 1000); // let Origin sync with the cloud
                 Logger("OSOL", "Game exited, killing launcher instance and cleaning up...");
                 KillProcTreeByName(launcherName);
 
