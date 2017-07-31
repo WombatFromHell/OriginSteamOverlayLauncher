@@ -1,4 +1,5 @@
-* a735a80 (HEAD -> master, origin/master) Make INI loading smarter when using old configs
+* 00a1dda (HEAD -> master, tag: v1.05b, origin/master) Add our Changelog.md output to our project build package
+* a735a80 Make INI loading smarter when using old configs
 * 386d3e0 Refactoring of code base and more tuneables Major code cleanup, user tuneable wait times, loosened search timing of launcher process, launcher process is now optional, and pre-launcher event support in URI mode.
 * ce19cde Remove duplicated README and replace with a file link
 * 8311da5 Fix our localized README

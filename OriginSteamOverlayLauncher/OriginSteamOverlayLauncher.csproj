@@ -91,11 +91,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>del /q $(TargetDir)\OriginSteamOverlayLauncher.zip
-"C:\Program Files\7-Zip\7z.exe" a $(TargetDir)\OriginSteamOverlayLauncher.zip $(TargetDir)\OriginSteamOverlayLauncher.exe $(SolutionDir)README.md $(SolutionDir)Changelog.md</PostBuildEvent>
+    <PostBuildEvent>del /q $(TargetDir)OriginSteamOverlayLauncher.zip
+"C:\Program Files\7-Zip\7z.exe" a $(TargetDir)OriginSteamOverlayLauncher.zip $(TargetDir)OriginSteamOverlayLauncher.exe $(SolutionDir)README.md $(SolutionDir)Changelog.md</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
+    <PreBuildEvent>cd $(SolutionDir)
+git log --oneline --decorate --graph &gt; $(SolutionDir)Changelog.md</PreBuildEvent>
   </PropertyGroup>
 </Project>
