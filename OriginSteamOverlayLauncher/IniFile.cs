@@ -7,8 +7,8 @@ using System.Text;
 // Change this to match your program's normal namespace
 namespace OriginSteamOverlayLauncher
 {
-    class IniFile   // revision 11
-    {
+    class IniFile   // revision 12
+    {// INI Support, courtesy of: https://stackoverflow.com/questions/217902/reading-writing-an-ini-file
         public string Path;
         string EXE = Assembly.GetExecutingAssembly().GetName().Name;
 
