@@ -273,14 +273,14 @@ namespace OriginSteamOverlayLauncher
             // overwrite/create log upon startup
             File.WriteAllText("OriginSteamOverlayLauncher_Log.txt", String.Empty);
 
-            if (Settings.ValidatePath(iniFile.Path)
+            if (Settings.CheckINI(iniFile)
                 && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
             {
                 ProcessLauncher(curSet); // normal functionality
             }
             else
-            {// no valid ini, re-create it and ask the user to restart
-                Logger("WARNING", "Config file invalid or doesn't exist, re-creating it from scratch...");
+            {// ini doesn't match our comparison, recreate from stubs
+                Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
                 Settings.CreateINI(curSet, iniFile);
                 Settings.ValidateINI(curSet, iniFile, iniFile.Path);
                 Settings.PathChooser(curSet, iniFile);
