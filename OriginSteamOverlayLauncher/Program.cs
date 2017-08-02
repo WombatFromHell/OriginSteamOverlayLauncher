@@ -386,6 +386,7 @@ namespace OriginSteamOverlayLauncher
 
                 launcherProc.StartInfo.UseShellExecute = true;
                 launcherProc.StartInfo.FileName = setHnd.LauncherPath;
+                launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
                 launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
                 Logger("OSOL", "Attempting to start the launcher, cmd: " + setHnd.LauncherPath);
                 launcherProc.Start();
@@ -423,11 +424,11 @@ namespace OriginSteamOverlayLauncher
                     Logger("FATAL", "Cannot find main window handle of launcher process at PID [" + launcherProc.Id + "], perhaps the wrong launcher exe?");
                     return;
                 }
-            }// skip over the launcher if we're only launching a game path
 
-            // force the launcher window to activate before the game to avoid BPM hooking issues
-            Thread.Sleep(setHnd.PreGameOverlayWaitTime * 1000); // wait for the BPM overlay notification
-            BringToFront(launcherProc.MainWindowHandle);
+                // force the launcher window to activate before the game to avoid BPM hooking issues
+                Thread.Sleep(setHnd.PreGameOverlayWaitTime * 1000); // wait for the BPM overlay notification
+                BringToFront(launcherProc.MainWindowHandle);
+            }// skip over the launcher if we're only launching a game path
 
             /*
              * Game Post-Proxy Detection
@@ -437,6 +438,7 @@ namespace OriginSteamOverlayLauncher
             {// only run game ourselves if the user asks
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.GamePath;
+                gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
                 gameProc.StartInfo.Arguments = setHnd.GameArgs;
                 Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
                 gameProc.Start();
@@ -467,7 +469,7 @@ namespace OriginSteamOverlayLauncher
 
             int g_sanity_counter = 0;
             int gamePID = 0;
-            while (g_sanity_counter <= 300)
+            while (g_sanity_counter <= 300 && setHnd.LauncherPath != String.Empty)
             {// actively attempt to reacquire process, wait up to 5 mins
                 if (g_sanity_counter == 300)
                 {
@@ -504,15 +506,17 @@ namespace OriginSteamOverlayLauncher
             /*
              * Post-Game Cleanup
              */
-            if (IsRunningPID(launcherProc.Id))
+            if (setHnd.LauncherPath != String.Empty && IsRunningPID(launcherProc.Id))
             {// found the launcher left after the game exited
                 Thread.Sleep(setHnd.PostGameWaitTime * 1000); // let Origin sync with the cloud
                 Logger("OSOL", "Game exited, killing launcher instance and cleaning up...");
                 KillProcTreeByName(launcherName);
-
-                // ask a non-async delegate to run a process after the game and launcher exit
-                ExecuteExternalElevated(setHnd.PostGameExec, setHnd.PostGameExecArgs);
             }
+            else
+                Logger("OSOL", "Game exited, cleaning up...");
+
+            // ask a non-async delegate to run a process after the game and launcher exit
+            ExecuteExternalElevated(setHnd.PostGameExec, setHnd.PostGameExecArgs);
         }
     }
 }

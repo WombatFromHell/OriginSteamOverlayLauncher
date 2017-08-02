@@ -1,4 +1,5 @@
-* 00a1dda (HEAD -> master, tag: v1.05b, origin/master) Add our Changelog.md output to our project build package
+* 72d4038 (HEAD -> master, tag: v1.05b, origin/master) Push git log output into Changelog.md before builds
+* 00a1dda Add our Changelog.md output to our project build package
 * a735a80 Make INI loading smarter when using old configs
 * 386d3e0 Refactoring of code base and more tuneables Major code cleanup, user tuneable wait times, loosened search timing of launcher process, launcher process is now optional, and pre-launcher event support in URI mode.
 * ce19cde Remove duplicated README and replace with a file link
