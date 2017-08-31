@@ -43,6 +43,7 @@ Starcraft 2         = battlenet://sc2
 Overwatch           = battlenet://Pro
 Diablo 3            = battlenet://d3
 Starcraft           = battlenet://sc
+Destiny 2           = battlenet://dst2
 ```
 
 (As of v1.02) If you run into any games that don't launch properly by default, either because of overlay problems or just not launching at all via OSOL, you can edit the "OriginSteamOverlayLauncher.ini" after setting your paths and change the "LauncherMode" setting to "LauncherOnly" (no quotes).
