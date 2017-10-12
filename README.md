@@ -34,17 +34,18 @@ If you wish to use additional arguments with your game executable you should edi
 * Now that you have your launch id, change the "LauncherURI" option to:
 > LauncherURI=origin2://game/launch/?offerIds=1019025
 
-```
-List of common launcher strings for Battle.net:
-Heroes of the Storm = battlenet://hots
-World of Warcraft   = battlenet://WoW
-Hearthstone         = battlenet://WTCG
-Starcraft 2         = battlenet://sc2
-Overwatch           = battlenet://Pro
-Diablo 3            = battlenet://d3
-Starcraft           = battlenet://sc
-Destiny 2           = battlenet://dst2
-```
+**Here's a list of common launcher strings for Battle.net:**
+
+| Game                 | LauncherURI      |
+| -------------------- | ---------------- |
+| Heroes of the Storm  | battlenet://hots |
+| World of Warcraft    | battlenet://wow  |
+| Hearthstone          | battlenet://hs   |
+| Starcraft 2          | battlenet://sc2  |
+| Starcraft Remastered | battlenet://scr  |
+| Overwatch            | battlenet://ow   |
+| Diablo 3             | battlenet://d3   |
+| Destiny 2            | battlenet://dst2 |
 
 (As of v1.02) If you run into any games that don't launch properly by default, either because of overlay problems or just not launching at all via OSOL, you can edit the "OriginSteamOverlayLauncher.ini" after setting your paths and change the "LauncherMode" setting to "LauncherOnly" (no quotes).
 
