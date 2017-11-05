@@ -15,7 +15,7 @@ How To Use
 
 Notes
 =====
-__If you looking for specific instructions on getting OSOL working with a particular launcher or are having issues with certain behavior you believe is related to OSOL please go to the [Project Wiki Page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki).__
+__If you're looking for specific instructions on getting OSOL working with a particular launcher or are having issues with certain behavior you believe is related to OSOL please go to the [Project Wiki Page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki).__
 
 OSOL should work with most launchers that call a regular Windows executable, if you find a launcher that doesn't work with OSOL please [report it](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/issues/new) so I can address it.
 
