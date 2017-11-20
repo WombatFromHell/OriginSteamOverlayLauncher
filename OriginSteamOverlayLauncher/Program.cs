@@ -3,6 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -267,23 +270,54 @@ namespace OriginSteamOverlayLauncher
         [STAThread]
         static void Main(string[] args)
         {
-            Settings curSet = new Settings();
-            // path to our local config
-            IniFile iniFile = new IniFile("OriginSteamOverlayLauncher.ini");
-            // overwrite/create log upon startup
-            File.WriteAllText("OriginSteamOverlayLauncher_Log.txt", String.Empty);
+            // get our current mutex id based off our AssemblyInfo.cs
+            string appGuid = ((GuidAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value.ToString();
+            string mutexId = string.Format("Global\\{{{0}}}", appGuid);
 
-            if (Settings.CheckINI(iniFile)
-                && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
+            // simple global mutex, courtesy of: https://stackoverflow.com/a/1213517
+            using (var mutex = new Mutex(false, mutexId))
             {
-                ProcessLauncher(curSet); // normal functionality
-            }
-            else
-            {// ini doesn't match our comparison, recreate from stubs
-                Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
-                Settings.CreateINI(curSet, iniFile);
-                Settings.ValidateINI(curSet, iniFile, iniFile.Path);
-                Settings.PathChooser(curSet, iniFile);
+                try
+                {
+                    try
+                    {
+                        if (!mutex.WaitOne(TimeSpan.FromSeconds(1), false))
+                            Environment.Exit(0);
+                    }
+                    catch (AbandonedMutexException)
+                    {
+                        Logger("MUTEX", "Mutex is held by another instance, but seems abandoned!");
+                        Environment.Exit(0);
+                    }
+                    
+                    /*
+                     * Run our actual entry point here...
+                     */
+
+                    Settings curSet = new Settings();
+                    // path to our local config
+                    IniFile iniFile = new IniFile("OriginSteamOverlayLauncher.ini");
+                    // overwrite/create log upon startup
+                    File.WriteAllText("OriginSteamOverlayLauncher_Log.txt", String.Empty);
+
+                    if (Settings.CheckINI(iniFile)
+                        && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
+                    {
+                        ProcessLauncher(curSet); // normal functionality
+                    }
+                    else
+                    {// ini doesn't match our comparison, recreate from stubs
+                        Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
+                        Settings.CreateINI(curSet, iniFile);
+                        Settings.ValidateINI(curSet, iniFile, iniFile.Path);
+                        Settings.PathChooser(curSet, iniFile);
+                    }
+                }
+                finally
+                {
+                    mutex.ReleaseMutex();
+                    Environment.Exit(0);
+                }
             }
         }
 

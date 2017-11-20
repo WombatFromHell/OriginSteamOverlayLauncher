@@ -1,4 +1,11 @@
-* 72d4038 (HEAD -> master, tag: v1.05b, origin/master) Push git log output into Changelog.md before builds
+* c90b426 (HEAD -> master, origin/master) Update README.md
+* 46f1b67 README grammar fix
+* 79f2e1d Update README.md
+* 967cf1b Updated README with links for bug reporting and wiki
+* 6302177 Updated Battle.net launcher uri string table
+* 47a8f5b Updated Battle.net launcher strings for Destiny 2
+* 83b4e37 (tag: v1.05c) Fixed non-launcher game execution and timing
+* 72d4038 (tag: v1.05b) Push git log output into Changelog.md before builds
 * 00a1dda Add our Changelog.md output to our project build package
 * a735a80 Make INI loading smarter when using old configs
 * 386d3e0 Refactoring of code base and more tuneables Major code cleanup, user tuneable wait times, loosened search timing of launcher process, launcher process is now optional, and pre-launcher event support in URI mode.
