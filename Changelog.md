@@ -1,4 +1,5 @@
-* 7d27b4d (HEAD -> master) Fixed incorrect default value in ProcessAcquisitionTimeout option
+* 9d278b4 (HEAD -> master) Refactoring and exposed more options via INI Added ReLaunch, DoNotClose, and ProxyTimeout options to the INI to expose more customizable behavior wrt the launcher
+* 7d27b4d Fixed incorrect default value in ProcessAcquisitionTimeout option
 * 99da6f5 Exposed process acquisition timeout in the INI
 * 29d2d72 Added a single global mutex
 * c90b426 (origin/master) Update README.md

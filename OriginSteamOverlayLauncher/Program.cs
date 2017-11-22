@@ -294,13 +294,13 @@ namespace OriginSteamOverlayLauncher
             setHnd.PreLaunchExecArgs = ValidateString(iniHnd, String.Empty, setHnd.PreLaunchExecArgs, "PreLaunchExecArgs", "Options");
             setHnd.PostGameExec = ValidateString(iniHnd, String.Empty, setHnd.PostGameExec, "PostGameExec", "Options");
             setHnd.PostGameExecArgs = ValidateString(iniHnd, String.Empty, setHnd.PostGameExecArgs, "PostGameExecArgs", "Options");
-            
+
             // treat ints differently
-            setHnd.PreGameOverlayWaitTime = ValidateInt(iniHnd, 5, setHnd.PreGameOverlayWaitTime, "PreGameOverlayWaitTime", "Options"); // 5s default wait time (if not specified)
-            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time (if not specified)
-            setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, setHnd.PostGameWaitTime, "PostGameWaitTime", "Options"); // 7s default wait time (if not specified)
-            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time (if not specified)
-            setHnd.ProxyTimeout = ValidateInt(iniHnd, 5, setHnd.ProxyTimeout, "ProxyTimeout", "Options"); // 5s default wait time (if not specified)
+            setHnd.ProxyTimeout = ValidateInt(iniHnd, 5, setHnd.ProxyTimeout, "ProxyTimeout", "Options"); // 5s default wait time
+            setHnd.PreGameOverlayWaitTime = ValidateInt(iniHnd, 5, setHnd.PreGameOverlayWaitTime, "PreGameOverlayWaitTime", "Options"); // 5s default wait time
+            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time
+            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time
+            setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, setHnd.PostGameWaitTime, "PostGameWaitTime", "Options"); // 7s default wait time
 
             // parse strings into bools
             // Default to closing the previously detected launcher PID
@@ -353,28 +353,35 @@ namespace OriginSteamOverlayLauncher
                         Logger("MUTEX", "Mutex is held by another instance, but seems abandoned!");
                         Environment.Exit(0);
                     }
-                    
+
                     /*
                      * Run our actual entry point here...
                      */
 
-                    Settings curSet = new Settings();
-                    // path to our local config
-                    IniFile iniFile = new IniFile("OriginSteamOverlayLauncher.ini");
-                    // overwrite/create log upon startup
-                    File.WriteAllText("OriginSteamOverlayLauncher_Log.txt", String.Empty);
-
-                    if (Settings.CheckINI(iniFile)
-                        && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
-                    {
-                        ProcessLauncher(curSet); // normal functionality
+                    if (cliArgExists(args, "help"))
+                    {// display an INI settings overview if run with /help
+                        DisplayHelpDialog();
                     }
                     else
-                    {// ini doesn't match our comparison, recreate from stubs
-                        Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
-                        Settings.CreateINI(curSet, iniFile);
-                        Settings.ValidateINI(curSet, iniFile, iniFile.Path);
-                        Settings.PathChooser(curSet, iniFile);
+                    {
+                        Settings curSet = new Settings();
+                        // path to our local config
+                        IniFile iniFile = new IniFile("OriginSteamOverlayLauncher.ini");
+                        // overwrite/create log upon startup
+                        File.WriteAllText("OriginSteamOverlayLauncher_Log.txt", String.Empty);
+
+                        if (Settings.CheckINI(iniFile)
+                            && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
+                        {
+                            ProcessLauncher(curSet); // normal functionality
+                        }
+                        else
+                        {// ini doesn't match our comparison, recreate from stubs
+                            Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
+                            Settings.CreateINI(curSet, iniFile);
+                            Settings.ValidateINI(curSet, iniFile, iniFile.Path);
+                            Settings.PathChooser(curSet, iniFile);
+                        }
                     }
                 }
                 finally
@@ -386,6 +393,15 @@ namespace OriginSteamOverlayLauncher
         }
 
         #region ProcessHelpers
+        private static bool cliArgExists(string[] args, string ArgName)
+        {// courtesy of: https://stackoverflow.com/a/30569947
+            var singleFound = args.Where(w => w.ToLower() == "/" + ArgName.ToLower()).FirstOrDefault();
+            if (singleFound != null)
+                return ArgName.Equals(ArgName.ToLower());
+            else
+                return false;
+        }
+
         public static void Logger(String cause, String message)
         {
             using (StreamWriter stream = File.AppendText("OriginSteamOverlayLauncher_Log.txt"))
@@ -459,7 +475,13 @@ namespace OriginSteamOverlayLauncher
 
         private static void DisplayHelpDialog()
         {
-            // TODO: Stub out a "/help" option for overviewing INI options
+            Form helpForm = new HelpForm();
+            helpForm.ShowDialog();
+
+            if (helpForm.DialogResult == DialogResult.OK || helpForm.DialogResult == DialogResult.Cancel)
+            {
+                Process.GetCurrentProcess().Kill(); // exit the assembly after the modal
+            }
         }
         #endregion
 
