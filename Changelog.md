@@ -1,4 +1,5 @@
-* 99da6f5 (HEAD -> master) Exposed process acquisition timeout in the INI
+* 7d27b4d (HEAD -> master) Fixed incorrect default value in ProcessAcquisitionTimeout option
+* 99da6f5 Exposed process acquisition timeout in the INI
 * 29d2d72 Added a single global mutex
 * c90b426 (origin/master) Update README.md
 * 46f1b67 README grammar fix
