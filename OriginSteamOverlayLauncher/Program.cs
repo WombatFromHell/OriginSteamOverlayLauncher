@@ -30,6 +30,7 @@ namespace OriginSteamOverlayLauncher
         public int PreGameOverlayWaitTime { get; set; }
         public int PreGameLauncherWaitTime { get; set; }
         public int PostGameWaitTime { get; set; }
+        public int ProcessAcquisitionTimeout { get; set; }
         #endregion
         
         #region Helpers
@@ -96,7 +97,7 @@ namespace OriginSteamOverlayLauncher
                 Process.GetCurrentProcess().Kill(); // bail!
             }
 
-            Program.MessageBox(IntPtr.Zero, "OSOL should be restarted for normal behavior, exiting...", "Alert", (int)0x00001000L);
+            Program.MessageBox(IntPtr.Zero, "INI updated, OSOL should be restarted for normal behavior, exiting...", "Notice", (int)0x00001000L);
             Process.GetCurrentProcess().Kill();
         }
 
@@ -123,6 +124,7 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PreGameOverlayWaitTime", "5", "Options"); //5s
                 iniHnd.Write("PreGameLauncherWaitTime", "12", "Options"); //12s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
+                iniHnd.Write("ProcessAcquisitionTimeout", "300", "Options"); //5mins
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -141,7 +143,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PreLaunchExec") && iniHnd.KeyExists("PreLaunchExecArgs")
                     && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs")
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
-                    && iniHnd.KeyExists("PostGameWaitTime"))
+                    && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout"))
                     return true;
                 else
                     return false;
@@ -243,6 +245,7 @@ namespace OriginSteamOverlayLauncher
             setHnd.PreGameOverlayWaitTime = ValidateInt(iniHnd, 5, setHnd.PreGameOverlayWaitTime, "PreGameOverlayWaitTime", "Options"); // 5s default wait time (if not specified)
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time (if not specified)
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, setHnd.PostGameWaitTime, "PostGameWaitTime", "Options"); // 7s default wait time (if not specified)
+            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 7, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time (if not specified)
 
             if (ValidatePath(setHnd.LauncherPath) || ValidatePath(setHnd.GamePath))
                 return true; // only flag to continue if either main path works
@@ -427,9 +430,9 @@ namespace OriginSteamOverlayLauncher
 
                 int l_sanity_counter = 0;
                 int launcherPID = 0;
-                while (l_sanity_counter <= 300)
+                while (l_sanity_counter <= setHnd.ProcessAcquisitionTimeout)
                 {// wait up to 5 mins. for the launcher process
-                    if (l_sanity_counter == 300)
+                    if (l_sanity_counter == setHnd.ProcessAcquisitionTimeout)
                     {
                         Logger("FATAL", "Could not detect the launcher process after waiting 5 mins, exiting!");
                         Process.GetCurrentProcess().Kill();
@@ -503,9 +506,9 @@ namespace OriginSteamOverlayLauncher
 
             int g_sanity_counter = 0;
             int gamePID = 0;
-            while (g_sanity_counter <= 300 && setHnd.LauncherPath != String.Empty)
+            while (g_sanity_counter <= setHnd.ProcessAcquisitionTimeout && setHnd.LauncherPath != String.Empty)
             {// actively attempt to reacquire process, wait up to 5 mins
-                if (g_sanity_counter == 300)
+                if (g_sanity_counter == setHnd.ProcessAcquisitionTimeout)
                 {
                     Logger("FATAL", "Timed out while looking for game process, exiting! Internet connection or launcher issue?");
                     Process.GetCurrentProcess().Kill();
