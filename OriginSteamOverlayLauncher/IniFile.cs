@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -23,11 +24,19 @@ namespace OriginSteamOverlayLauncher
             Path = new FileInfo(IniPath ?? EXE + ".ini").FullName.ToString();
         }
 
-        public string Read(string Key, string Section = null)
+        public string ReadString(string Key, string Section = null)
         {
             var RetVal = new StringBuilder(255);
             GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, 255, Path);
             return RetVal.ToString();
+        }
+
+        public bool ReadBool(string Key, string Section = null)
+        {
+            var RetVal = new StringBuilder(255);
+            GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, 255, Path);
+            Boolean.TryParse(RetVal.ToString(), out bool _output);
+            return _output;
         }
 
         public void Write(string Key, string Value, string Section = null)
@@ -47,7 +56,7 @@ namespace OriginSteamOverlayLauncher
 
         public bool KeyPopulated(string Key, string Section = null)
         {
-            return Read(Key, Section).Length > 0;
+            return ReadString(Key, Section).Length > 0;
         }
 
         public bool KeyExists(string Key)

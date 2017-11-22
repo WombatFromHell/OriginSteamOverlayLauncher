@@ -14,6 +14,7 @@ namespace OriginSteamOverlayLauncher
     class Settings
     {// externalize our config variables for encapsulation
         #region SettingStubs
+        // strings for execution paths and arguments
         public String LauncherPath { get; set; }
         public String LauncherArgs { get; set; }
         public String LauncherURI { get; set; }
@@ -26,10 +27,16 @@ namespace OriginSteamOverlayLauncher
         public String PreLaunchExecArgs { get; set; }
         public String PostGameExec { get; set; }
         public String PostGameExecArgs { get; set; }
-        
+
+        // bools for OSOL behavior
+        public Boolean ReLaunch { get; set; }
+        public Boolean DoNotClose { get; set; }
+
+        // ints for exposing internal timings
         public int PreGameOverlayWaitTime { get; set; }
         public int PreGameLauncherWaitTime { get; set; }
         public int PostGameWaitTime { get; set; }
+        public int ProxyTimeout { get; set; }
         public int ProcessAcquisitionTimeout { get; set; }
         #endregion
         
@@ -124,7 +131,14 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PreGameOverlayWaitTime", "5", "Options"); //5s
                 iniHnd.Write("PreGameLauncherWaitTime", "12", "Options"); //12s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
+                iniHnd.Write("ProxyTimeout", "5", "Options"); //5s
                 iniHnd.Write("ProcessAcquisitionTimeout", "300", "Options"); //5mins
+
+                // options as parsed strings
+                //Kill and relaunch detected launcher PID before game
+                iniHnd.Write("ReLaunch", "True", "Options");
+                // Do not kill detected launcher PID after game exits
+                iniHnd.Write("DoNotClose", "False", "Options");
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -143,7 +157,8 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PreLaunchExec") && iniHnd.KeyExists("PreLaunchExecArgs")
                     && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs")
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
-                    && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout"))
+                    && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
+                    && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("DoNotClose"))
                     return true;
                 else
                     return false;
@@ -152,7 +167,7 @@ namespace OriginSteamOverlayLauncher
                 return false;
         }
 
-        public static bool ValidatePath(String path)
+        public static Boolean ValidatePath(String path)
         {// run a sanity check to see if the input is a valid path
             try
             {
@@ -170,9 +185,17 @@ namespace OriginSteamOverlayLauncher
 
         public static String ValidateString(IniFile iniHnd, String writeKey, String setKey, String subKey, String keyName)
         {// reusable key validator for ini strings
+            /*
+             * Takes:
+             *     A ref to the IniFile: iniHnd
+             *     A string to use as a default: writeKey
+             *     A ref to the string to set in the INI: setKey
+             *     A string key to modify in the INI: subKey
+             *     A string master-key to modify in the INI: keyName
+             */
             if (iniHnd.KeyPopulated(subKey, keyName))
             {// return empty if empty, or contents if valid
-                setKey = iniHnd.Read(subKey, keyName);
+                setKey = iniHnd.ReadString(subKey, keyName);
                 return setKey.Length > 0 ? setKey : String.Empty;
             }
             else if (!iniHnd.KeyExists(subKey))
@@ -184,11 +207,19 @@ namespace OriginSteamOverlayLauncher
                 return String.Empty;
         }
 
-        public static int ValidateInt(IniFile iniHnd, Int32 writeKey, Int32 setKey, String subKey, String keyName)
+        public static Int32 ValidateInt(IniFile iniHnd, Int32 writeKey, Int32 setKey, String subKey, String keyName)
         {// reusable key validator for ini ints
+            /*
+             * Takes:
+             *     A ref to the IniFile: iniHnd
+             *     An int to use as the default: writeKey
+             *     A ref to the int to set in the INI: setKey
+             *     A string key to modify in the INI: subKey
+             *     A string master-key to modify in the INI: keyName
+             */
             if (iniHnd.KeyPopulated(subKey, keyName))
             {
-                Int32.TryParse(iniHnd.Read(subKey, keyName), out int _output);
+                Int32.TryParse(iniHnd.ReadString(subKey, keyName), out int _output);
                 return _output > 0 ? _output : -1; // must always be greater than 0s
             }
             else if (!iniHnd.KeyExists(subKey))
@@ -200,6 +231,29 @@ namespace OriginSteamOverlayLauncher
                 return -1;
         }
 
+        public static Boolean ValidateBool(IniFile iniHnd, Boolean writeKey, Boolean setKey, String subKey, String keyName)
+        {// reusable key validator for ini bools
+            /*
+             * Takes:
+             *     A ref to the IniFile: iniHnd
+             *     A bool to use as a default: writeKey
+             *     A ref to the bool to set in the INI: setKey
+             *     A string key to modify in the INI: subKey
+             *     A string master-key to modify in the INI: keyName
+             */
+            if (iniHnd.KeyPopulated(subKey, keyName))
+            {// return empty if empty, or contents if valid
+                return iniHnd.ReadBool(subKey, keyName);
+            }
+            else if (!iniHnd.KeyExists(subKey))
+            {// edge case where the contents change before program closes
+                iniHnd.Write(subKey, writeKey.ToString(), keyName);
+                return false;
+            }
+            else
+                return false;
+        }
+
         public static bool ValidateINI(Settings setHnd, IniFile iniHnd, String iniFilePath)
         {// validate while reading from ini - filling in defaults where sensible
             setHnd.LauncherPath = ValidateString(iniHnd, String.Empty, "LauncherPath", "LauncherPath", "Paths");
@@ -209,9 +263,9 @@ namespace OriginSteamOverlayLauncher
 
             // special case - check launchermode options
             if (iniHnd.KeyPopulated("LauncherMode", "Options")
-                && Settings.StringEquals(iniHnd.Read("LauncherMode", "Options"), "Normal")
-                || Settings.StringEquals(iniHnd.Read("LauncherMode", "Options"), "URI")
-                || Settings.StringEquals(iniHnd.Read("LauncherMode", "Options"), "LauncherOnly"))
+                && Settings.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "Normal")
+                || Settings.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "URI")
+                || Settings.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "LauncherOnly"))
             {
                 /*
                  * "LauncherMode" can have three options:
@@ -227,7 +281,7 @@ namespace OriginSteamOverlayLauncher
                  *     work properly with the BPM overlay. This is to work around a Steam regression involving
                  *     hooking Origin titles launched through the Origin2 launcher.
                  */
-                setHnd.LauncherMode = iniHnd.Read("LauncherMode", "Options");
+                setHnd.LauncherMode = iniHnd.ReadString("LauncherMode", "Options");
             }
             else
             {// autocorrect for the user
@@ -246,6 +300,13 @@ namespace OriginSteamOverlayLauncher
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time (if not specified)
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, setHnd.PostGameWaitTime, "PostGameWaitTime", "Options"); // 7s default wait time (if not specified)
             setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time (if not specified)
+            setHnd.ProxyTimeout = ValidateInt(iniHnd, 5, setHnd.ProxyTimeout, "ProxyTimeout", "Options"); // 5s default wait time (if not specified)
+
+            // parse strings into bools
+            // Default to closing the previously detected launcher PID
+            setHnd.ReLaunch = ValidateBool(iniHnd, true, setHnd.ReLaunch, "ReLaunch", "Options");
+            // Default to closing the detected launcher PID when a game exits
+            setHnd.DoNotClose = ValidateBool(iniHnd, false, setHnd.DoNotClose, "DoNotClose", "Options");
 
             if (ValidatePath(setHnd.LauncherPath) || ValidatePath(setHnd.GamePath))
                 return true; // only flag to continue if either main path works
@@ -395,6 +456,11 @@ namespace OriginSteamOverlayLauncher
                 Logger("WARNING", "Process delegate failed on [" + filePath + " " + fileArgs + "], due to: " + e.ToString());
             }
         }
+
+        private static void DisplayHelpDialog()
+        {
+            // TODO: Stub out a "/help" option for overviewing INI options
+        }
         #endregion
 
         private static void ProcessLauncher(Settings setHnd)
@@ -405,11 +471,19 @@ namespace OriginSteamOverlayLauncher
             Process launcherProc = new Process();
             Process gameProc = new Process();
 
+            // internal counters to sync with timeout
+            int l_sanity_counter = 0;
+            int g_sanity_counter = 0;
+            // track PIDs that we find
+            int launcherPID = 0;
+            int gamePID = 0;
+
             /*
              * Launcher Detection
              */
-
-            if (IsRunning(launcherName))
+            
+            // obey the user and avoid killing and relaunching the target launcher
+            if (IsRunning(launcherName) && setHnd.ReLaunch)
             {// if the launcher is running before the game kill it so we can run it through Steam
                 Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
                 KillProcTreeByName(launcherName);
@@ -425,13 +499,12 @@ namespace OriginSteamOverlayLauncher
                 launcherProc.StartInfo.FileName = setHnd.LauncherPath;
                 launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
                 launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
-                Logger("OSOL", "Attempting to start the launcher, cmd: " + setHnd.LauncherPath);
+
+                Logger("OSOL", "Attempting to start the launcher: " + setHnd.LauncherPath);
                 launcherProc.Start();
 
-                int l_sanity_counter = 0;
-                int launcherPID = 0;
                 while (l_sanity_counter <= setHnd.ProcessAcquisitionTimeout)
-                {// wait up to 5 mins. for the launcher process
+                {
                     if (l_sanity_counter == setHnd.ProcessAcquisitionTimeout)
                     {
                         Logger("FATAL", "Could not detect the launcher process after waiting 5 mins, exiting!");
@@ -477,9 +550,10 @@ namespace OriginSteamOverlayLauncher
                 gameProc.StartInfo.FileName = setHnd.GamePath;
                 gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
                 gameProc.StartInfo.Arguments = setHnd.GameArgs;
+
                 Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
                 gameProc.Start();
-                Thread.Sleep(5000); // wait for the proxy to close
+                Thread.Sleep(setHnd.ProxyTimeout); // wait for the proxy to close
             }
             else if (Settings.StringEquals(launcherMode, "URI"))
             {
@@ -488,6 +562,7 @@ namespace OriginSteamOverlayLauncher
 
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.LauncherURI;
+                
                 Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000); // wait to hook some sluggish launchers
                 try
                 {// we can't control what will happen so try to catch exceptions
@@ -501,13 +576,10 @@ namespace OriginSteamOverlayLauncher
                 }
             }
             else
-                Logger("OSOL", "Searching for the game process, waiting up to 5 minutes...");
-            
+                Logger("OSOL", "Searching for the game process...");
 
-            int g_sanity_counter = 0;
-            int gamePID = 0;
             while (g_sanity_counter <= setHnd.ProcessAcquisitionTimeout && setHnd.LauncherPath != String.Empty)
-            {// actively attempt to reacquire process, wait up to 5 mins
+            {// actively attempt to reacquire process
                 if (g_sanity_counter == setHnd.ProcessAcquisitionTimeout)
                 {
                     Logger("FATAL", "Timed out while looking for game process, exiting! Internet connection or launcher issue?");
@@ -541,16 +613,18 @@ namespace OriginSteamOverlayLauncher
             }
 
             /*
-             * Post-Game Cleanup
-             */
-            if (setHnd.LauncherPath != String.Empty && IsRunningPID(launcherProc.Id))
+                * Post-Game Cleanup
+                */
+            if (setHnd.LauncherPath != String.Empty && IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
             {// found the launcher left after the game exited
                 Thread.Sleep(setHnd.PostGameWaitTime * 1000); // let Origin sync with the cloud
                 Logger("OSOL", "Game exited, killing launcher instance and cleaning up...");
                 KillProcTreeByName(launcherName);
             }
             else
+            {// obey the user and don't kill the launcher if requested
                 Logger("OSOL", "Game exited, cleaning up...");
+            }
 
             // ask a non-async delegate to run a process after the game and launcher exit
             ExecuteExternalElevated(setHnd.PostGameExec, setHnd.PostGameExecArgs);
