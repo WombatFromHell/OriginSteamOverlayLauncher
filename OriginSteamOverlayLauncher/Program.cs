@@ -245,7 +245,7 @@ namespace OriginSteamOverlayLauncher
             setHnd.PreGameOverlayWaitTime = ValidateInt(iniHnd, 5, setHnd.PreGameOverlayWaitTime, "PreGameOverlayWaitTime", "Options"); // 5s default wait time (if not specified)
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time (if not specified)
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, setHnd.PostGameWaitTime, "PostGameWaitTime", "Options"); // 7s default wait time (if not specified)
-            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 7, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time (if not specified)
+            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time (if not specified)
 
             if (ValidatePath(setHnd.LauncherPath) || ValidatePath(setHnd.GamePath))
                 return true; // only flag to continue if either main path works
