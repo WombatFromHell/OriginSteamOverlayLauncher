@@ -1,4 +1,5 @@
-* 29d2d72 (HEAD -> master) Added a single global mutex
+* 99da6f5 (HEAD -> master) Exposed process acquisition timeout in the INI
+* 29d2d72 Added a single global mutex
 * c90b426 (origin/master) Update README.md
 * 46f1b67 README grammar fix
 * 79f2e1d Update README.md
