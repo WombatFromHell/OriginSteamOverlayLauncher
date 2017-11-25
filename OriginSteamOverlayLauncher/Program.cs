@@ -23,6 +23,7 @@ namespace OriginSteamOverlayLauncher
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hWnd);
         public const int SW_SHOWDEFAULT = 10;
+        public const int SW_MINIMIZE = 2;
         public const int SW_SHOW = 5;
         #endregion
         
@@ -110,6 +111,11 @@ namespace OriginSteamOverlayLauncher
             ShowWindowAsync(wHnd, SW_SHOWDEFAULT);
             ShowWindowAsync(wHnd, SW_SHOW);
             SetForegroundWindow(wHnd);
+        }
+
+        private static void MinimizeWindow(IntPtr wHnd)
+        {// force the window handle to minimize
+            ShowWindowAsync(wHnd, SW_MINIMIZE);
         }
 
         private static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
@@ -255,6 +261,10 @@ namespace OriginSteamOverlayLauncher
                 // force the launcher window to activate before the game to avoid BPM hooking issues
                 Thread.Sleep(setHnd.PreGameOverlayWaitTime * 1000); // wait for the BPM overlay notification
                 BringToFront(launcherProc.MainWindowHandle);
+
+                // if the user requests it minimize our launcher after detecting it
+                if (setHnd.MinimizeLauncher)
+                    MinimizeWindow(launcherProc.MainWindowHandle);
             }// skip over the launcher if we're only launching a game path
 
             /*

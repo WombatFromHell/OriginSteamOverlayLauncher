@@ -29,6 +29,7 @@ namespace OriginSteamOverlayLauncher
         // bools for OSOL behavior
         public Boolean ReLaunch { get; set; }
         public Boolean DoNotClose { get; set; }
+        public Boolean MinimizeLauncher { get; set; }
 
         // ints for exposing internal timings
         public int PreGameOverlayWaitTime { get; set; }
@@ -137,6 +138,8 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("ReLaunch", "True", "Options");
                 // Do not kill detected launcher PID after game exits
                 iniHnd.Write("DoNotClose", "False", "Options");
+                // Do not minimize launcher on process detection
+                iniHnd.Write("MinimizeLauncher", "False", "Options");
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -156,7 +159,8 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs")
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
                     && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
-                    && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("DoNotClose"))
+                    && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch")
+                    && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher"))
                     return true;
                 else
                     return false;
@@ -306,6 +310,8 @@ namespace OriginSteamOverlayLauncher
             setHnd.ReLaunch = ValidateBool(iniHnd, true, setHnd.ReLaunch, "ReLaunch", "Options");
             // Default to closing the detected launcher PID when a game exits
             setHnd.DoNotClose = ValidateBool(iniHnd, false, setHnd.DoNotClose, "DoNotClose", "Options");
+            // Default to leaving the launcher window alone after detecting it
+            setHnd.MinimizeLauncher = ValidateBool(iniHnd, false, setHnd.MinimizeLauncher, "MinimizeLauncher", "Options");
 
             if (ValidatePath(setHnd.LauncherPath) || ValidatePath(setHnd.GamePath))
                 return true; // only flag to continue if either main path works
