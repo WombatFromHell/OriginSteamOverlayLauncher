@@ -121,25 +121,26 @@
     <value>Here is a listing of all valid INI options with recommended defaults:
 
 [Paths]
-LauncherPath=C:\Your Launcher\Launcher.exe (required!)
+LauncherPath=C:\Your Launcher\Launcher.exe	(required!)
 LauncherArgs=Your Launcher Args Here
-LauncherURI=launchproto://launchertarget (see project Wiki for URI strings)
-GamePath=C:\Your Game\Game.exe (required!)
+LauncherURI=launchproto://launchertarget	(see project Wiki for URI strings)
+GamePath=C:\Your Game\Game.exe			(required!)
 GameArgs=Your Game Args Here
 [Options]
 PreLaunchExec=C:\Your PreLauncher\Executable.exe
 PreLaunchExecArgs=Your PreLauncher Executable Args Here
 PostGameExec=C:\Your PostGame\Executable.exe
 PostGameExecArgs=Your PostGame Executable Args Here
-PreGameOverlayWaitTime=5 (seconds to wait for overlay after launching launcher)
-PreGameLauncherWaitTime=12 (seconds to wait for launcher before launching game)
-PostGameWaitTime=7 (seconds to wait after game exits for cloud syncing)
-ProxyTimeout=5 (seconds to wait for launcher proxy to exit before detecting game PID)
-LauncherMode=Normal (Normal mode launches the LauncherPath and GamePath)
-LauncherMode=LauncherOnly (LauncherOnly mode launches only the LauncherPath)
-LauncherMode=URI (URI mode launches LauncherPath with the argument in LauncherURI)
-ProcessAcquisitionTimeout=300 (seconds to wait for launcher/game process detection)
-ReLaunch=True (kills and relaunches LauncherPath if detected)
-DoNotClose=False (set to True to stop OSOL killing the LauncherPath when the game exits)</value>
+PreGameOverlayWaitTime=5			(seconds to wait for overlay after launching launcher)
+PreGameLauncherWaitTime=12			(seconds to wait for launcher before launching game)
+PostGameWaitTime=7				(seconds to wait after game exits for cloud syncing)
+ProxyTimeout=5					(seconds to wait for launcher proxy to exit before detecting game PID)
+LauncherMode=Normal				(Normal mode launches the LauncherPath and GamePath)
+LauncherMode=LauncherOnly			(LauncherOnly mode launches only the LauncherPath)
+LauncherMode=URI				(URI mode launches LauncherPath with the argument in LauncherURI)
+ProcessAcquisitionTimeout=300			(seconds to wait for launcher/game process detection)
+ReLaunch=True					(set to False to prevent OSOL from relaunching LauncherPath if detected)
+DoNotClose=False				(set to True to stop OSOL killing the LauncherPath when the game exits)
+MinimizeLauncher=False				(set to True to forcefully minimize launcher upon detection)</value>
   </data>
 </root>
