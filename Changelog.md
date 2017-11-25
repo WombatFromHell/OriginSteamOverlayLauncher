@@ -1,4 +1,5 @@
-* c631222 (HEAD -> master, origin/master) Fixed LauncherURI not being used to launch games via URI
+* 648d4ad (HEAD -> master, origin/master) Added MinimizeLauncher option to INI by request
+* c631222 Fixed LauncherURI not being used to launch games via URI
 * bc39dc5 Fix CS in camel typed method
 * 37e9a44 OSOL now displays an INI settings overview when run with /help cli arg
 * 667251e Refactoring and exposed more options via INI Added ReLaunch, DoNotClose, and ProxyTimeout options to the INI to expose more customizable behavior wrt the launcher
