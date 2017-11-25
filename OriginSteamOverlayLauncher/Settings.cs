@@ -256,6 +256,7 @@ namespace OriginSteamOverlayLauncher
         {// validate while reading from ini - filling in defaults where sensible
             setHnd.LauncherPath = ValidateString(iniHnd, String.Empty, "LauncherPath", "LauncherPath", "Paths");
             setHnd.LauncherArgs = ValidateString(iniHnd, String.Empty, "LauncherArgs", "LauncherArgs", "Paths");
+            setHnd.LauncherURI = ValidateString(iniHnd, String.Empty, "LauncherURI", "LauncherURI", "Paths");
 
             setHnd.GamePath = ValidateString(iniHnd, String.Empty, "GamePath", "GamePath", "Paths");
 
