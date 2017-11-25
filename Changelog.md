@@ -1,5 +1,6 @@
-* bc39dc5 (HEAD -> master) Fix CS in camel typed method
-* 37e9a44 (origin/master) OSOL now displays an INI settings overview when run with /help cli arg
+* c631222 (HEAD -> master, origin/master) Fixed LauncherURI not being used to launch games via URI
+* bc39dc5 Fix CS in camel typed method
+* 37e9a44 OSOL now displays an INI settings overview when run with /help cli arg
 * 667251e Refactoring and exposed more options via INI Added ReLaunch, DoNotClose, and ProxyTimeout options to the INI to expose more customizable behavior wrt the launcher
 * 03fd684 Fixed incorrect default value in ProcessAcquisitionTimeout option
 * 2771118 Exposed process acquisition timeout in the INI
