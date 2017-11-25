@@ -221,9 +221,9 @@ namespace OriginSteamOverlayLauncher
                 launcherProc.Start();
 
                 while (l_sanity_counter <= setHnd.ProcessAcquisitionTimeout)
-                {
+                {// actively attempt to acquire launcher PID
                     if (l_sanity_counter == setHnd.ProcessAcquisitionTimeout)
-                    {
+                    {// bail if we hit our timeout
                         Logger("FATAL", "Could not detect the launcher process after waiting 5 mins, exiting!");
                         Process.GetCurrentProcess().Kill();
                     }
