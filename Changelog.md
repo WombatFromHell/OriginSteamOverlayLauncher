@@ -1,4 +1,5 @@
-* 648d4ad (HEAD -> master, origin/master) Added MinimizeLauncher option to INI by request
+* 0f762e9 (HEAD -> master, origin/master) INI overview changes to reflect MinimizeLauncher option
+* 648d4ad Added MinimizeLauncher option to INI by request
 * c631222 Fixed LauncherURI not being used to launch games via URI
 * bc39dc5 Fix CS in camel typed method
 * 37e9a44 OSOL now displays an INI settings overview when run with /help cli arg

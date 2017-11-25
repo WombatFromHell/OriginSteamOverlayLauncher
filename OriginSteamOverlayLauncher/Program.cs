@@ -25,8 +25,11 @@ namespace OriginSteamOverlayLauncher
         public const int SW_SHOWDEFAULT = 10;
         public const int SW_MINIMIZE = 2;
         public const int SW_SHOW = 5;
+
+        public static string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+        public static string appName = Path.GetFileNameWithoutExtension(codeBase);
         #endregion
-        
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -62,9 +65,10 @@ namespace OriginSteamOverlayLauncher
                     {
                         Settings curSet = new Settings();
                         // path to our local config
-                        IniFile iniFile = new IniFile("OriginSteamOverlayLauncher.ini");
+                        IniFile iniFile = new IniFile(appName + ".ini");
                         // overwrite/create log upon startup
-                        File.WriteAllText("OriginSteamOverlayLauncher_Log.txt", String.Empty);
+                        File.WriteAllText(appName + "_Log.txt", String.Empty);
+                        Logger("NOTE", "OSOL is running as: " + appName);
 
                         if (Settings.CheckINI(iniFile)
                             && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
@@ -100,7 +104,7 @@ namespace OriginSteamOverlayLauncher
 
         public static void Logger(String cause, String message)
         {
-            using (StreamWriter stream = File.AppendText("OriginSteamOverlayLauncher_Log.txt"))
+            using (StreamWriter stream = File.AppendText(appName + "_Log.txt"))
             {
                 stream.Write("[{0}] [{1}] {2}\r\n", DateTime.Now.ToUniversalTime(), cause, message);
             }

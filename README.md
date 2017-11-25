@@ -1,4 +1,4 @@
-# OriginSteamOverlayLauncher
+# OSOL (O.rigin S.team O.verlay L.auncher)
 How To Install/Uninstall
 ========================
 This wrapper requires no installation other than copying it into the directory of the game executable you wish to run through Steam BPM/Overlay. It also can simply be deleted if you wish to uninstall it at any time. If you have trouble running it, or are running Windows 8 or earlier, you may need to download and install the [.NET Framework Redistributable v4.5](https://www.microsoft.com/en-us/download/details.aspx?id=40779).
@@ -9,8 +9,8 @@ How To Use
 * Place the "OriginSteamOverlayLauncher.exe" file in the directory with the game executable you wish to launch through Origin.
 * Go into Steam and add the OriginSteamOverlayLauncher.exe as a Non-Steam Game, selecting it from the directory of the game executable you wish to run through Steam.
 * Rename the shortcut in Steam to the name of the game in Origin so you can retrieve Steam Community Configurator Profiles.
-* Launch the shortcut you've created and you'll be prompted to select the paths of the Origin Launcher (by default: "C:\Program Files (x86)\Origin\Origin.exe"), and the game executable you wish to use.
-* This wrapper should run Origin (so Steam Overlay can hook into it) and then the game, and if everything went okay the Steam Overlay will appear in-game.
+* Launch the shortcut you've created and you'll be prompted to select the paths of the Game executable and its Launcher.
+* This wrapper should run the launcher (so Steam Overlay can hook into it) and then the game, and if everything went okay the Steam Overlay will appear in-game.
 
 
 Notes
