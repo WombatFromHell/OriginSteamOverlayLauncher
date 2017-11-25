@@ -1,4 +1,5 @@
-* 0f762e9 (HEAD -> master, origin/master) INI overview changes to reflect MinimizeLauncher option
+* f24aa9a (HEAD -> master, origin/master) OSOL can now be renamed arbitrarily in prep for mediating launcher support
+* 0f762e9 INI overview changes to reflect MinimizeLauncher option
 * 648d4ad Added MinimizeLauncher option to INI by request
 * c631222 Fixed LauncherURI not being used to launch games via URI
 * bc39dc5 Fix CS in camel typed method
