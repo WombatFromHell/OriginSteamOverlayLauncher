@@ -1,8 +1,9 @@
-* 9d278b4 (HEAD -> master) Refactoring and exposed more options via INI Added ReLaunch, DoNotClose, and ProxyTimeout options to the INI to expose more customizable behavior wrt the launcher
-* 7d27b4d Fixed incorrect default value in ProcessAcquisitionTimeout option
-* 99da6f5 Exposed process acquisition timeout in the INI
+* 37e9a44 (HEAD -> master, origin/master) OSOL now displays an INI settings overview when run with /help cli arg
+* 667251e Refactoring and exposed more options via INI Added ReLaunch, DoNotClose, and ProxyTimeout options to the INI to expose more customizable behavior wrt the launcher
+* 03fd684 Fixed incorrect default value in ProcessAcquisitionTimeout option
+* 2771118 Exposed process acquisition timeout in the INI
 * 29d2d72 Added a single global mutex
-* c90b426 (origin/master) Update README.md
+* c90b426 Update README.md
 * 46f1b67 README grammar fix
 * 79f2e1d Update README.md
 * 967cf1b Updated README with links for bug reporting and wiki
