@@ -198,6 +198,9 @@ namespace OriginSteamOverlayLauncher
             Process launcherProc = new Process();
             Process gameProc = new Process();
 
+            // save our monitoring path for later
+            String monitorPath = Settings.ValidatePath(setHnd.MonitorPath) ? setHnd.MonitorPath : String.Empty;
+            String monitorName = Path.GetFileNameWithoutExtension(monitorPath);
             // internal counters to sync with timeout
             int l_sanity_counter = 0;
             int g_sanity_counter = 0;
@@ -316,8 +319,8 @@ namespace OriginSteamOverlayLauncher
                     Logger("FATAL", "Timed out while looking for game process, exiting! Internet connection or launcher issue?");
                     Process.GetCurrentProcess().Kill();
                 }
-
-                if (GetRunningPIDByName(gameName) != 0)
+                
+                if (monitorPath.Length == 0 && GetRunningPIDByName(gameName) != 0)
                 {// let's assume the game works similarly to our launcher (wrt proxies)
                     gamePID = GetRunningPIDByName(gameName);
                     gameProc = RebindProcessByID(gamePID);
@@ -325,12 +328,22 @@ namespace OriginSteamOverlayLauncher
                         && gameProc.MainWindowTitle.Length > 0)
                         break; // we probably found our real window
                 }
+                else if (monitorPath.Length > 0 && GetRunningPIDByName(monitorName) != 0)
+                {// the user wants us to monitor a remote executable as a proxy for the game
+                    gamePID = GetRunningPIDByName(monitorName);
+                    gameProc = RebindProcessByID(gamePID);
+                    if (gameProc.MainWindowHandle != IntPtr.Zero
+                        && gameProc.MainWindowTitle.Length > 0)
+                        break;
+                }
 
                 g_sanity_counter++;
                 Thread.Sleep(1000);
             }
 
-            if (gameProc.Id != 0)
+            if (monitorPath.Length > 0 && gameProc.Id != 0)
+                Logger("OSOL", "Detected the monitor at PID [" + gameProc.Id + "] in " + g_sanity_counter + " sec.");
+            else if (gameProc.Id != 0)
                 Logger("OSOL", "Detected the game process at PID [" + gameProc.Id + "] in " + g_sanity_counter + " sec.");
             else
             {
@@ -338,9 +351,19 @@ namespace OriginSteamOverlayLauncher
                 Process.GetCurrentProcess().Kill();
             }
 
-            while (IsRunning(gameName))
-            {// sleep while game is running
-                Thread.Sleep(1000);
+            if (monitorPath.Length == 0)
+            {
+                while (IsRunning(gameName))
+                {// sleep while the game is running
+                    Thread.Sleep(1000);
+                }
+            }
+            else
+            {
+                while (IsRunning(monitorName))
+                {// sleep while the monitor is running
+                    Thread.Sleep(1000);
+                }
             }
 
             /*

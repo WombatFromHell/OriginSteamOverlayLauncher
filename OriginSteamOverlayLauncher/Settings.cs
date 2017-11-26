@@ -18,6 +18,7 @@ namespace OriginSteamOverlayLauncher
         public String LauncherURI { get; set; }
         public String GamePath { get; set; }
         public String GameArgs { get; set; }
+        public String MonitorPath { get; set; }
 
         // options
         public String LauncherMode { get; set; }
@@ -119,6 +120,7 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("LauncherURI", String.Empty, "Paths");
                 iniHnd.Write("GamePath", String.Empty, "Paths");
                 iniHnd.Write("GameArgs", String.Empty, "Paths");
+                iniHnd.Write("MonitorPath", String.Empty, "Paths");
 
                 // options
                 iniHnd.Write("PreLaunchExec", String.Empty, "Options");
@@ -154,8 +156,8 @@ namespace OriginSteamOverlayLauncher
             {// skip this if our ini doesn't exist
                 if (iniHnd.KeyExists("LauncherPath") && iniHnd.KeyExists("LauncherArgs")
                     && iniHnd.KeyExists("LauncherURI") && iniHnd.KeyExists("GamePath")
-                    && iniHnd.KeyExists("GameArgs") && iniHnd.KeyExists("LauncherMode")
-                    && iniHnd.KeyExists("PreLaunchExec") && iniHnd.KeyExists("PreLaunchExecArgs")
+                    && iniHnd.KeyExists("MonitorPath") && iniHnd.KeyExists("GameArgs")
+                    && iniHnd.KeyExists("LauncherMode") && iniHnd.KeyExists("PreLaunchExec") && iniHnd.KeyExists("PreLaunchExecArgs")
                     && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs")
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
                     && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
@@ -263,6 +265,8 @@ namespace OriginSteamOverlayLauncher
             setHnd.LauncherURI = ValidateString(iniHnd, String.Empty, "LauncherURI", "LauncherURI", "Paths");
 
             setHnd.GamePath = ValidateString(iniHnd, String.Empty, "GamePath", "GamePath", "Paths");
+            setHnd.GameArgs = ValidateString(iniHnd, String.Empty, "GameArgs", "GameArgs", "Paths");
+            setHnd.MonitorPath = ValidateString(iniHnd, String.Empty, "MonitorPath", "MonitorPath", "Paths");
 
             // special case - check launchermode options
             if (iniHnd.KeyPopulated("LauncherMode", "Options")
@@ -313,8 +317,8 @@ namespace OriginSteamOverlayLauncher
             // Default to leaving the launcher window alone after detecting it
             setHnd.MinimizeLauncher = ValidateBool(iniHnd, false, setHnd.MinimizeLauncher, "MinimizeLauncher", "Options");
 
-            if (ValidatePath(setHnd.LauncherPath) || ValidatePath(setHnd.GamePath))
-                return true; // only flag to continue if either main path works
+            if (ValidatePath(setHnd.LauncherPath) && ValidatePath(setHnd.GamePath))
+                return true; // only continue if both required paths work
 
             return false;
         }
