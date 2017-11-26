@@ -126,6 +126,7 @@ LauncherArgs=Your Launcher Args Here
 LauncherURI=launchproto://launchertarget	(see project Wiki for URI strings)
 GamePath=C:\Your Game\Game.exe			(required!)
 GameArgs=Your Game Args Here
+MonitorPath=C:\Your Game\Game To Target.exe	(OSOL will watch for this exe instead of the GamePath, useful for BattleEye)
 [Options]
 PreLaunchExec=C:\Your PreLauncher\Executable.exe
 PreLaunchExecArgs=Your PreLauncher Executable Args Here
