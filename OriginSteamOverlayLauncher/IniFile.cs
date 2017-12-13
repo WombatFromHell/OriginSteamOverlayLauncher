@@ -12,6 +12,7 @@ namespace OriginSteamOverlayLauncher
     {// INI Support, courtesy of: https://stackoverflow.com/questions/217902/reading-writing-an-ini-file
         public string Path;
         string EXE = Assembly.GetExecutingAssembly().GetName().Name;
+        int bufferSize = 256 * 1024; // 256kb buffer limit on reads per line
 
         [DllImport("kernel32", CharSet = CharSet.Unicode)]
         static extern long WritePrivateProfileString(string Section, string Key, string Value, string FilePath);
@@ -26,15 +27,15 @@ namespace OriginSteamOverlayLauncher
 
         public string ReadString(string Key, string Section = null)
         {
-            var RetVal = new StringBuilder(255);
-            GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, 255, Path);
+            var RetVal = new StringBuilder(bufferSize);
+            GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, bufferSize, Path);
             return RetVal.ToString();
         }
 
         public bool ReadBool(string Key, string Section = null)
         {
-            var RetVal = new StringBuilder(255);
-            GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, 255, Path);
+            var RetVal = new StringBuilder(bufferSize);
+            GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, bufferSize, Path);
             Boolean.TryParse(RetVal.ToString(), out bool _output);
             return _output;
         }
