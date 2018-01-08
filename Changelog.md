@@ -1,4 +1,5 @@
-* 0b9b55a (HEAD -> master, origin/master) Fixed hard coded INI read buffer limit of 255 characters
+* a4bfcb2 (HEAD -> master, origin/master) Updated assembly version
+* 0b9b55a Fixed hard coded INI read buffer limit of 255 characters
 * 0b19679 (tag: v1.06a) Added MonitorPath and fixed GameArgs not being read into StartInfo OSOL can now use MonitorPath to monitor a remote executable instead of GamePath reducing process acquisition desyncs
 * a0200b4 README cleanups
 * f24aa9a OSOL can now be renamed arbitrarily in prep for mediating launcher support
