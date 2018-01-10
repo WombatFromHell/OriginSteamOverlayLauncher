@@ -218,6 +218,7 @@ namespace OriginSteamOverlayLauncher
             String launcherMode = setHnd.LauncherMode;
             Process launcherProc = new Process();
             Process gameProc = new Process();
+            TrayIconUtil trayUtil = new TrayIconUtil();
 
             // save our monitoring path for later
             String monitorPath = Settings.ValidatePath(setHnd.MonitorPath) ? setHnd.MonitorPath : String.Empty;
@@ -393,6 +394,9 @@ namespace OriginSteamOverlayLauncher
 
             // ask a non-async delegate to run a process after the game and launcher exit
             ExecuteExternalElevated(setHnd.PostGameExec, setHnd.PostGameExecArgs);
+
+            // clean up system tray if process related icons are leftover
+            trayUtil.RefreshTrayArea();
         }
     }
 }

@@ -74,6 +74,7 @@
     <Compile Include="IniFile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TrayIconUtil.cs" />
     <Compile Include="Settings.cs" />
   </ItemGroup>
   <ItemGroup>
