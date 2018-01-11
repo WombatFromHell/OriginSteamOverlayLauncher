@@ -129,15 +129,32 @@ namespace OriginSteamOverlayLauncher
 
         private static bool IsRunningPID(Int64 pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
 
-        private static int IsRunningValidPID(Process[] procTree)
-        {// return the first PID with a non-null window handle
-            foreach (Process proc in procTree)
-            {
-                if (proc.Id > 0 && !proc.HasExited && proc.MainWindowHandle != IntPtr.Zero)
-                {
-                    return proc.Id;
+        private static int ValidateProcTree(Process[] procTree, int timeout)
+        {
+            var procChildren = procTree.Count();
+            Thread.Sleep(timeout * 1000); // let process stabilize before gathering data
+
+            if (procChildren > 1)
+            {// our parent is likely a caller or proxy
+                for (int i = 0; i < procChildren - 1; i++)
+                {// iterate through each process in the tree and determine which process we should bind to
+                    var proc = procTree[i];
+
+                    if (proc.Id > 0 && !proc.HasExited)
+                    {// return the first PID with an hwnd
+                        if (proc.MainWindowHandle != IntPtr.Zero && proc.MainWindowTitle.Length > 0)
+                        {// probably a real process (launcher or game) because it has an hwnd and title
+                            return proc.Id;
+                        }
+                        else if (procChildren > 2 && proc.MainWindowHandle == IntPtr.Zero && !procTree[0].HasExited)
+                        {// probably a headless process due to having more than one child, return the PID of the parent
+                            return procTree[0].Id;
+                        }
+                    }
                 }
             }
+            else if (procChildren != 0 && !procTree[0].HasExited)
+                return procTree[0].Id; // no children, just return the PID
 
             return 0;
         }
@@ -223,6 +240,7 @@ namespace OriginSteamOverlayLauncher
             // save our monitoring path for later
             String monitorPath = Settings.ValidatePath(setHnd.MonitorPath) ? setHnd.MonitorPath : String.Empty;
             String monitorName = Path.GetFileNameWithoutExtension(monitorPath);
+            String _launchType = (monitorPath.Length > 0 ? " monitor " : " game ");
             // internal counters to sync with timeout
             int l_sanity_counter = 0;
             int g_sanity_counter = 0;
@@ -239,7 +257,7 @@ namespace OriginSteamOverlayLauncher
             {// if the launcher is running before the game kill it so we can run it through Steam
                 Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
                 KillProcTreeByName(launcherName);
-                Thread.Sleep(3000); // pause a moment for the launcher to close
+                Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
             }
 
             if (Settings.ValidatePath(setHnd.LauncherPath))
@@ -255,40 +273,39 @@ namespace OriginSteamOverlayLauncher
                 Logger("OSOL", "Attempting to start the launcher: " + setHnd.LauncherPath);
                 launcherProc.Start();
 
-                while (l_sanity_counter <= setHnd.ProcessAcquisitionTimeout)
-                {// actively attempt to acquire launcher PID by snapshotting processes every second
+                while (l_sanity_counter < setHnd.ProcessAcquisitionTimeout)
+                {// actively attempt to acquire launcher PID
                     var _procTree = GetProcessTreeByName(launcherName);
-                    var _validPID = IsRunningValidPID(_procTree);
+                    launcherPID = ValidateProcTree(_procTree, setHnd.ProxyTimeout);
+                    l_sanity_counter = l_sanity_counter + setHnd.ProxyTimeout;
 
-                    if (l_sanity_counter == setHnd.ProcessAcquisitionTimeout)
-                    {// bail if we hit our timeout
-                        Logger("FATAL", "Could not detect the launcher process after waiting " + setHnd.ProcessAcquisitionTimeout + " seconds!");
-                        Process.GetCurrentProcess().Kill();
-                    }
-                    
-                    if (_validPID > 0)
-                    {// use our hwnd checker to locate a valid PID
-                        launcherPID = _validPID;
-                        launcherProc = RebindProcessByID(launcherPID);
-                        break;
-                    }
-                    else if (IsRunning(launcherName))
-                    {// initial check for valid hwnd failed, fall back to searching by name
-                        launcherPID = GetRunningPIDByName(launcherName);
-                        launcherProc = RebindProcessByID(launcherPID);
-                        Logger("OSOL", "Failed to find launcher PID by window handle, attempting to detect by name...");
+                    // first check if we should bail early due to timeout
+                    if (l_sanity_counter >= setHnd.ProcessAcquisitionTimeout)
+                    {
+                        Logger("WARNING", "Could not detect the launcher process after waiting " + setHnd.ProcessAcquisitionTimeout + " seconds!");
                         break;
                     }
 
-                    l_sanity_counter++;
-                    Thread.Sleep(1000);
-                }
+#if DEBUG
+                    if (_procTree.Count() != 0)
+                    {
+                        StringBuilder _procOut = new StringBuilder();
+                        _procOut.Append("Trying to bind to detected launcher PID: ");
 
-                if (launcherPID > 0)
-                    Logger("OSOL", "Detected the launcher window at PID: " + launcherPID);
-                else
-                {
-                    Logger("WARNING", "Cannot find the PID of the launcher by either window handle or name!");
+                        foreach (Process proc in _procTree)
+                        {
+                            _procOut.Append(proc.Id + " ");
+                        }
+                        Logger("DEBUG", _procOut.ToString());
+                    }
+#endif
+
+                    if (launcherPID > 0)
+                    {// only bind if we have something
+                        launcherProc = RebindProcessByID(launcherPID);
+                        Logger("OSOL", "Detected the launcher window at PID: " + launcherPID + " in " + l_sanity_counter + " seconds");
+                        break;
+                    }
                 }
 
                 // force the launcher window to activate before the game to avoid BPM hooking issues
@@ -313,7 +330,6 @@ namespace OriginSteamOverlayLauncher
 
                 Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
                 gameProc.Start();
-                Thread.Sleep(setHnd.ProxyTimeout); // wait for the proxy to close
             }
             else if (Settings.StringEquals(launcherMode, "URI"))
             {
@@ -335,45 +351,41 @@ namespace OriginSteamOverlayLauncher
                     Logger("EXCEPTION", x.ToString());
                 }
             }
-            else
-                Logger("OSOL", "Searching for the game process...");
 
-            while (g_sanity_counter <= setHnd.ProcessAcquisitionTimeout && setHnd.LauncherPath != String.Empty)
-            {// actively attempt to reacquire process
-                if (g_sanity_counter == setHnd.ProcessAcquisitionTimeout)
+            while (g_sanity_counter < setHnd.ProcessAcquisitionTimeout && setHnd.LauncherPath != String.Empty)
+            {
+                // use a monitor executable for tracking if the user requests it, otherwise use the game executable specified
+                var _procTree = monitorPath.Length > 0 ? GetProcessTreeByName(monitorName) : GetProcessTreeByName(gameName);
+                gamePID = ValidateProcTree(_procTree, setHnd.ProxyTimeout);
+                g_sanity_counter = g_sanity_counter + setHnd.ProxyTimeout;
+
+                // first check if we should bail early due to timeout
+                if (g_sanity_counter >= setHnd.ProcessAcquisitionTimeout)
                 {
-                    Logger("FATAL", "Could not detect the game process after waiting " + setHnd.ProcessAcquisitionTimeout + " seconds, exiting!");
+                    Logger("FATAL", "Cannot find the PID of the" + _launchType + "by either window handle or name after waiting " + setHnd.ProcessAcquisitionTimeout + " seconds, exiting!");
                     Process.GetCurrentProcess().Kill();
                 }
 
-                // use a monitor executable for tracking if the user requests it, otherwise use the game executable specified
-                var _procTree = monitorPath.Length > 0 ? GetProcessTreeByName(monitorName) : GetProcessTreeByName(gameName);
-                int _validPID = IsRunningValidPID(_procTree);
+#if DEBUG
+                if (_procTree.Count() != 0)
+                {
+                    StringBuilder _procOut = new StringBuilder();
+                    _procOut.Append("Trying to bind to detected" + _launchType + "PID: ");
 
-                if (_validPID > 0)
-                {// assume our game works similar to our launcher, locate by hwnd first
-                    gamePID = _validPID;
-                    gameProc = RebindProcessByID(gamePID);
-                    break;
+                    foreach (Process proc in _procTree)
+                    {
+                        _procOut.Append(proc.Id + " ");
+                    }
+                    Logger("DEBUG", _procOut.ToString());
                 }
-                else if (IsRunning(monitorName) || IsRunning(gameName))
-                {// fall back to searching for running PID by name if hwnd fails
-                    gamePID = monitorPath.Length > 0 ? GetRunningPIDByName(monitorName) : GetRunningPIDByName(gameName);
+#endif
+
+                if (gamePID > 0)
+                {// validate our results
                     gameProc = RebindProcessByID(gamePID);
-                    Logger("OSOL", "Failed to find the" + (monitorPath.Length > 0 ? " monitor " : " game ") + "PID by window handle, attempting to detect by name...");
-                    break;
+                    Logger("OSOL", "Detected the" + _launchType + "at PID: " + gameProc.Id + " in " + g_sanity_counter + " seconds");
+                    break; // only leave early if we found something valid
                 }
-
-                g_sanity_counter++;
-                Thread.Sleep(1000);
-            }
-
-            if (gamePID > 0)
-                Logger("OSOL", "Detected the" + (monitorPath.Length > 0 ? " monitor " : " game ") +" at PID: " + gameProc.Id);
-            else
-            {
-                Logger("FATAL", "Cannot find the PID of the" + (monitorPath.Length > 0 ? " monitor " : " game ") + "by either window handle or name, exiting!");
-                Process.GetCurrentProcess().Kill();
             }
 
             while (IsRunningPID(gamePID))
