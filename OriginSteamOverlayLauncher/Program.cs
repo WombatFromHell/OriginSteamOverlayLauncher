@@ -4,12 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Reflection;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Threading;
 using System.Windows.Forms;
-using System.Collections.Generic;
-using System.Text;
+using System.ComponentModel;
+using System.Management;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -34,7 +32,7 @@ namespace OriginSteamOverlayLauncher
         #endregion
 
         [STAThread]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             // get our current mutex id based off our AssemblyInfo.cs
             string appGuid = ((GuidAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value.ToString();
@@ -66,6 +64,7 @@ namespace OriginSteamOverlayLauncher
                     }
                     else
                     {
+                        ProcessTracking procTrack = new ProcessTracking();
                         Settings curSet = new Settings();
                         // path to our local config
                         IniFile iniFile = new IniFile(appName + ".ini");
@@ -76,7 +75,7 @@ namespace OriginSteamOverlayLauncher
                         if (Settings.CheckINI(iniFile)
                             && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
                         {
-                            ProcessLauncher(curSet); // normal functionality
+                            procTrack.ProcessLauncher(curSet); // normal functionality
                         }
                         else
                         {// ini doesn't match our comparison, recreate from stubs
@@ -96,7 +95,7 @@ namespace OriginSteamOverlayLauncher
         }
 
         #region ProcessHelpers
-        private static bool CliArgExists(string[] args, string ArgName)
+        public static bool CliArgExists(string[] args, string ArgName)
         {// courtesy of: https://stackoverflow.com/a/30569947
             var singleFound = args.Where(w => w.ToLower() == "/" + ArgName.ToLower()).FirstOrDefault();
             if (singleFound != null)
@@ -112,24 +111,24 @@ namespace OriginSteamOverlayLauncher
                 stream.Write("[{0}] [{1}] {2}\r\n", DateTime.Now.ToUniversalTime(), cause, message);
             }
         }
-        
-        private static void BringToFront(IntPtr wHnd)
+
+        public static void BringToFront(IntPtr wHnd)
         {// force the window handle owner to restore and activate to focus
             ShowWindowAsync(wHnd, SW_SHOWDEFAULT);
             ShowWindowAsync(wHnd, SW_SHOW);
             SetForegroundWindow(wHnd);
         }
 
-        private static void MinimizeWindow(IntPtr wHnd)
+        public static void MinimizeWindow(IntPtr wHnd)
         {// force the window handle to minimize
             ShowWindowAsync(wHnd, SW_MINIMIZE);
         }
 
-        private static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
+        public static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
 
-        private static bool IsRunningPID(Int64 pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
+        public static bool IsRunningPID(Int64 pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
 
-        private static int ValidateProcTree(Process[] procTree, int timeout)
+        public static int ValidateProcTree(Process[] procTree, int timeout)
         {
             var procChildren = procTree.Count();
             Thread.Sleep(timeout * 1000); // let process stabilize before gathering data
@@ -159,12 +158,12 @@ namespace OriginSteamOverlayLauncher
             return 0;
         }
 
-        private static Process[] GetProcessTreeByName(String procName)
+        public static Process[] GetProcessTreeByName(String procName)
         {
             return Process.GetProcessesByName(procName);
         }
 
-        private static int GetRunningPIDByName(String procName)
+        public static int GetRunningPIDByName(String procName)
         {
             Process tmpProc = Process.GetProcessesByName(procName).FirstOrDefault();
             if (tmpProc != null)
@@ -173,12 +172,12 @@ namespace OriginSteamOverlayLauncher
                 return 0;
         }
 
-        private static Process RebindProcessByID(int PID)
+        public static Process RebindProcessByID(int PID)
         {
             return Process.GetProcessById(PID);
         }
 
-        private static void KillProcTreeByName(String procName)
+        public static void KillProcTreeByName(String procName)
         {
             Process[] foundProcs = Process.GetProcessesByName(procName);
             foreach (Process proc in foundProcs)
@@ -187,7 +186,45 @@ namespace OriginSteamOverlayLauncher
             }
         }
 
-        private static void ExecuteExternalElevated(String filePath, String fileArgs)
+        public static string GetCommandLineToString(Process process)
+        { // credit to: https://stackoverflow.com/a/40501117
+            string cmdLine = null;
+
+            try
+            {
+                using (var searcher = new ManagementObjectSearcher($"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {process.Id}"))
+                {// use WMI to grab the CommandLine string by looking up the PID
+                    var matchEnum = searcher.Get().GetEnumerator();
+                    if (matchEnum.MoveNext())
+                    {// this will always return at most 1 result
+                        cmdLine = matchEnum.Current["CommandLine"]?.ToString();
+                    }
+                }
+
+                if (cmdLine == null)
+                {
+                    // Not having found a command line implies 1 of 2 exceptions, which the
+                    // WMI query masked:
+                    // An "Access denied" exception due to lack of privileges.
+                    // A "Cannot process request because the process (<pid>) has exited."
+                    // exception due to the process having terminated.
+                    // We provoke the same exception again simply by accessing process.MainModule.
+                    var dummy = process.MainModule; // Provoke exception.
+                }
+            }
+            // Catch and ignore "access denied" exceptions.
+            catch (Win32Exception ex) when (ex.HResult == -2147467259) { }
+            // Catch and ignore "Cannot process request because the process (<pid>) has
+            // exited." exceptions.
+            // These can happen if a process was initially included in 
+            // Process.GetProcesses(), but has terminated before it can be
+            // examined below.
+            catch (InvalidOperationException ex) when (ex.HResult == -2146233079) { }
+
+            return cmdLine;
+        }
+
+        public static void ExecuteExternalElevated(String filePath, String fileArgs)
         {// generic process delegate for executing pre-launcher/post-game
             try
             {
@@ -216,7 +253,7 @@ namespace OriginSteamOverlayLauncher
             }
         }
 
-        private static void DisplayHelpDialog()
+        public static void DisplayHelpDialog()
         {
             Form helpForm = new HelpForm();
             helpForm.ShowDialog();
@@ -227,188 +264,5 @@ namespace OriginSteamOverlayLauncher
             }
         }
         #endregion
-
-        private static void ProcessLauncher(Settings setHnd)
-        {
-            String launcherName = Path.GetFileNameWithoutExtension(setHnd.LauncherPath);
-            String gameName = Path.GetFileNameWithoutExtension(setHnd.GamePath);
-            String launcherMode = setHnd.LauncherMode;
-            Process launcherProc = new Process();
-            Process gameProc = new Process();
-            TrayIconUtil trayUtil = new TrayIconUtil();
-
-            // save our monitoring path for later
-            String monitorPath = Settings.ValidatePath(setHnd.MonitorPath) ? setHnd.MonitorPath : String.Empty;
-            String monitorName = Path.GetFileNameWithoutExtension(monitorPath);
-            String _launchType = (monitorPath.Length > 0 ? " monitor " : " game ");
-            // internal counters to sync with timeout
-            int l_sanity_counter = 0;
-            int g_sanity_counter = 0;
-            // track PIDs that we find
-            int launcherPID = 0;
-            int gamePID = 0;
-
-            /*
-             * Launcher Detection
-             */
-            
-            // obey the user and avoid killing and relaunching the target launcher
-            if (IsRunning(launcherName) && setHnd.ReLaunch)
-            {// if the launcher is running before the game kill it so we can run it through Steam
-                Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
-                KillProcTreeByName(launcherName);
-                Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
-            }
-
-            if (Settings.ValidatePath(setHnd.LauncherPath))
-            {
-                // ask a non-async delegate to run a process before the launcher
-                ExecuteExternalElevated(setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
-
-                launcherProc.StartInfo.UseShellExecute = true;
-                launcherProc.StartInfo.FileName = setHnd.LauncherPath;
-                launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
-                launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
-
-                Logger("OSOL", "Attempting to start the launcher: " + setHnd.LauncherPath);
-                launcherProc.Start();
-
-                while (l_sanity_counter < setHnd.ProcessAcquisitionTimeout)
-                {// actively attempt to acquire launcher PID
-                    var _procTree = GetProcessTreeByName(launcherName);
-                    launcherPID = ValidateProcTree(_procTree, setHnd.ProxyTimeout);
-                    l_sanity_counter = l_sanity_counter + setHnd.ProxyTimeout;
-
-                    // first check if we should bail early due to timeout
-                    if (l_sanity_counter >= setHnd.ProcessAcquisitionTimeout)
-                    {
-                        Logger("WARNING", "Could not detect the launcher process after waiting " + setHnd.ProcessAcquisitionTimeout + " seconds!");
-                        break;
-                    }
-
-#if DEBUG
-                    if (_procTree.Count() != 0)
-                    {
-                        StringBuilder _procOut = new StringBuilder();
-                        _procOut.Append("Trying to bind to detected launcher PID: ");
-
-                        foreach (Process proc in _procTree)
-                        {
-                            _procOut.Append(proc.Id + " ");
-                        }
-                        Logger("DEBUG", _procOut.ToString());
-                    }
-#endif
-
-                    if (launcherPID > 0)
-                    {// only bind if we have something
-                        launcherProc = RebindProcessByID(launcherPID);
-                        Logger("OSOL", "Detected the launcher window at PID: " + launcherPID + " in " + l_sanity_counter + " seconds");
-                        break;
-                    }
-                }
-
-                // force the launcher window to activate before the game to avoid BPM hooking issues
-                Thread.Sleep(setHnd.PreGameOverlayWaitTime * 1000); // wait for the BPM overlay notification
-                BringToFront(launcherProc.MainWindowHandle);
-
-                // if the user requests it minimize our launcher after detecting it
-                if (setHnd.MinimizeLauncher)
-                    MinimizeWindow(launcherProc.MainWindowHandle);
-            }// skip over the launcher if we're only launching a game path
-
-            /*
-             * Game Post-Proxy Detection
-             */
-
-            if (Settings.StringEquals(launcherMode, "Normal"))
-            {// only run game ourselves if the user asks
-                gameProc.StartInfo.UseShellExecute = true;
-                gameProc.StartInfo.FileName = setHnd.GamePath;
-                gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
-                gameProc.StartInfo.Arguments = setHnd.GameArgs;
-
-                Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
-                gameProc.Start();
-            }
-            else if (Settings.StringEquals(launcherMode, "URI"))
-            {
-                // make sure we run our pre-launcher event even in URI mode
-                ExecuteExternalElevated(setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
-
-                gameProc.StartInfo.UseShellExecute = true;
-                gameProc.StartInfo.FileName = setHnd.LauncherURI;
-                
-                Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000); // wait to hook some sluggish launchers
-                try
-                {// we can't control what will happen so try to catch exceptions
-                    Logger("OSOL", "Launching URI: " + setHnd.LauncherURI);
-                    gameProc.Start();
-                }
-                catch (Exception x)
-                {// catch any exceptions and dump to log
-                    Logger("OSOL", "Failed to launch URI [" + setHnd.LauncherURI + "] double check your launcher installation");
-                    Logger("EXCEPTION", x.ToString());
-                }
-            }
-
-            while (g_sanity_counter < setHnd.ProcessAcquisitionTimeout && setHnd.LauncherPath != String.Empty)
-            {
-                // use a monitor executable for tracking if the user requests it, otherwise use the game executable specified
-                var _procTree = monitorPath.Length > 0 ? GetProcessTreeByName(monitorName) : GetProcessTreeByName(gameName);
-                gamePID = ValidateProcTree(_procTree, setHnd.ProxyTimeout);
-                g_sanity_counter = g_sanity_counter + setHnd.ProxyTimeout;
-
-                // first check if we should bail early due to timeout
-                if (g_sanity_counter >= setHnd.ProcessAcquisitionTimeout)
-                {
-                    Logger("FATAL", "Cannot find the PID of the" + _launchType + "by either window handle or name after waiting " + setHnd.ProcessAcquisitionTimeout + " seconds, exiting!");
-                    Process.GetCurrentProcess().Kill();
-                }
-
-#if DEBUG
-                if (_procTree.Count() != 0)
-                {
-                    StringBuilder _procOut = new StringBuilder();
-                    _procOut.Append("Trying to bind to detected" + _launchType + "PID: ");
-
-                    foreach (Process proc in _procTree)
-                    {
-                        _procOut.Append(proc.Id + " ");
-                    }
-                    Logger("DEBUG", _procOut.ToString());
-                }
-#endif
-
-                if (gamePID > 0)
-                {// validate our results
-                    gameProc = RebindProcessByID(gamePID);
-                    Logger("OSOL", "Detected the" + _launchType + "at PID: " + gameProc.Id + " in " + g_sanity_counter + " seconds");
-                    break; // only leave early if we found something valid
-                }
-            }
-
-            while (IsRunningPID(gamePID))
-            {// sleep while the game/monitor is running
-                Thread.Sleep(1000);
-            }
-
-            Logger("OSOL", "Game exited, cleaning up...");
-
-            /*
-                * Post-Game Cleanup
-                */
-            if (setHnd.LauncherPath != String.Empty && IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
-            {// found the launcher left after the game exited
-                Thread.Sleep(setHnd.PostGameWaitTime * 1000); // let Origin sync with the cloud
-                KillProcTreeByName(launcherName);
-            }
-
-            // ask a non-async delegate to run a process after the game and launcher exit
-            ExecuteExternalElevated(setHnd.PostGameExec, setHnd.PostGameExecArgs);
-
-            // clean up system tray if process related icons are leftover
-            trayUtil.RefreshTrayArea();
-        }
     }
 }

@@ -31,6 +31,7 @@ namespace OriginSteamOverlayLauncher
         public Boolean ReLaunch { get; set; }
         public Boolean DoNotClose { get; set; }
         public Boolean MinimizeLauncher { get; set; }
+        public Boolean CommandlineProxy { get; set; }
 
         // ints for exposing internal timings
         public int PreGameOverlayWaitTime { get; set; }
@@ -132,7 +133,7 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PreGameOverlayWaitTime", "5", "Options"); //5s
                 iniHnd.Write("PreGameLauncherWaitTime", "12", "Options"); //12s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
-                iniHnd.Write("ProxyTimeout", "5", "Options"); //5s
+                iniHnd.Write("ProxyTimeout", "3", "Options"); //3s
                 iniHnd.Write("ProcessAcquisitionTimeout", "300", "Options"); //5mins
 
                 // options as parsed strings
@@ -142,6 +143,8 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("DoNotClose", "False", "Options");
                 // Do not minimize launcher on process detection
                 iniHnd.Write("MinimizeLauncher", "False", "Options");
+                // Do not copy the commandline from a previous instance of the game/monitor executable
+                iniHnd.Write("CommandlineProxy", "False", "Options");
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -162,7 +165,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
                     && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch")
-                    && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher"))
+                    && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy"))
                     return true;
                 else
                     return false;
@@ -303,7 +306,7 @@ namespace OriginSteamOverlayLauncher
             setHnd.PostGameExecArgs = ValidateString(iniHnd, String.Empty, setHnd.PostGameExecArgs, "PostGameExecArgs", "Options");
 
             // treat ints differently
-            setHnd.ProxyTimeout = ValidateInt(iniHnd, 5, setHnd.ProxyTimeout, "ProxyTimeout", "Options"); // 3s default wait time
+            setHnd.ProxyTimeout = ValidateInt(iniHnd, 3, setHnd.ProxyTimeout, "ProxyTimeout", "Options"); // 3s default wait time
             setHnd.PreGameOverlayWaitTime = ValidateInt(iniHnd, 5, setHnd.PreGameOverlayWaitTime, "PreGameOverlayWaitTime", "Options"); // 5s default wait time
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time
             setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time
@@ -316,6 +319,8 @@ namespace OriginSteamOverlayLauncher
             setHnd.DoNotClose = ValidateBool(iniHnd, false, setHnd.DoNotClose, "DoNotClose", "Options");
             // Default to leaving the launcher window alone after detecting it
             setHnd.MinimizeLauncher = ValidateBool(iniHnd, false, setHnd.MinimizeLauncher, "MinimizeLauncher", "Options");
+            // Default to not proxying the commandline from a running instance of the game/monitor executable
+            setHnd.CommandlineProxy = ValidateBool(iniHnd, false, setHnd.CommandlineProxy, "CommandlineProxy", "Options");
 
             if (ValidatePath(setHnd.LauncherPath) && ValidatePath(setHnd.GamePath))
                 return true; // only continue if both required paths work

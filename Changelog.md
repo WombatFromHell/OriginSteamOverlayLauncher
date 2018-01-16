@@ -1,5 +1,5 @@
-* 4ab2e6c (HEAD -> master) Further improved process detection when parsing process tree with children
-* 6511b24 (origin/master) Implemented utility function to cleanup system tray area after exit
+* 0688cff (HEAD -> master, origin/master) Further improved process detection when parsing process tree with children
+* 6511b24 Implemented utility function to cleanup system tray area after exit
 * c6ae077 Improved process detection so that OSOL can track more launchers
 * a4bfcb2 Updated assembly version
 * 0b9b55a Fixed hard coded INI read buffer limit of 255 characters
