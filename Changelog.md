@@ -1,5 +1,7 @@
-* d2457cd (HEAD -> master) Refactored CommandlineProxy support and more code cleanup
-* 754b8de (origin/master) Support for CommandlineProxy and lots of code cleanup
+* 3961e81 (HEAD -> master, origin/master) Reissue minimize window message after the game exits
+* 1254eb8 Make sure to use copied arguments not the ones from the INI
+* 5b534ba Refactored CommandlineProxy support and more code cleanup
+* 754b8de Support for CommandlineProxy and lots of code cleanup
 * 0688cff (tag: v1.06e) Further improved process detection when parsing process tree with children
 * 6511b24 Implemented utility function to cleanup system tray area after exit
 * c6ae077 Improved process detection so that OSOL can track more launchers
