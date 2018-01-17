@@ -77,38 +77,41 @@ namespace OriginSteamOverlayLauncher
              */
 
             // obey the user and avoid killing and relaunching the target launcher
-            if (Program.IsRunning(launcherName) && setHnd.ReLaunch)
-            {// if the launcher is running before the game kill it so we can run it through Steam
-                Program.Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
-                Program.KillProcTreeByName(launcherName);
-                Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
+            if (!setHnd.CommandlineProxy)
+            {// only use launcher if CommandlineProxy is disabled
+                if (Program.IsRunning(launcherName) && setHnd.ReLaunch)
+                {// if the launcher is running before the game kill it so we can run it through Steam
+                    Program.Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
+                    Program.KillProcTreeByName(launcherName);
+                    Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
+                }
+
+                if (Settings.ValidatePath(setHnd.LauncherPath))
+                {
+                    // ask a non-async delegate to run a process before the launcher
+                    Program.ExecuteExternalElevated(setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
+
+                    launcherProc.StartInfo.UseShellExecute = true;
+                    launcherProc.StartInfo.FileName = setHnd.LauncherPath;
+                    launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
+                    launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
+
+                    Program.Logger("OSOL", "Attempting to start the launcher: " + setHnd.LauncherPath);
+                    launcherProc.Start();
+
+                    // loop until we have a valid process handle
+                    launcherProc = GetProcessTreeHandle(setHnd, launcherName);
+                    launcherPID = launcherProc != null ? launcherProc.Id : 0;
+
+                    // force the launcher window to activate before the game to avoid BPM hooking issues
+                    Thread.Sleep(setHnd.PreGameOverlayWaitTime * 1000); // wait for the BPM overlay notification
+                    Program.BringToFront(launcherProc.MainWindowHandle);
+
+                    // if the user requests it minimize our launcher after detecting it
+                    if (setHnd.MinimizeLauncher)
+                        Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                }// skip over the launcher if we're only launching a game path
             }
-
-            if (Settings.ValidatePath(setHnd.LauncherPath))
-            {
-                // ask a non-async delegate to run a process before the launcher
-                Program.ExecuteExternalElevated(setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
-
-                launcherProc.StartInfo.UseShellExecute = true;
-                launcherProc.StartInfo.FileName = setHnd.LauncherPath;
-                launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
-                launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
-
-                Program.Logger("OSOL", "Attempting to start the launcher: " + setHnd.LauncherPath);
-                launcherProc.Start();
-
-                // loop until we have a valid process handle
-                launcherProc = GetProcessTreeHandle(setHnd, launcherName);
-                launcherPID = launcherProc != null ? launcherProc.Id : 0;
-
-                // force the launcher window to activate before the game to avoid BPM hooking issues
-                Thread.Sleep(setHnd.PreGameOverlayWaitTime * 1000); // wait for the BPM overlay notification
-                Program.BringToFront(launcherProc.MainWindowHandle);
-
-                // if the user requests it minimize our launcher after detecting it
-                if (setHnd.MinimizeLauncher)
-                    Program.MinimizeWindow(launcherProc.MainWindowHandle);
-            }// skip over the launcher if we're only launching a game path
 
             /*
              * Game Post-Proxy Detection
