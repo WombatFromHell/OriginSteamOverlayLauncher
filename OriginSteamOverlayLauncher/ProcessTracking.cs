@@ -188,7 +188,16 @@ namespace OriginSteamOverlayLauncher
                 */
             if (setHnd.LauncherPath != String.Empty && Program.IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
             {// found the launcher left after the game exited
-                Thread.Sleep(setHnd.PostGameWaitTime * 1000); // let Origin sync with the cloud
+                Thread.Sleep(1000);
+
+                // resend the message to minimize our launcher
+                if (setHnd.MinimizeLauncher)
+                    Program.MinimizeWindow(launcherProc.MainWindowHandle);
+
+                // let Origin sync with the cloud
+                Thread.Sleep(setHnd.PostGameWaitTime - 1 * 1000);
+
+                // finally, kill our launcher proctree
                 Program.KillProcTreeByName(launcherName);
             }
 
