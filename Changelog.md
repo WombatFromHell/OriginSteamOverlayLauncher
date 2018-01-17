@@ -1,4 +1,5 @@
-* 754b8de (HEAD -> master, origin/master) Support for CommandlineProxy and lots of code cleanup
+* d2457cd (HEAD -> master) Refactored CommandlineProxy support and more code cleanup
+* 754b8de (origin/master) Support for CommandlineProxy and lots of code cleanup
 * 0688cff (tag: v1.06e) Further improved process detection when parsing process tree with children
 * 6511b24 Implemented utility function to cleanup system tray area after exit
 * c6ae077 Improved process detection so that OSOL can track more launchers

@@ -161,7 +161,7 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.FileName = setHnd.GamePath;
                     gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
                     gameProc.StartInfo.Arguments = setHnd.GameArgs + " " + _cmdLine;
-                    Program.Logger("OSOL", "Relaunching with proxied commandline, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
+                    Program.Logger("OSOL", "Relaunching with proxied commandline, cmd: " + setHnd.GamePath + " " + gameProc.StartInfo.Arguments);
                     gameProc.Start();
 
                     Thread.Sleep(setHnd.ProxyTimeout * 1000);
