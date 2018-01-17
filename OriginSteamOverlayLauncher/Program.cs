@@ -68,6 +68,7 @@ namespace OriginSteamOverlayLauncher
                         Settings curSet = new Settings();
                         // path to our local config
                         IniFile iniFile = new IniFile(appName + ".ini");
+
                         // overwrite/create log upon startup
                         File.WriteAllText(appName + "_Log.txt", String.Empty);
                         Logger("NOTE", "OSOL is running as: " + appName);
@@ -75,7 +76,7 @@ namespace OriginSteamOverlayLauncher
                         if (Settings.CheckINI(iniFile)
                             && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
                         {
-                            procTrack.ProcessLauncher(curSet); // normal functionality
+                            procTrack.ProcessLauncher(curSet, iniFile); // normal functionality
                         }
                         else
                         {// ini doesn't match our comparison, recreate from stubs
@@ -95,7 +96,7 @@ namespace OriginSteamOverlayLauncher
         }
 
         #region ProcessHelpers
-        public static bool CliArgExists(string[] args, string ArgName)
+        private static bool CliArgExists(string[] args, string ArgName)
         {// courtesy of: https://stackoverflow.com/a/30569947
             var singleFound = args.Where(w => w.ToLower() == "/" + ArgName.ToLower()).FirstOrDefault();
             if (singleFound != null)
@@ -186,15 +187,24 @@ namespace OriginSteamOverlayLauncher
             }
         }
 
-        public static string GetCommandLineToString(Process process)
+        public static string GetCommandLineToString(Process process, String startPath)
         { // credit to: https://stackoverflow.com/a/40501117
-            string cmdLine = null;
+            String cmdLine = String.Empty;
+            String _parsedPath = String.Empty;
 
             try
             {
                 using (var searcher = new ManagementObjectSearcher($"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {process.Id}"))
                 {// use WMI to grab the CommandLine string by looking up the PID
                     var matchEnum = searcher.Get().GetEnumerator();
+
+                    // include a space to clean up the output parsed args
+                    if (startPath.Contains(" "))
+                        _parsedPath = String.Format("\"{0}\" ", startPath);
+                    else
+                        _parsedPath = String.Format("{0} ", startPath);
+                    
+
                     if (matchEnum.MoveNext())
                     {// this will always return at most 1 result
                         cmdLine = matchEnum.Current["CommandLine"]?.ToString();
@@ -221,7 +231,8 @@ namespace OriginSteamOverlayLauncher
             // examined below.
             catch (InvalidOperationException ex) when (ex.HResult == -2146233079) { }
 
-            return cmdLine;
+            // remove the full path from our parsed arguments
+            return RemoveInPlace(cmdLine, _parsedPath);
         }
 
         public static void ExecuteExternalElevated(String filePath, String fileArgs)
@@ -262,6 +273,44 @@ namespace OriginSteamOverlayLauncher
             {
                 Process.GetCurrentProcess().Kill(); // exit the assembly after the modal
             }
+        }
+
+        public static bool OrdinalContains(String match, String container, StringComparison _comp = StringComparison.InvariantCultureIgnoreCase)
+        {// if container string contains match string, via valid index, then true
+            if (container.IndexOf(match, _comp) >= 0)
+                return true;
+
+            return false;
+        }
+
+        private static string RemoveInPlace(String input, String match)
+        {
+            if (OrdinalContains(match, input))
+            {
+                string _result = input.Replace(match, String.Empty);
+                return _result;
+            }
+
+            return String.Empty;
+        }
+
+        public static void StoreCommandline(Settings setHnd, IniFile iniHnd, String cmdLine)
+        {// save the passed commandline string to our ini for later
+            if (cmdLine.Length > 0)
+            {
+                setHnd.DetectedCommandline = cmdLine;
+                iniHnd.Write("DetectedCommandline", cmdLine, "Paths");
+            }
+        }
+
+        public static bool CompareCommandlines(String storedCmdline, String comparatorCmdline)
+        {// compared stored against active to prevent unnecessary relaunching
+            if (storedCmdline.Length > 0 && comparatorCmdline.Length > 0 && Settings.StringEquals(comparatorCmdline, storedCmdline))
+            {
+                return true;
+            }
+
+            return false;
         }
         #endregion
     }

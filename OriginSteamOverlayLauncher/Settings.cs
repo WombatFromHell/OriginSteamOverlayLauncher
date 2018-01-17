@@ -26,6 +26,7 @@ namespace OriginSteamOverlayLauncher
         public String PreLaunchExecArgs { get; set; }
         public String PostGameExec { get; set; }
         public String PostGameExecArgs { get; set; }
+        public String DetectedCommandline { get; set; }
 
         // bools for OSOL behavior
         public Boolean ReLaunch { get; set; }
@@ -122,6 +123,7 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("GamePath", String.Empty, "Paths");
                 iniHnd.Write("GameArgs", String.Empty, "Paths");
                 iniHnd.Write("MonitorPath", String.Empty, "Paths");
+                iniHnd.Write("DetectedCommandline", String.Empty, "Paths");
 
                 // options
                 iniHnd.Write("PreLaunchExec", String.Empty, "Options");
@@ -161,7 +163,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("LauncherURI") && iniHnd.KeyExists("GamePath")
                     && iniHnd.KeyExists("MonitorPath") && iniHnd.KeyExists("GameArgs")
                     && iniHnd.KeyExists("LauncherMode") && iniHnd.KeyExists("PreLaunchExec") && iniHnd.KeyExists("PreLaunchExecArgs")
-                    && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs")
+                    && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs") && iniHnd.KeyExists("DetectedCommandline")
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
                     && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch")
@@ -270,6 +272,9 @@ namespace OriginSteamOverlayLauncher
             setHnd.GamePath = ValidateString(iniHnd, String.Empty, "GamePath", "GamePath", "Paths");
             setHnd.GameArgs = ValidateString(iniHnd, String.Empty, "GameArgs", "GameArgs", "Paths");
             setHnd.MonitorPath = ValidateString(iniHnd, String.Empty, "MonitorPath", "MonitorPath", "Paths");
+
+            // support for saving a commandline grabbed via CommandlineProxy
+            setHnd.DetectedCommandline = ValidateString(iniHnd, String.Empty, setHnd.DetectedCommandline, "DetectedCommandline", "Paths");
 
             // special case - check launchermode options
             if (iniHnd.KeyPopulated("LauncherMode", "Options")

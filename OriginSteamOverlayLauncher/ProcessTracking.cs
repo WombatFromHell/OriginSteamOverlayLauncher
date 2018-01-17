@@ -34,7 +34,7 @@ namespace OriginSteamOverlayLauncher
                 if (_procTree.Count() != 0)
                 {
                     StringBuilder _procOut = new StringBuilder();
-                    _procOut.Append("Trying to bind to detected process at PID: ");
+                    _procOut.Append("Trying to bind to detected processes at PIDs: ");
 
                     foreach (Process proc in _procTree)
                     {
@@ -55,8 +55,8 @@ namespace OriginSteamOverlayLauncher
             return _retProc; // returns null if nothing matched or we timed out, otherwise reports a validated Process handle
         }
 
-        public void ProcessLauncher(Settings setHnd)
-        {
+        public void ProcessLauncher(Settings setHnd, IniFile iniHnd)
+        {// pass our Settings and IniFile contexts into this workhorse routine
             String launcherName = Path.GetFileNameWithoutExtension(setHnd.LauncherPath);
             String gameName = Path.GetFileNameWithoutExtension(setHnd.GamePath);
             String launcherMode = setHnd.LauncherMode;
@@ -120,8 +120,8 @@ namespace OriginSteamOverlayLauncher
                 gameProc.StartInfo.FileName = setHnd.GamePath;
                 gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
                 gameProc.StartInfo.Arguments = setHnd.GameArgs;
-
                 Program.Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
+
                 gameProc.Start();
             }
             else if (Settings.StringEquals(launcherMode, "URI"))
@@ -141,48 +141,44 @@ namespace OriginSteamOverlayLauncher
                     Program.Logger("EXCEPTION", x.ToString());
                 }
             }
+            
+            // use the monitor module name if the user requests it, otherwise default to detecting by the game module name
+            gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
+            gamePID = gameProc != null ? gameProc.Id : 0;
 
-            // acquire a valid process handle
-            if (setHnd.LauncherPath != String.Empty)
-            {
-                // use the monitor module name if the user requests it, otherwise default to detecting by the game module name
-                gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
-                gamePID = gameProc != null ? gameProc.Id : 0;
-            }
+            if (setHnd.CommandlineProxy)
+            {// relaunch based on detected commandline if the user requests it
+                var _cmdLine = Program.GetCommandLineToString(gameProc, setHnd.GamePath);
+                var _storedCmdline = setHnd.DetectedCommandline;
+                
+                if (!Program.CompareCommandlines(_storedCmdline, _cmdLine)
+                    && !Settings.StringEquals(setHnd.GameArgs, _cmdLine))
+                {// only proxy arguments if our target arguments differ
+                    gameProc.Kill();
+                    Thread.Sleep(setHnd.ProxyTimeout * 1000);
 
-            if (Settings.StringEquals(launcherMode, "Normal") && setHnd.CommandlineProxy)
-            {// we need to grab the commandline, kill the game process, and relaunch using the commandline we grabbed
-                var _cmdLine = Program.GetCommandLineToString(gameProc);
-                gameProc.Kill();
+                    gameProc.StartInfo.UseShellExecute = true;
+                    gameProc.StartInfo.FileName = setHnd.GamePath;
+                    gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
+                    gameProc.StartInfo.Arguments = setHnd.GameArgs + " " + _cmdLine;
+                    Program.Logger("OSOL", "Relaunching with proxied commandline, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
+                    gameProc.Start();
 
-                // relaunch with our commandline string
-                gameProc.StartInfo.UseShellExecute = true;
-                gameProc.StartInfo.FileName = setHnd.GamePath;
-                gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
-                gameProc.StartInfo.Arguments = setHnd.GameArgs + " " + _cmdLine;
+                    Thread.Sleep(setHnd.ProxyTimeout * 1000);
 
-                Program.Logger("OSOL", "Relaunching game with copied arguments, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
-                gameProc.Start();
-
-                // copy the previous detection logic
-                Thread.Sleep(setHnd.ProxyTimeout * 1000);
-                if (setHnd.LauncherPath != String.Empty)
-                {
+                    // rebind to relaunched process targetting the monitor or game process
                     gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
                     gamePID = gameProc != null ? gameProc.Id : 0;
-                }
 
-                while (Program.IsRunningPID(gamePID))
-                {// sleep while the game/monitor is running
-                    Thread.Sleep(1000);
+                    // save our newest active commandline for later
+                    Program.StoreCommandline(setHnd, iniHnd, _cmdLine);
+                    Program.Logger("OSOL", String.Format("Process arguments saved to INI: {0}", _cmdLine));
                 }
             }
-            else
-            {// don't need to do anything special
-                while (Program.IsRunningPID(gamePID))
-                {
-                    Thread.Sleep(1000);
-                }
+
+            while (Program.IsRunningPID(gamePID))
+            {
+                Thread.Sleep(1000);
             }
 
             Program.Logger("OSOL", "Game exited, cleaning up...");

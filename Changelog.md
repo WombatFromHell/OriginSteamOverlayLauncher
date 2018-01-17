@@ -1,7 +1,8 @@
-* 0688cff (HEAD -> master, origin/master) Further improved process detection when parsing process tree with children
+* 754b8de (HEAD -> master, origin/master) Support for CommandlineProxy and lots of code cleanup
+* 0688cff (tag: v1.06e) Further improved process detection when parsing process tree with children
 * 6511b24 Implemented utility function to cleanup system tray area after exit
 * c6ae077 Improved process detection so that OSOL can track more launchers
-* a4bfcb2 Updated assembly version
+* a4bfcb2 (tag: v1.06b) Updated assembly version
 * 0b9b55a Fixed hard coded INI read buffer limit of 255 characters
 * 0b19679 (tag: v1.06a) Added MonitorPath and fixed GameArgs not being read into StartInfo OSOL can now use MonitorPath to monitor a remote executable instead of GamePath reducing process acquisition desyncs
 * a0200b4 README cleanups
