@@ -149,7 +149,7 @@ namespace OriginSteamOverlayLauncher
             gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
             gamePID = gameProc != null ? gameProc.Id : 0;
 
-            if (setHnd.CommandlineProxy)
+            if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length == 0)
             {// relaunch based on detected commandline if the user requests it
                 var _cmdLine = Program.GetCommandLineToString(gameProc, setHnd.GamePath);
                 var _storedCmdline = setHnd.DetectedCommandline;
