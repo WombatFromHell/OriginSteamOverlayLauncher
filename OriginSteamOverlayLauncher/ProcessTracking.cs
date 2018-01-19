@@ -15,6 +15,7 @@ namespace OriginSteamOverlayLauncher
             Process _retProc = null;
             int sanity_counter = 0;
 
+            Program.Logger("OSOL", String.Format("Searching for valid process by name: {0}", procName));
             while (sanity_counter < setHnd.ProcessAcquisitionTimeout)
             {// loop every ProxyTimeout (via ValidateProcTree()) until we get a validated PID by procName
                 var _procTree = Program.GetProcessTreeByName(procName);
@@ -26,7 +27,7 @@ namespace OriginSteamOverlayLauncher
                 // first check if we should bail early due to timeout
                 if (sanity_counter >= setHnd.ProcessAcquisitionTimeout)
                 {
-                    Program.Logger("WARNING", String.Format("Could not detect a valid process after waiting {0} seconds!", setHnd.ProcessAcquisitionTimeout));
+                    Program.Logger("WARNING", String.Format("Could not bind to a valid process after waiting {0} seconds!", setHnd.ProcessAcquisitionTimeout));
                     break;
                 }
 
@@ -47,7 +48,7 @@ namespace OriginSteamOverlayLauncher
                 if (_result > 0)
                 {// rebind our process handle using our validated PID
                     _retProc = Program.RebindProcessByID(_result);
-                    Program.Logger("OSOL", String.Format("Detected a valid process at PID: {0} in {1} seconds", _result, sanity_counter));
+                    Program.Logger("OSOL", String.Format("Bound to a valid process at PID: {0} in {1} seconds", _result, sanity_counter));
                     break;
                 }
             }
@@ -67,7 +68,7 @@ namespace OriginSteamOverlayLauncher
             // save our monitoring path for later
             String monitorPath = Settings.ValidatePath(setHnd.MonitorPath) ? setHnd.MonitorPath : String.Empty;
             String monitorName = Path.GetFileNameWithoutExtension(monitorPath);
-            String _launchType = (monitorPath.Length > 0 ? " monitor " : " game ");
+            String _launchType = (monitorPath.Length > 0 ? "monitor" : "game");
             // save PIDs that we find
             int launcherPID = 0;
             int gamePID = 0;
@@ -75,7 +76,8 @@ namespace OriginSteamOverlayLauncher
             /*
              * Launcher Detection
              */
-
+            
+            // only use launcher if CommandlineProxy is not enabled and we have no DetectedCommandline args
             if (Settings.ValidatePath(setHnd.LauncherPath) && !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
             {
                 // obey the user and avoid killing and relaunching the target launcher
@@ -108,7 +110,7 @@ namespace OriginSteamOverlayLauncher
                 // if the user requests it minimize our launcher after detecting it
                 if (setHnd.MinimizeLauncher)
                     Program.MinimizeWindow(launcherProc.MainWindowHandle);
-            }// skip over the launcher if we're only launching a game path
+            }
 
             /*
              * Game Post-Proxy Detection
@@ -124,12 +126,12 @@ namespace OriginSteamOverlayLauncher
                 if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length > 0)
                 {// use the saved commandline from DetectedCommandline with GameArgs
                     gameProc.StartInfo.Arguments = setHnd.DetectedCommandline + " " + setHnd.GameArgs;
-                    Program.Logger("OSOL", "Launching game with DetectedCommandline arguments, cmd: " + setHnd.GamePath + " " + setHnd.DetectedCommandline + " " + setHnd.GameArgs);
+                    Program.Logger("OSOL", String.Format("Launching game with DetectedCommandline arguments, cmd: {0} {1} {2}", setHnd.GamePath, setHnd.DetectedCommandline, setHnd.GameArgs));
                     gameProc.Start();
                 }
                 else if (!setHnd.CommandlineProxy)
                 {// just use the specified GameArgs since CommandlineProxy is disabled
-                    Program.Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
+                    Program.Logger("OSOL", String.Format("Launching game, cmd: {0} {1}", setHnd.GamePath, setHnd.GameArgs));
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
                     gameProc.Start();
                 }
@@ -186,7 +188,7 @@ namespace OriginSteamOverlayLauncher
                     gameProc.Start();
                     Thread.Sleep(setHnd.ProxyTimeout * 1000);
 
-                    // rebind to relaunched process targetting the monitor or game process
+                    // rebind to relaunched process
                     gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
                     gamePID = gameProc != null ? gameProc.Id : 0;
 
@@ -196,17 +198,22 @@ namespace OriginSteamOverlayLauncher
                 }
             }
 
-            while (Program.IsRunningPID(gamePID))
+            if (gamePID > 0)
             {
-                Thread.Sleep(1000);
-            }
+                while (Program.IsRunningPID(gamePID))
+                {
+                    Thread.Sleep(1000);
+                }
 
-            Program.Logger("OSOL", "Game exited, cleaning up...");
+                Program.Logger("OSOL", String.Format("The {0} exited, cleaning up...", _launchType));
+            }
+            else
+                Program.Logger("WARNING", String.Format("Could not find a {0} process by name: {1}", _launchType, Settings.StringEquals("monitor", _launchType) ? gameName : monitorName));
 
             /*
                 * Post-Game Cleanup
                 */
-            if (setHnd.LauncherPath.Length > 0 && Program.IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
+            if (launcherProc != null && Program.IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
             {// found the launcher left after the game exited
                 Thread.Sleep(1000);
 

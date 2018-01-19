@@ -1,4 +1,5 @@
-* fcd1aa4 (HEAD -> master) Make OSOL less reliant on LauncherPath when starting up
+* aa70c44 (HEAD -> master) Fixed blank LauncherPath exception upon game exit
+* fcd1aa4 Make OSOL less reliant on LauncherPath when starting up
 * c0d1758 (origin/master) Update our changelog
 * 120ef5d A second attempt at fixing CommandlineProxy behavior for Tarkov
 * a410dfc Move ReLaunch inside ValidatePath and add sanity for DetectedCommandline

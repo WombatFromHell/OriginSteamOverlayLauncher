@@ -100,9 +100,9 @@ namespace OriginSteamOverlayLauncher
                 }
             }
 
-            if (!ValidatePath(setHnd.LauncherPath) && !ValidatePath(setHnd.GamePath))
+            if (!ValidatePath(setHnd.GamePath))
             {// sanity check in case of cancelling both path inputs
-                Program.Logger("FATAL", "The user didn't select valid paths, bailing!");
+                Program.Logger("FATAL", "A valid GamePath is required to function!");
                 Process.GetCurrentProcess().Kill(); // bail!
             }
 
