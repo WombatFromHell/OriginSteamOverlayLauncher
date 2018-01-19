@@ -1,4 +1,5 @@
-# OSOL (O.rigin S.team O.verlay L.auncher)
+# OSOL (O.rigin S.team O.verlay L.auncher) [![Join the chat at https://gitter.im/OriginSteamOverlayLauncher/Lobby](https://badges.gitter.im/OriginSteamOverlayLauncher/Lobby.svg)](https://gitter.im/OriginSteamOverlayLauncher/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 How To Install/Uninstall
 ========================
 This wrapper requires no installation other than copying it into the directory of the game executable you wish to run through Steam BPM/Overlay. It also can simply be deleted if you wish to uninstall it at any time. If you have trouble running it, or are running Windows 8 or earlier, you may need to download and install the [.NET Framework Redistributable v4.5](https://www.microsoft.com/en-us/download/details.aspx?id=40779).
