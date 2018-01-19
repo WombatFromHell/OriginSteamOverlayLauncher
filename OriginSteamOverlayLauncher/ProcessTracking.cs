@@ -76,16 +76,16 @@ namespace OriginSteamOverlayLauncher
              * Launcher Detection
              */
 
-            // obey the user and avoid killing and relaunching the target launcher
-            if (Program.IsRunning(launcherName) && setHnd.ReLaunch)
-            {// if the launcher is running before the game kill it so we can run it through Steam
-                Program.Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
-                Program.KillProcTreeByName(launcherName);
-                Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
-            }
-
-            if (Settings.ValidatePath(setHnd.LauncherPath))
+            if (Settings.ValidatePath(setHnd.LauncherPath) && !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
             {
+                // obey the user and avoid killing and relaunching the target launcher
+                if (Program.IsRunning(launcherName) && setHnd.ReLaunch)
+                {// if the launcher is running before the game kill it so we can run it through Steam
+                    Program.Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
+                    Program.KillProcTreeByName(launcherName);
+                    Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
+                }
+
                 // ask a non-async delegate to run a process before the launcher
                 Program.ExecuteExternalElevated(setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
 

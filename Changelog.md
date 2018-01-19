@@ -1,4 +1,5 @@
-* c5172cf (HEAD -> master, origin/master) Convert old-style complex logging to newer method with better comments
+* 5a146ce (HEAD -> master, origin/master) Fix exception in PostGameWaitTime timeout
+* c5172cf Convert old-style complex logging to newer method with better comments
 * bea55f4 Use arguments from DetectedCommandline when launching game process
 * 5afbe29 Revert "Only use launcher behavior if CommandlineProxy is disabled"
 * dd7d9f2 Do not relaunch using CommandlineProxy if DetectedCommandline is populated
