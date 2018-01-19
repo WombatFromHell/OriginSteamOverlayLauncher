@@ -119,8 +119,18 @@ namespace OriginSteamOverlayLauncher
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.GamePath;
                 gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
-                gameProc.StartInfo.Arguments = setHnd.GameArgs;
-                Program.Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
+
+                // use the saved commandline from CommandlineProxy
+                if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length > 0)
+                {
+                    gameProc.StartInfo.Arguments = setHnd.DetectedCommandline + " " + setHnd.GameArgs;
+                    Program.Logger("OSOL", "Launching game with DetectedCommandline arguments, cmd: " + setHnd.GamePath + " " + setHnd.DetectedCommandline + " " + setHnd.GameArgs);
+                }
+                else
+                {
+                    Program.Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
+                    gameProc.StartInfo.Arguments = setHnd.GameArgs;
+                }
 
                 gameProc.Start();
             }
