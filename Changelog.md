@@ -1,4 +1,5 @@
-* aa70c44 (HEAD -> master) Fixed blank LauncherPath exception upon game exit
+* e343385 (HEAD -> master) Make ProcessLauncher more resilient when GetProcessTreeHandle fails
+* aa70c44 Fixed blank LauncherPath exception upon game exit
 * fcd1aa4 Make OSOL less reliant on LauncherPath when starting up
 * c0d1758 (origin/master) Update our changelog
 * 120ef5d A second attempt at fixing CommandlineProxy behavior for Tarkov

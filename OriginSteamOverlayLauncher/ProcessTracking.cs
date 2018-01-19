@@ -48,7 +48,7 @@ namespace OriginSteamOverlayLauncher
                 if (_result > 0)
                 {// rebind our process handle using our validated PID
                     _retProc = Program.RebindProcessByID(_result);
-                    Program.Logger("OSOL", String.Format("Bound to a valid process at PID: {0} in {1} seconds", _result, sanity_counter));
+                    Program.Logger("OSOL", String.Format("Bound to a valid process at PID: {0} [{1}] in {2} seconds", _result, _retProc.MainModule.ModuleName, sanity_counter));
                     break;
                 }
             }
