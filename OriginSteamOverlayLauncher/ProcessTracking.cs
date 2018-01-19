@@ -206,7 +206,7 @@ namespace OriginSteamOverlayLauncher
             /*
                 * Post-Game Cleanup
                 */
-            if (setHnd.LauncherPath != String.Empty && Program.IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
+            if (setHnd.LauncherPath.Length > 0 && Program.IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
             {// found the launcher left after the game exited
                 Thread.Sleep(1000);
 
