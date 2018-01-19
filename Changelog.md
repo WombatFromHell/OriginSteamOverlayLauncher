@@ -1,23 +1,29 @@
-* 3961e81 (HEAD -> master, origin/master) Reissue minimize window message after the game exits
-* 1254eb8 Make sure to use copied arguments not the ones from the INI
-* 5b534ba Refactored CommandlineProxy support and more code cleanup
-* 754b8de Support for CommandlineProxy and lots of code cleanup
-* 0688cff (tag: v1.06e) Further improved process detection when parsing process tree with children
-* 6511b24 Implemented utility function to cleanup system tray area after exit
-* c6ae077 Improved process detection so that OSOL can track more launchers
-* a4bfcb2 (tag: v1.06b) Updated assembly version
-* 0b9b55a Fixed hard coded INI read buffer limit of 255 characters
-* 0b19679 (tag: v1.06a) Added MonitorPath and fixed GameArgs not being read into StartInfo OSOL can now use MonitorPath to monitor a remote executable instead of GamePath reducing process acquisition desyncs
-* a0200b4 README cleanups
-* f24aa9a OSOL can now be renamed arbitrarily in prep for mediating launcher support
-* 0f762e9 INI overview changes to reflect MinimizeLauncher option
-* 648d4ad Added MinimizeLauncher option to INI by request
-* c631222 Fixed LauncherURI not being used to launch games via URI
-* bc39dc5 Fix CS in camel typed method
-* 37e9a44 OSOL now displays an INI settings overview when run with /help cli arg
-* 667251e Refactoring and exposed more options via INI Added ReLaunch, DoNotClose, and ProxyTimeout options to the INI to expose more customizable behavior wrt the launcher
-* 03fd684 Fixed incorrect default value in ProcessAcquisitionTimeout option
-* 2771118 Exposed process acquisition timeout in the INI
+* c5172cf (HEAD -> master, origin/master) Convert old-style complex logging to newer method with better comments
+* bea55f4 Use arguments from DetectedCommandline when launching game process
+* 5afbe29 Revert "Only use launcher behavior if CommandlineProxy is disabled"
+* dd7d9f2 Do not relaunch using CommandlineProxy if DetectedCommandline is populated
+* ce6d9f9 Only use launcher behavior if CommandlineProxy is disabled
+* 7a11ca0 Update the changelog for previous commit
+* 1c61b9e Reissue minimize window message after the game exits
+* ba49762 Make sure to use copied arguments not the ones from the INI
+* 299ec44 Refactored CommandlineProxy support and more code cleanup
+* c246446 Support for CommandlineProxy and lots of code cleanup
+* 09a874b Further improved process detection when parsing process tree with children
+* 236e2cd Implemented utility function to cleanup system tray area after exit
+* b3fdc2c Improved process detection so that OSOL can track more launchers
+* a65fb24 Updated assembly version
+* 2e5045e Fixed hard coded INI read buffer limit of 255 characters
+* a7f5892 Added MonitorPath and fixed GameArgs not being read into StartInfo OSOL can now use MonitorPath to monitor a remote executable instead of GamePath reducing process acquisition desyncs
+* edcd71c README cleanups
+* c809243 OSOL can now be renamed arbitrarily in prep for mediating launcher support
+* b086dc7 INI overview changes to reflect MinimizeLauncher option
+* e5d4a56 Added MinimizeLauncher option to INI by request
+* 9ef5368 Fixed LauncherURI not being used to launch games via URI
+* dd40c86 Fix CS in camel typed method
+* 2c2cc0e OSOL now displays an INI settings overview when run with /help cli arg
+* daff13b Refactoring and exposed more options via INI Added ReLaunch, DoNotClose, and ProxyTimeout options to the INI to expose more customizable behavior wrt the launcher
+* c7b0cf2 Fixed incorrect default value in ProcessAcquisitionTimeout option
+* f0ceae9 Exposed process acquisition timeout in the INI
 * 29d2d72 Added a single global mutex
 * c90b426 Update README.md
 * 46f1b67 README grammar fix

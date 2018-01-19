@@ -213,7 +213,7 @@ namespace OriginSteamOverlayLauncher
                     Program.MinimizeWindow(launcherProc.MainWindowHandle);
 
                 // let Origin sync with the cloud
-                Thread.Sleep(setHnd.PostGameWaitTime - 1 * 1000);
+                Thread.Sleep((setHnd.PostGameWaitTime - 1) * 1000);
 
                 // finally, kill our launcher proctree
                 Program.KillProcTreeByName(launcherName);
