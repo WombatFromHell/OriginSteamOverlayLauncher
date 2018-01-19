@@ -1,5 +1,4 @@
-* b1604bc (HEAD -> master, origin/master) Update the changelog for previous commit
-* 3961e81 Reissue minimize window message after the game exits
+* 3961e81 (HEAD -> master, origin/master) Reissue minimize window message after the game exits
 * 1254eb8 Make sure to use copied arguments not the ones from the INI
 * 5b534ba Refactored CommandlineProxy support and more code cleanup
 * 754b8de Support for CommandlineProxy and lots of code cleanup
