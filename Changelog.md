@@ -1,6 +1,7 @@
-* 120ef5d (HEAD -> master) A second attempt at fixing CommandlineProxy behavior for Tarkov
+* c0d1758 (HEAD -> master, origin/master) Update our changelog
+* 120ef5d A second attempt at fixing CommandlineProxy behavior for Tarkov
 * a410dfc Move ReLaunch inside ValidatePath and add sanity for DetectedCommandline
-* 5a146ce (origin/master) Fix exception in PostGameWaitTime timeout
+* 5a146ce Fix exception in PostGameWaitTime timeout
 * c5172cf Convert old-style complex logging to newer method with better comments
 * bea55f4 Use arguments from DetectedCommandline when launching game process
 * 5afbe29 Revert "Only use launcher behavior if CommandlineProxy is disabled"

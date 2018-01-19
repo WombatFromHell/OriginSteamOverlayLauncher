@@ -66,8 +66,8 @@ namespace OriginSteamOverlayLauncher
                         .SkipWhile(line => !line.Contains(Key + "="))
                         .TakeWhile(line => line.Contains(Key + "="))
                         .FirstOrDefault();
-
-            if (element != null && element.Length > 0)
+            
+            if (element != null)
                 return true;
             else
                 return false;

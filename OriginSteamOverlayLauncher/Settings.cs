@@ -327,8 +327,8 @@ namespace OriginSteamOverlayLauncher
             // Default to not proxying the commandline from a running instance of the game/monitor executable
             setHnd.CommandlineProxy = ValidateBool(iniHnd, false, setHnd.CommandlineProxy, "CommandlineProxy", "Options");
 
-            if (ValidatePath(setHnd.LauncherPath) && ValidatePath(setHnd.GamePath))
-                return true; // only continue if both required paths work
+            if (ValidatePath(setHnd.GamePath))
+                return true; // continue if the GamePath works
 
             return false;
         }
