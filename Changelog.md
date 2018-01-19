@@ -1,7 +1,13 @@
-* e343385 (HEAD -> master) Make ProcessLauncher more resilient when GetProcessTreeHandle fails
-* aa70c44 Fixed blank LauncherPath exception upon game exit
-* fcd1aa4 Make OSOL less reliant on LauncherPath when starting up
-* c0d1758 (origin/master) Update our changelog
+*   9489414 (HEAD -> master) Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
+|\  
+| * b19d840 (origin/master) Fix Gitter badge formatting
+| * e436f25 Add Gitter badge (#22)
+* | 0b86d3d Show the name of the process GetProcessTreeHandle has bound to
+* | e343385 Make ProcessLauncher more resilient when GetProcessTreeHandle fails
+* | aa70c44 Fixed blank LauncherPath exception upon game exit
+* | fcd1aa4 Make OSOL less reliant on LauncherPath when starting up
+|/  
+* c0d1758 (tag: v1.06i) Update our changelog
 * 120ef5d A second attempt at fixing CommandlineProxy behavior for Tarkov
 * a410dfc Move ReLaunch inside ValidatePath and add sanity for DetectedCommandline
 * 5a146ce Fix exception in PostGameWaitTime timeout

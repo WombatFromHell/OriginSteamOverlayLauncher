@@ -235,7 +235,7 @@ namespace OriginSteamOverlayLauncher
             return RemoveInPlace(cmdLine, _parsedPath);
         }
 
-        public static void ExecuteExternalElevated(String filePath, String fileArgs)
+        public static void ExecuteExternalElevated(Settings setHnd, String filePath, String fileArgs)
         {// generic process delegate for executing pre-launcher/post-game
             try
             {
@@ -247,20 +247,24 @@ namespace OriginSteamOverlayLauncher
                     execProc.StartInfo.UseShellExecute = true;
                     execProc.StartInfo.FileName = filePath;
                     execProc.StartInfo.Arguments = fileArgs;
-                    execProc.StartInfo.Verb = "runas"; // ask the user for contextual UAC privs in case they need elevation
-                    Logger("OSOL", "Attempting to run external process: " + filePath + " " + fileArgs);
+                    
+                    // ask the user for contextual UAC privs in case they need elevation
+                    if (setHnd.ElevateExternals)
+                        execProc.StartInfo.Verb = "runas";
+
+                    Logger("OSOL", String.Format("Attempting to run external process: {0} {1}", filePath, fileArgs));
                     execProc.Start();
                     execProc.WaitForExit(); // idle waiting for outside process to return
                     Logger("OSOL", "External process delegate returned, continuing...");
                 }
                 else if (filePath != null && filePath.Length > 0)
                 {
-                    Logger("WARNING", "External process path is invalid: " + filePath + " " + fileArgs);
+                    Logger("WARNING", String.Format("External process path is invalid: {0} {1}", filePath, fileArgs));
                 }
             }
             catch (Exception e)
             {
-                Logger("WARNING", "Process delegate failed on [" + filePath + " " + fileArgs + "], due to: " + e.ToString());
+                Logger("WARNING", String.Format("Process delegate failed on [{0} {1}], due to: {2}", filePath, fileArgs, e.ToString()));
             }
         }
 

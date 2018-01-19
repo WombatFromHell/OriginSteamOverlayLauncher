@@ -127,6 +127,7 @@ LauncherURI=launchproto://launchertarget	(see project Wiki for URI strings)
 GamePath=C:\Your Game\Game.exe			(required!)
 GameArgs=Your Game Args Here
 MonitorPath=C:\Your Game\Game To Target.exe	(OSOL will watch for this exe instead of the GamePath, useful for BattleEye)
+DetectedCommandline=				(OSOL stores copied arguments from CommandlineProxy here, see wiki)
 [Options]
 PreLaunchExec=C:\Your PreLauncher\Executable.exe
 PreLaunchExecArgs=Your PreLauncher Executable Args Here
@@ -142,6 +143,8 @@ LauncherMode=URI				(URI mode launches LauncherPath with the argument in Launche
 ProcessAcquisitionTimeout=300			(seconds to wait for launcher/game process detection)
 ReLaunch=True					(set to False to prevent OSOL from relaunching LauncherPath if detected)
 DoNotClose=False				(set to True to stop OSOL killing the LauncherPath when the game exits)
-MinimizeLauncher=False				(set to True to forcefully minimize launcher upon detection)</value>
+MinimizeLauncher=False				(set to True to forcefully minimize launcher upon detection)
+CommandlineProxy=False				(set to True to copy token arguments from child game processes)
+ElevateExternals=False				(set to True to run Pre/PostGameExec with elevated privileges)</value>
   </data>
 </root>

@@ -31,6 +31,7 @@ namespace OriginSteamOverlayLauncher
         // bools for OSOL behavior
         public Boolean ReLaunch { get; set; }
         public Boolean DoNotClose { get; set; }
+        public Boolean ElevateExternals { get; set; }
         public Boolean MinimizeLauncher { get; set; }
         public Boolean CommandlineProxy { get; set; }
 
@@ -147,6 +148,8 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("MinimizeLauncher", "False", "Options");
                 // Do not copy the commandline from a previous instance of the game/monitor executable
                 iniHnd.Write("CommandlineProxy", "False", "Options");
+                // Do not attempt to run external pre-post processes with elevated privs
+                iniHnd.Write("ElevateExternals", "False", "Options");
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -167,7 +170,8 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
                     && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch")
-                    && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy"))
+                    && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy")
+                    && iniHnd.KeyExists("ElevateExternals"))
                     return true;
                 else
                     return false;
@@ -326,6 +330,8 @@ namespace OriginSteamOverlayLauncher
             setHnd.MinimizeLauncher = ValidateBool(iniHnd, false, setHnd.MinimizeLauncher, "MinimizeLauncher", "Options");
             // Default to not proxying the commandline from a running instance of the game/monitor executable
             setHnd.CommandlineProxy = ValidateBool(iniHnd, false, setHnd.CommandlineProxy, "CommandlineProxy", "Options");
+            // Default to not running external pre-post processes with elevated privs
+            setHnd.ElevateExternals = ValidateBool(iniHnd, false, setHnd.ElevateExternals, "ElevateExternals", "Options");
 
             if (ValidatePath(setHnd.GamePath))
                 return true; // continue if the GamePath works

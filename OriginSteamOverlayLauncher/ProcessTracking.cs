@@ -89,7 +89,7 @@ namespace OriginSteamOverlayLauncher
                 }
 
                 // ask a non-async delegate to run a process before the launcher
-                Program.ExecuteExternalElevated(setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
+                Program.ExecuteExternalElevated(setHnd, setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
 
                 launcherProc.StartInfo.UseShellExecute = true;
                 launcherProc.StartInfo.FileName = setHnd.LauncherPath;
@@ -171,9 +171,9 @@ namespace OriginSteamOverlayLauncher
 
                 var _cmdLine = Program.GetCommandLineToString(gameProc, setHnd.GamePath);
                 var _storedCmdline = setHnd.DetectedCommandline;
+                Program.Logger("OSOL", String.Format("Detected arguments in [{0}]: {1}", gameProc.MainModule.ModuleName, _cmdLine));
 
-                if (!Program.OrdinalContains(_storedCmdline, _cmdLine)
-                    && !Program.CompareCommandlines(_storedCmdline, _cmdLine)
+                if (!Program.CompareCommandlines(_storedCmdline, _cmdLine)
                     && !Settings.StringEquals(setHnd.GameArgs, _cmdLine))
                 {// only proxy arguments if our target arguments differ
                     gameProc.Kill();
@@ -211,9 +211,9 @@ namespace OriginSteamOverlayLauncher
                 Program.Logger("WARNING", String.Format("Could not find a {0} process by name: {1}", _launchType, Settings.StringEquals("monitor", _launchType) ? gameName : monitorName));
 
             /*
-                * Post-Game Cleanup
-                */
-            if (launcherProc != null && Program.IsRunningPID(launcherProc.Id) && !setHnd.DoNotClose)
+             * Post-Game Cleanup
+             */
+            if (launcherPID > 0 && launcherProc != null && !launcherProc.HasExited && !setHnd.DoNotClose)
             {// found the launcher left after the game exited
                 Thread.Sleep(1000);
 
@@ -229,7 +229,7 @@ namespace OriginSteamOverlayLauncher
             }
 
             // ask a non-async delegate to run a process after the game and launcher exit
-            Program.ExecuteExternalElevated(setHnd.PostGameExec, setHnd.PostGameExecArgs);
+            Program.ExecuteExternalElevated(setHnd, setHnd.PostGameExec, setHnd.PostGameExecArgs);
 
             // make sure we sleep a bit to ensure the external process and launcher terminate properly
             Thread.Sleep(setHnd.ProxyTimeout * 1000);
