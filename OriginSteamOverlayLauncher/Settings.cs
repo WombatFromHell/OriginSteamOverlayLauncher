@@ -185,7 +185,7 @@ namespace OriginSteamOverlayLauncher
             }
             catch (Exception e)
             {
-                Program.Logger("WARNING", "Path validator failed on: [" + path + "], because: " + e.ToString());
+                Program.Logger("WARNING", String.Format("Path validator failed on: [{0}], because: {1}", path, e.ToString()));
                 return false;
             }
 
