@@ -119,19 +119,21 @@ namespace OriginSteamOverlayLauncher
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.GamePath;
                 gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
-                
+
+                // avoid executing GamePath if we need to grab arguments from a child of the launcher
                 if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length > 0)
                 {// use the saved commandline from DetectedCommandline with GameArgs
                     gameProc.StartInfo.Arguments = setHnd.DetectedCommandline + " " + setHnd.GameArgs;
                     Program.Logger("OSOL", "Launching game with DetectedCommandline arguments, cmd: " + setHnd.GamePath + " " + setHnd.DetectedCommandline + " " + setHnd.GameArgs);
+                    gameProc.Start();
                 }
-                else
-                {// just use the specified GameArgs
+                else if (!setHnd.CommandlineProxy)
+                {// just use the specified GameArgs since CommandlineProxy is disabled
                     Program.Logger("OSOL", "Launching game, cmd: " + setHnd.GamePath + " " + setHnd.GameArgs);
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
+                    gameProc.Start();
                 }
-
-                gameProc.Start();
+                    
             }
             else if (Settings.StringEquals(launcherMode, "URI"))
             {
@@ -150,11 +152,11 @@ namespace OriginSteamOverlayLauncher
                     Program.Logger("EXCEPTION", x.ToString());
                 }
             }
-            
-            // use the monitor module name if the user requests it, otherwise default to detecting by the game module name
+
+            // wait for the GamePath executable up to the ProcessAcquisitionTimeout and use our MonitorPath if the user requests it
             gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
             gamePID = gameProc != null ? gameProc.Id : 0;
-            
+
             if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length == 0)
             {
                 /*
