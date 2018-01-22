@@ -18,11 +18,6 @@ Notes
 =====
 __If you're looking for specific instructions on getting OSOL working with a particular launcher or are having issues with certain behavior you believe is related to OSOL please read the [Project Wiki Page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki) before making an issue ticket.__
 
-OSOL should work with most launchers that call a regular Windows executable, if you find a launcher that doesn't work with OSOL please [report it](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/issues/new) so I can address it.
-
-
-Known Issues
-============
 If you have difficulty getting the Steam overlay to hook into your game when launching with OSOL please follow [these instructions](https://support.steampowered.com/kb_article.php?ref=9828-SFLZ-9289), and make sure OSOL and Steam are both running with the appropriate permissions (if Steam is running as Admin, make sure to run OSOL as Admin as well so that all processes spawned from it can be hooked by Steam). **This is important for older games (circa <2007).**
 
 If you have issues with games not launching with the Steam Overlay and are using a recent AMD graphics device you may need to disable the "AMD External Events Utility" service by following the instructions below:
@@ -31,7 +26,11 @@ If you have issues with games not launching with the Steam Overlay and are using
 * Browse down to the "AMD External Events" service.
 * Double-click it, change the startup type to "Disabled", and click "Stop" to disable the service, then click "OK" and exit the dialog.
 
-NOTE: This will break FreeSync functionality, but allow the Steam Overlay to hook into Origin games.
+**NOTE:** _This will break FreeSync functionality, but allow the Steam Overlay to hook into Origin games._
+
+**OSOL currently supports the following launchers: _Battle.net, UPlay, Origin, GOG Galaxy, Epic Games Launcher, and most Emulators/Master Launchers_**
+
+If you find a launcher that doesn't work with OSOL please [report it](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/issues/new) so I can consider adding it to the supported launchers list.
 
 
 How To Compile
