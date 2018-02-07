@@ -48,7 +48,7 @@ namespace OriginSteamOverlayLauncher
                 if (_result > 0)
                 {// rebind our process handle using our validated PID
                     _retProc = Program.RebindProcessByID(_result);
-                    Program.Logger("OSOL", String.Format("Bound to a valid process at PID: {0} [{1}] in {2} seconds", _result, _retProc.MainModule.ModuleName, sanity_counter));
+                    Program.Logger("OSOL", String.Format("Bound to a valid process at PID: {0} [{1}] in {2} seconds", _result, String.Format("{0}.exe", procName), sanity_counter));
                     break;
                 }
             }
@@ -205,7 +205,7 @@ namespace OriginSteamOverlayLauncher
                     Thread.Sleep(1000);
                 }
 
-                Program.Logger("OSOL", String.Format("The {0} exited, cleaning up...", _launchType));
+                Program.Logger("OSOL", String.Format("The {0} exited, moving on to clean up...", _launchType));
             }
             else
                 Program.Logger("WARNING", String.Format("Could not find a {0} process by name: {1}", _launchType, Settings.StringEquals("monitor", _launchType) ? gameName : monitorName));
@@ -223,6 +223,8 @@ namespace OriginSteamOverlayLauncher
 
                 // let Origin sync with the cloud
                 Thread.Sleep((setHnd.PostGameWaitTime - 1) * 1000);
+
+                Program.Logger("OSOL", String.Format("Found launcher still running, cleaning up...", _launchType));
 
                 // finally, kill our launcher proctree
                 Program.KillProcTreeByName(launcherName);

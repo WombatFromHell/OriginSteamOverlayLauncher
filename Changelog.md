@@ -1,6 +1,7 @@
-*   9489414 (HEAD -> master) Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
+* ecde9f5 (HEAD -> master, origin/master) Bug fixes for CommandlineProxy and Pre-PostGameExec with more code cleanups
+*   9489414 Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
 |\  
-| * b19d840 (origin/master) Fix Gitter badge formatting
+| * b19d840 Fix Gitter badge formatting
 | * e436f25 Add Gitter badge (#22)
 * | 0b86d3d Show the name of the process GetProcessTreeHandle has bound to
 * | e343385 Make ProcessLauncher more resilient when GetProcessTreeHandle fails
