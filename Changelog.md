@@ -1,4 +1,5 @@
-*   d6af270 (HEAD -> master, origin/master) Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
+* 7ebb270 (HEAD -> master, origin/master) Enabled DPI awareness and added ForceLauncher for use with CommandlineProxy
+*   d6af270 Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
 |\  
 | * 3957c97 Update README.md
 * | 3634c6c Fixed Win32Exception causing failure to return PID
