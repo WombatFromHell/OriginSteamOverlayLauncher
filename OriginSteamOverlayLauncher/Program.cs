@@ -57,6 +57,8 @@ namespace OriginSteamOverlayLauncher
                     /*
                      * Run our actual entry point here...
                      */
+                    Application.EnableVisualStyles(); // enable DPI awareness
+                    Application.SetCompatibleTextRenderingDefault(false);
 
                     if (CliArgExists(args, "help"))
                     {// display an INI settings overview if run with /help

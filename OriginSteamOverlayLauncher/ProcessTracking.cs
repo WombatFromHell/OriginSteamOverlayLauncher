@@ -78,7 +78,7 @@ namespace OriginSteamOverlayLauncher
              */
             
             // only use launcher if CommandlineProxy is not enabled and we have no DetectedCommandline args
-            if (Settings.ValidatePath(setHnd.LauncherPath) && !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
+            if (Settings.ValidatePath(setHnd.LauncherPath) && setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
             {
                 // obey the user and avoid killing and relaunching the target launcher
                 if (Program.IsRunning(launcherName) && setHnd.ReLaunch)

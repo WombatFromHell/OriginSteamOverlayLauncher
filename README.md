@@ -2,7 +2,7 @@
 
 How To Install/Uninstall
 ========================
-This wrapper requires no installation other than copying it into the directory of the game executable you wish to run through Steam BPM/Overlay. It also can simply be deleted if you wish to uninstall it at any time. If you have trouble running it, or are running Windows 8 or earlier, you may need to download and install the [.NET Framework Redistributable v4.5](https://www.microsoft.com/en-us/download/details.aspx?id=40779).
+This wrapper requires no installation other than copying it into the directory of the game executable you wish to run through Steam BPM/Overlay. It also can simply be deleted if you wish to uninstall it at any time. If you have trouble running it, or are running Windows 8 or earlier, you may need to download and install the [.NET Framework Runtime v4.7.1](https://www.microsoft.com/en-us/download/details.aspx?id=56115).
 
 
 How To Use
@@ -35,7 +35,7 @@ If you find a launcher that doesn't work with OSOL please [report it](https://gi
 
 How To Compile
 ==============
-If you wish to compile this project from github source, you'll need Visual Studio v14+ or Visual Studio Express and target the .NET Framework v4.5 for C#. There are no external libraries required. The source code can be modified freely under the MIT license as long as the contributers and creator are given credit.
+If you wish to compile this project from github source, you'll need Visual Studio v14+ or Visual Studio Community and target the .NET Framework v4.7.1 for C#. There are no external libraries required. The source code can be modified freely under the MIT license as long as the contributers and creator are given credit.
 
 
 Credits

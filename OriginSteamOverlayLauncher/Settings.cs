@@ -31,6 +31,7 @@ namespace OriginSteamOverlayLauncher
         // bools for OSOL behavior
         public Boolean ReLaunch { get; set; }
         public Boolean DoNotClose { get; set; }
+        public Boolean ForceLauncher { get; set; }
         public Boolean ElevateExternals { get; set; }
         public Boolean MinimizeLauncher { get; set; }
         public Boolean CommandlineProxy { get; set; }
@@ -144,6 +145,8 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("ReLaunch", "True", "Options");
                 // Do not kill detected launcher PID after game exits
                 iniHnd.Write("DoNotClose", "False", "Options");
+                // Do not launch LauncherPath separate from GamePath
+                iniHnd.Write("ForceLauncher", "False", "Options");
                 // Do not minimize launcher on process detection
                 iniHnd.Write("MinimizeLauncher", "False", "Options");
                 // Do not copy the commandline from a previous instance of the game/monitor executable
@@ -169,7 +172,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs") && iniHnd.KeyExists("DetectedCommandline")
                     && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
                     && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
-                    && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch")
+                    && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("ForceLauncher")
                     && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy")
                     && iniHnd.KeyExists("ElevateExternals"))
                     return true;
@@ -326,6 +329,8 @@ namespace OriginSteamOverlayLauncher
             setHnd.ReLaunch = ValidateBool(iniHnd, true, setHnd.ReLaunch, "ReLaunch", "Options");
             // Default to closing the detected launcher PID when a game exits
             setHnd.DoNotClose = ValidateBool(iniHnd, false, setHnd.DoNotClose, "DoNotClose", "Options");
+            // Default to not launch LauncherPath separate from GamePath
+            setHnd.ForceLauncher = ValidateBool(iniHnd, false, setHnd.ForceLauncher, "ForceLauncher", "Options");
             // Default to leaving the launcher window alone after detecting it
             setHnd.MinimizeLauncher = ValidateBool(iniHnd, false, setHnd.MinimizeLauncher, "MinimizeLauncher", "Options");
             // Default to not proxying the commandline from a running instance of the game/monitor executable

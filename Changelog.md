@@ -1,4 +1,9 @@
-* ecde9f5 (HEAD -> master, origin/master) Bug fixes for CommandlineProxy and Pre-PostGameExec with more code cleanups
+*   d6af270 (HEAD -> master, origin/master) Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
+|\  
+| * 3957c97 Update README.md
+* | 3634c6c Fixed Win32Exception causing failure to return PID
+|/  
+* ecde9f5 (tag: v1.06j) Bug fixes for CommandlineProxy and Pre-PostGameExec with more code cleanups
 *   9489414 Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
 |\  
 | * b19d840 Fix Gitter badge formatting
