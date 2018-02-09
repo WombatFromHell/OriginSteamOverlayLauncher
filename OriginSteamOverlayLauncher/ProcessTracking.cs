@@ -113,8 +113,11 @@ namespace OriginSteamOverlayLauncher
             }
 
             /*
-             * Game Post-Proxy Detection
+             * Game Process Detection
              */
+
+            // wait before starting game process in case of launcher slowness
+            Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
 
             if (Settings.StringEquals(launcherMode, "Normal"))
             {// only run game ourselves if the user asks
@@ -141,8 +144,7 @@ namespace OriginSteamOverlayLauncher
             {
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.LauncherURI;
-
-                Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000); // wait to hook some sluggish launchers
+                
                 try
                 {// we can't control what will happen so try to catch exceptions
                     Program.Logger("OSOL", String.Format("Launching URI: {0}", setHnd.LauncherURI));
@@ -154,7 +156,7 @@ namespace OriginSteamOverlayLauncher
                     Program.Logger("EXCEPTION", x.ToString());
                 }
             }
-
+            
             // wait for the GamePath executable up to the ProcessAcquisitionTimeout and use our MonitorPath if the user requests it
             gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
             gamePID = gameProc != null ? gameProc.Id : 0;

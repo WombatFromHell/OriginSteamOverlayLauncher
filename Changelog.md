@@ -1,4 +1,5 @@
-* 7ebb270 (HEAD -> master, origin/master) Enabled DPI awareness and added ForceLauncher for use with CommandlineProxy
+* 0a04095 (HEAD -> master, origin/master) Fix typo in help dialog
+* 7ebb270 Enabled DPI awareness and added ForceLauncher for use with CommandlineProxy
 *   d6af270 Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
 |\  
 | * 3957c97 Update README.md
