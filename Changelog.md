@@ -1,5 +1,6 @@
-* 92b2ee5 (HEAD -> master) Removed redundant PreGameOverlayWaitTime option and improved wait logging
-* ae01ec8 (origin/master) Moved PreGameLauncherWaitTime outside of LauncherMode path
+* 6324422 (HEAD -> master, origin/master) Make sure ValidateInt always returns a positive integer on parse
+* 92b2ee5 Removed redundant PreGameOverlayWaitTime option and improved wait logging
+* ae01ec8 Moved PreGameLauncherWaitTime outside of LauncherMode path
 * 0a04095 Fix typo in help dialog
 * 7ebb270 Enabled DPI awareness and added ForceLauncher for use with CommandlineProxy
 *   d6af270 Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
