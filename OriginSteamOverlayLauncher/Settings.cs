@@ -233,7 +233,7 @@ namespace OriginSteamOverlayLauncher
             if (iniHnd.KeyPopulated(subKey, keyName))
             {
                 Int32.TryParse(iniHnd.ReadString(subKey, keyName), out int _output);
-                return _output > 0 ? _output : -1; // must always be greater than 0s
+                return _output > 0 ? _output : 1; // must always be greater than 0s
             }
             else if (!iniHnd.KeyExists(subKey))
             {// edge case
@@ -241,7 +241,7 @@ namespace OriginSteamOverlayLauncher
                 return writeKey;
             }
             else
-                return -1;
+                return 0;
         }
 
         public static Boolean ValidateBool(IniFile iniHnd, Boolean writeKey, Boolean setKey, String subKey, String keyName)
