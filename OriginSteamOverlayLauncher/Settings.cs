@@ -37,7 +37,6 @@ namespace OriginSteamOverlayLauncher
         public Boolean CommandlineProxy { get; set; }
 
         // ints for exposing internal timings
-        public int PreGameOverlayWaitTime { get; set; }
         public int PreGameLauncherWaitTime { get; set; }
         public int PostGameWaitTime { get; set; }
         public int ProxyTimeout { get; set; }
@@ -134,7 +133,6 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
 
                 // integer options (sensible defaults)
-                iniHnd.Write("PreGameOverlayWaitTime", "5", "Options"); //5s
                 iniHnd.Write("PreGameLauncherWaitTime", "12", "Options"); //12s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
                 iniHnd.Write("ProxyTimeout", "3", "Options"); //3s
@@ -170,8 +168,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("MonitorPath") && iniHnd.KeyExists("GameArgs")
                     && iniHnd.KeyExists("LauncherMode") && iniHnd.KeyExists("PreLaunchExec") && iniHnd.KeyExists("PreLaunchExecArgs")
                     && iniHnd.KeyExists("PostGameExec") && iniHnd.KeyExists("PostGameExecArgs") && iniHnd.KeyExists("DetectedCommandline")
-                    && iniHnd.KeyExists("PreGameOverlayWaitTime") && iniHnd.KeyExists("PreGameLauncherWaitTime")
-                    && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
+                    && iniHnd.KeyExists("PreGameLauncherWaitTime") && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("ForceLauncher")
                     && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy")
                     && iniHnd.KeyExists("ElevateExternals"))
@@ -319,7 +316,6 @@ namespace OriginSteamOverlayLauncher
 
             // treat ints differently
             setHnd.ProxyTimeout = ValidateInt(iniHnd, 3, setHnd.ProxyTimeout, "ProxyTimeout", "Options"); // 3s default wait time
-            setHnd.PreGameOverlayWaitTime = ValidateInt(iniHnd, 5, setHnd.PreGameOverlayWaitTime, "PreGameOverlayWaitTime", "Options"); // 5s default wait time
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time
             setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, setHnd.PostGameWaitTime, "PostGameWaitTime", "Options"); // 7s default wait time

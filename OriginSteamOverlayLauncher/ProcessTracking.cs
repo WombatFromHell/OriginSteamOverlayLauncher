@@ -102,22 +102,24 @@ namespace OriginSteamOverlayLauncher
                 // loop until we have a valid process handle
                 launcherProc = GetProcessTreeHandle(setHnd, launcherName);
                 launcherPID = launcherProc != null ? launcherProc.Id : 0;
+                
+                if (launcherPID > 0)
+                {
+                    // do some waiting based on user tuneables to avoid BPM weirdness
+                    Program.Logger("OSOL", String.Format("Waiting {0} seconds for potential launcher slowness...", setHnd.PreGameLauncherWaitTime));
+                    Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
 
-                // force the launcher window to activate before the game to avoid BPM hooking issues
-                Thread.Sleep(setHnd.PreGameOverlayWaitTime * 1000); // wait for the BPM overlay notification
-                Program.BringToFront(launcherProc.MainWindowHandle);
-
-                // if the user requests it minimize our launcher after detecting it
-                if (setHnd.MinimizeLauncher)
-                    Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                    // force the launcher window to activate before the game to avoid BPM hooking issues
+                    Program.BringToFront(launcherProc.MainWindowHandle);
+                    // if the user requests it minimize our launcher after detecting it
+                    if (setHnd.MinimizeLauncher)
+                        Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                }
             }
 
             /*
              * Game Process Detection
              */
-
-            // wait before starting game process in case of launcher slowness
-            Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
 
             if (Settings.StringEquals(launcherMode, "Normal"))
             {// only run game ourselves if the user asks
