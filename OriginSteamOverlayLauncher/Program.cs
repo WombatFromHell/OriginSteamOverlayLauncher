@@ -130,37 +130,7 @@ namespace OriginSteamOverlayLauncher
         public static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
 
         public static bool IsRunningPID(Int64 pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
-
-        public static int ValidateProcTree(Process[] procTree, int timeout)
-        {
-            var procChildren = procTree.Count();
-            Thread.Sleep(timeout * 1000); // let process stabilize before gathering data
-
-            if (procChildren > 1)
-            {// our parent is likely a caller or proxy
-                for (int i = 0; i < procChildren - 1; i++)
-                {// iterate through each process in the tree and determine which process we should bind to
-                    var proc = procTree[i];
-
-                    if (proc.Id > 0 && !proc.HasExited)
-                    {// return the first PID with an hwnd
-                        if (proc.MainWindowHandle != IntPtr.Zero && proc.MainWindowTitle.Length > 0)
-                        {// probably a real process (launcher or game) because it has an hwnd and title
-                            return proc.Id;
-                        }
-                        else if (procChildren > 2 && proc.MainWindowHandle == IntPtr.Zero && !procTree[0].HasExited)
-                        {// probably a headless process due to having more than one child, return the PID of the parent
-                            return procTree[0].Id;
-                        }
-                    }
-                }
-            }
-            else if (procChildren != 0 && !procTree[0].HasExited)
-                return procTree[0].Id; // no children, just return the PID
-
-            return 0;
-        }
-
+        
         public static Process[] GetProcessTreeByName(String procName)
         {
             return Process.GetProcessesByName(procName);

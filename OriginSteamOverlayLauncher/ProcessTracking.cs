@@ -9,6 +9,39 @@ namespace OriginSteamOverlayLauncher
 {
     class ProcessTracking
     {
+        public static int ValidateProcTree(Process[] procTree, int timeout)
+        {
+            var procChildren = procTree.Count();
+            Thread.Sleep(timeout * 1000); // let process stabilize before gathering data
+
+            if (procChildren == 1 && !procTree[0].HasExited 
+                && procTree[0].MainWindowHandle != IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0)
+            {
+                return procTree[0].Id; // just return the PID of the parent
+            }
+            else if (procChildren > 1)
+            {// our parent is likely a caller or proxy
+                for (int i = 0; i < procChildren; i++)
+                {// iterate through each process in the tree and determine which process we should bind to
+                    var proc = procTree[i];
+
+                    if (proc.Id > 0 && !proc.HasExited)
+                    {
+                        if (proc.MainWindowHandle != IntPtr.Zero && !proc.SafeHandle.IsInvalid && proc.MainWindowTitle.Length > 0)
+                        {// probably a real process (launcher or game) because it has a real hwnd and title
+                            return proc.Id;
+                        }
+                        else if (!procTree[0].HasExited && procTree[0].MainWindowHandle == IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0)
+                        {// child returns an invalid hwnd, return the parent PID instead
+                            return procTree[0].Id;
+                        }
+                    }
+                }
+            }
+
+            return 0;
+        }
+
         private static Process GetProcessTreeHandle(Settings setHnd, String procName)
         {// actively attempt to rebind process by PID via ValidateProcTree()
             int _result = 0;
@@ -20,7 +53,7 @@ namespace OriginSteamOverlayLauncher
             {// loop every ProxyTimeout (via ValidateProcTree()) until we get a validated PID by procName
                 var _procTree = Program.GetProcessTreeByName(procName);
                 // grab our first matching validated window PID
-                _result = Program.ValidateProcTree(_procTree, setHnd.ProxyTimeout);
+                _result = ValidateProcTree(_procTree, setHnd.ProxyTimeout);
                 // update our counter for logging purposes
                 sanity_counter = sanity_counter + setHnd.ProxyTimeout;
 

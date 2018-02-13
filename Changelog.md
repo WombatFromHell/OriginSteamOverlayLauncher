@@ -1,4 +1,5 @@
-* 6324422 (HEAD -> master, origin/master) Make sure ValidateInt always returns a positive integer on parse
+* ec98ddc (HEAD -> master, origin/master) Update Changelog for v1.06l
+* 6324422 Make sure ValidateInt always returns a positive integer on parse
 * 92b2ee5 Removed redundant PreGameOverlayWaitTime option and improved wait logging
 * ae01ec8 Moved PreGameLauncherWaitTime outside of LauncherMode path
 * 0a04095 Fix typo in help dialog
