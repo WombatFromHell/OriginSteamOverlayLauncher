@@ -18,6 +18,8 @@ Notes
 =====
 __If you're looking for specific instructions on getting OSOL working with a particular launcher or are having issues with certain behavior you believe is related to OSOL please read the [Project Wiki Page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki) before making an issue ticket.__
 
+If you experience crashes when starting OSOL and are running Windows 7, make sure you install the .NET 4.7.1 Redistributable found [here](https://www.microsoft.com/en-us/download/details.aspx?id=56115).
+
 If you have difficulty getting the Steam overlay to hook into your game when launching with OSOL please follow [these instructions](https://support.steampowered.com/kb_article.php?ref=9828-SFLZ-9289), and make sure OSOL and Steam are both running with the appropriate permissions (if Steam is running as Admin, make sure to run OSOL as Admin as well so that all processes spawned from it can be hooked by Steam). **This is important for older games (circa <2007).**
 
 If you have issues with games not launching with the Steam Overlay and are using a recent AMD graphics device you may need to disable the "AMD External Events Utility" service by following the instructions below:
