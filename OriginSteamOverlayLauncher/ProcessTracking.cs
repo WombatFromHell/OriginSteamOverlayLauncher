@@ -155,12 +155,6 @@ namespace OriginSteamOverlayLauncher
              * Game Process Detection
              */
 
-#if DEBUG
-            // DEBUGGING ONLY!
-            Program.Logger("OSOL", String.Format("Setting game process CPU affinity to: {0}", BitmaskExtensions.AffinityToCoreString(setHnd.GameProcessAffinity)));
-            Environment.Exit(0);
-#endif
-
             if (Settings.StringEquals(launcherMode, "Normal"))
             {// only run game ourselves if the user asks
                 gameProc.StartInfo.UseShellExecute = true;
