@@ -252,12 +252,20 @@ namespace OriginSteamOverlayLauncher
             }
         }
 
-        public static bool OrdinalContains(String match, String container, StringComparison _comp = StringComparison.InvariantCultureIgnoreCase)
+        public static bool OrdinalContains(String match, String container)
         {// if container string contains match string, via valid index, then true
-            if (container.IndexOf(match, _comp) >= 0)
+            if (container.IndexOf(match, StringComparison.InvariantCultureIgnoreCase) >= 0)
                 return true;
 
             return false;
+        }
+
+        public static bool StringEquals(String input, String comparator)
+        {// support function for checking string equality using Ordinal comparison
+            if (!String.IsNullOrEmpty(input) && String.Equals(input, comparator, StringComparison.OrdinalIgnoreCase))
+                return true;
+            else
+                return false;
         }
 
         private static string RemoveInPlace(String input, String match)
@@ -282,7 +290,7 @@ namespace OriginSteamOverlayLauncher
 
         public static bool CompareCommandlines(String storedCmdline, String comparatorCmdline)
         {// compared stored against active to prevent unnecessary relaunching
-            if (storedCmdline.Length > 0 && comparatorCmdline.Length > 0 && Settings.StringEquals(comparatorCmdline, storedCmdline))
+            if (storedCmdline.Length > 0 && comparatorCmdline.Length > 0 && Program.StringEquals(comparatorCmdline, storedCmdline))
             {
                 return true;
             }

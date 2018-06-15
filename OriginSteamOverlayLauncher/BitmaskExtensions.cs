@@ -107,17 +107,17 @@ namespace OriginSteamOverlayLauncher
             ulong maxResult = 8589934591;
 
             // provide shortcuts for common affinity masks (be smart about HT)
-            if (Settings.StringEquals(bitmask, "DualCore"))
+            if (Program.StringEquals(bitmask, "DualCore"))
             {// avoid CPU0 if possible
                 result = _isHT ? (ulong)0xA : (ulong)0x3;
                 return true;
             }
-            else if (Settings.StringEquals(bitmask, "QuadCore"))
+            else if (Program.StringEquals(bitmask, "QuadCore"))
             {
                 result = _isHT ? (ulong)0xAA : (ulong)0x15;
                 return true;
             }
-            else if (_isHT && Settings.StringEquals(bitmask, "DisableHT"))
+            else if (_isHT && Program.StringEquals(bitmask, "DisableHT"))
             {
                 long _aCores = 0;
 
@@ -130,7 +130,7 @@ namespace OriginSteamOverlayLauncher
                 result = (UInt64)_aCores;
                 return true;
             }
-            else if (!String.IsNullOrEmpty(bitmask) && !Settings.StringEquals(bitmask, "DisableHT"))
+            else if (!String.IsNullOrEmpty(bitmask) && !Program.StringEquals(bitmask, "DisableHT"))
             {// just convert what's there if possible
                 // pass string along to TryParseCoreString first
                 if (bitmask.Length > 1

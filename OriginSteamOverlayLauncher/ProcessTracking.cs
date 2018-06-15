@@ -155,7 +155,7 @@ namespace OriginSteamOverlayLauncher
              * Game Process Detection
              */
 
-            if (Settings.StringEquals(launcherMode, "Normal"))
+            if (Program.StringEquals(launcherMode, "Normal"))
             {// only run game ourselves if the user asks
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.GamePath;
@@ -176,7 +176,7 @@ namespace OriginSteamOverlayLauncher
                 }
                     
             }
-            else if (Settings.StringEquals(launcherMode, "URI"))
+            else if (Program.StringEquals(launcherMode, "URI"))
             {
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.LauncherURI;
@@ -195,6 +195,7 @@ namespace OriginSteamOverlayLauncher
             // wait for the GamePath executable up to the ProcessAcquisitionTimeout and use our MonitorPath if the user requests it
             gameProc = monitorPath.Length > 0 ? GetProcessTreeHandle(setHnd, monitorName) : GetProcessTreeHandle(setHnd, gameName);
             gamePID = gameProc != null ? gameProc.Id : 0;
+            string _procPrio = setHnd.GameProcessPriority.ToString();
 
             if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length == 0)
             {
@@ -211,7 +212,7 @@ namespace OriginSteamOverlayLauncher
                 Program.Logger("OSOL", String.Format("Detected arguments in [{0}]: {1}", gameProc.MainModule.ModuleName, _cmdLine));
 
                 if (!Program.CompareCommandlines(_storedCmdline, _cmdLine)
-                    && !Settings.StringEquals(setHnd.GameArgs, _cmdLine))
+                    && !Program.StringEquals(setHnd.GameArgs, _cmdLine))
                 {// only proxy arguments if our target arguments differ
                     gameProc.Kill();
                     Thread.Sleep(setHnd.ProxyTimeout * 1000);
@@ -237,13 +238,18 @@ namespace OriginSteamOverlayLauncher
 
             if (gamePID > 0)
             {
-                // run our post-game launch commands after a sleep
-                Thread.Sleep((setHnd.PostGameLaunchWaitTime - 1) * 1000);
+                // run our post-game launch commands after a configurable sleep
+                Thread.Sleep((setHnd.PostGameCommandWaitTime - 1) * 1000);
 
                 if (setHnd.GameProcessAffinity > 0)
                 {// use our specified CPU affinity bitmask
                     gameProc.ProcessorAffinity = (IntPtr)setHnd.GameProcessAffinity;
                     Program.Logger("OSOL", String.Format("Setting game process CPU affinity to: {0}", BitmaskExtensions.AffinityToCoreString(setHnd.GameProcessAffinity)));
+                }
+                if (!String.IsNullOrEmpty(_procPrio) && !Program.StringEquals(_procPrio, "Normal"))
+                {// we have a custom process priority so let's use it
+                    gameProc.PriorityClass = setHnd.GameProcessPriority;
+                    Program.Logger("OSOL", String.Format("Setting game process priority to: {0}", setHnd.GameProcessPriority.ToString()));
                 }
 
                 while (Program.IsRunningPID(gamePID))
@@ -254,7 +260,7 @@ namespace OriginSteamOverlayLauncher
                 Program.Logger("OSOL", String.Format("The {0} exited, moving on to clean up...", _launchType));
             }
             else
-                Program.Logger("WARNING", String.Format("Could not find a {0} process by name: {1}", _launchType, Settings.StringEquals("monitor", _launchType) ? gameName : monitorName));
+                Program.Logger("WARNING", String.Format("Could not find a {0} process by name: {1}", _launchType, Program.StringEquals("monitor", _launchType) ? gameName : monitorName));
 
             /*
              * Post-Game Cleanup

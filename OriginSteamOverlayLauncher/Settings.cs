@@ -29,6 +29,7 @@ namespace OriginSteamOverlayLauncher
         public String DetectedCommandline { get; set; }
         // special options
         public UInt64 GameProcessAffinity { get; set; }
+        public ProcessPriorityClass GameProcessPriority { get; set; }
 
         // bools for OSOL behavior
         public Boolean ReLaunch { get; set; }
@@ -41,21 +42,13 @@ namespace OriginSteamOverlayLauncher
         // ints for exposing internal timings
         public int PreGameLauncherWaitTime { get; set; }
         public int PostGameWaitTime { get; set; }
-        public int PostGameLaunchWaitTime { get; set; }
+        public int PostGameCommandWaitTime { get; set; }
         public int ProxyTimeout { get; set; }
         public int ProcessAcquisitionTimeout { get; set; }
         #endregion
-        
+
         #region Helpers
         public String AssemblyPath = System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
-
-        public static bool StringEquals(String input, String comparator)
-        {// support function for checking string equality using Ordinal comparison
-            if (input != String.Empty && String.Equals(input, comparator, StringComparison.OrdinalIgnoreCase))
-                return true;
-            else
-                return false;
-        }
 
         public static void PathChooser(Settings setHnd, IniFile iniHnd)
         {
@@ -177,7 +170,8 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PreGameLauncherWaitTime") && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("ForceLauncher")
                     && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy")
-                    && iniHnd.KeyExists("ElevateExternals") && iniHnd.KeyExists("GameProcessAffinity") && iniHnd.KeyExists("PostGameLaunchWaitTime"))
+                    && iniHnd.KeyExists("GameProcessAffinity") && iniHnd.KeyExists("PostGameCommandWaitTime") && iniHnd.KeyExists("GameProcessPriority")
+                    && iniHnd.KeyExists("ElevateExternals"))
                     //&& iniHnd.KeyExists("ElevateExternals"))
                     return true;
                 else
@@ -221,10 +215,44 @@ namespace OriginSteamOverlayLauncher
             else if (!iniHnd.KeyExists(subKey))
             {// edge case where the contents change before program closes
                 iniHnd.Write(subKey, writeKey, keyName);
-                return String.Empty;
             }
-            else
-                return String.Empty;
+
+            return String.Empty;
+        }
+
+        public static ProcessPriorityClass ValidatePriority(IniFile iniHnd, String writeKey, String subKey, String keyName)
+        {// reusable key validator for ini strings
+            /*
+             * Takes:
+             *     A ref to the IniFile: iniHnd
+             *     A string to use as a default: writeKey
+             *     A string key to modify in the INI: subKey
+             *     A string master-key to modify in the INI: keyName
+             */
+            if (iniHnd.KeyPopulated(subKey, keyName))
+            {// return empty if empty, or contents if valid
+                string _key = iniHnd.ReadString(subKey, keyName);
+                if (!String.IsNullOrEmpty(_key))
+                {
+                    if (Program.OrdinalContains("Idle", _key))
+                        return ProcessPriorityClass.Idle;
+                    else if (Program.OrdinalContains("BelowNormal", _key))
+                        return ProcessPriorityClass.BelowNormal;
+                    else if (Program.OrdinalContains("AboveNormal", _key))
+                        return ProcessPriorityClass.AboveNormal;
+                    else if (Program.OrdinalContains("High", _key))
+                        return ProcessPriorityClass.High;
+                    else if (Program.OrdinalContains("RealTime", _key))
+                        return ProcessPriorityClass.RealTime;
+                }
+            }
+            else if (!iniHnd.KeyExists(subKey))
+            {// edge case where the contents change before program closes
+                iniHnd.Write(subKey, writeKey, keyName);
+            }
+
+            // accept Windows' default
+            return ProcessPriorityClass.Normal;
         }
 
         public static Int32 ValidateInt(IniFile iniHnd, Int32 writeKey, String subKey, String keyName)
@@ -250,7 +278,7 @@ namespace OriginSteamOverlayLauncher
                 return 0;
         }
 
-        public static Boolean ValidateBool(IniFile iniHnd, Boolean writeKey, Boolean setKey, String subKey, String keyName)
+        public static Boolean ValidateBool(IniFile iniHnd, Boolean writeKey, String subKey, String keyName)
         {// reusable key validator for ini bools
             /*
              * Takes:
@@ -313,9 +341,9 @@ namespace OriginSteamOverlayLauncher
 
             // special case - check launchermode options
             if (iniHnd.KeyPopulated("LauncherMode", "Options")
-                && Settings.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "Normal")
-                || Settings.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "URI")
-                || Settings.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "LauncherOnly"))
+                && Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "Normal")
+                || Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "URI")
+                || Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "LauncherOnly"))
             {
                 /*
                  * "LauncherMode" can have three options:
@@ -350,24 +378,25 @@ namespace OriginSteamOverlayLauncher
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, "PreGameLauncherWaitTime", "Options"); // 12s default wait time
             setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, "PostGameWaitTime", "Options"); // 7s default wait time
-            setHnd.PostGameLaunchWaitTime = ValidateInt(iniHnd, 7, "PostGameLaunchWaitTime", "Options"); // 7s default wait time
+            setHnd.PostGameCommandWaitTime = ValidateInt(iniHnd, 7, "PostGameCommandWaitTime", "Options"); // 7s default wait time
 
             // parse strings into bools
             // Default to closing the previously detected launcher PID
-            setHnd.ReLaunch = ValidateBool(iniHnd, true, setHnd.ReLaunch, "ReLaunch", "Options");
+            setHnd.ReLaunch = ValidateBool(iniHnd, true, "ReLaunch", "Options");
             // Default to closing the detected launcher PID when a game exits
-            setHnd.DoNotClose = ValidateBool(iniHnd, false, setHnd.DoNotClose, "DoNotClose", "Options");
+            setHnd.DoNotClose = ValidateBool(iniHnd, false, "DoNotClose", "Options");
             // Default to not launch LauncherPath separate from GamePath
-            setHnd.ForceLauncher = ValidateBool(iniHnd, false, setHnd.ForceLauncher, "ForceLauncher", "Options");
+            setHnd.ForceLauncher = ValidateBool(iniHnd, false, "ForceLauncher", "Options");
             // Default to leaving the launcher window alone after detecting it
-            setHnd.MinimizeLauncher = ValidateBool(iniHnd, false, setHnd.MinimizeLauncher, "MinimizeLauncher", "Options");
+            setHnd.MinimizeLauncher = ValidateBool(iniHnd, false, "MinimizeLauncher", "Options");
             // Default to not proxying the commandline from a running instance of the game/monitor executable
-            setHnd.CommandlineProxy = ValidateBool(iniHnd, false, setHnd.CommandlineProxy, "CommandlineProxy", "Options");
+            setHnd.CommandlineProxy = ValidateBool(iniHnd, false, "CommandlineProxy", "Options");
             // Default to not running external pre-post processes with elevated privs
-            setHnd.ElevateExternals = ValidateBool(iniHnd, false, setHnd.ElevateExternals, "ElevateExternals", "Options");
+            setHnd.ElevateExternals = ValidateBool(iniHnd, false, "ElevateExternals", "Options");
 
             // Default to no CPU core affinity (internally used as a bitmask - string, int, or hex)
             setHnd.GameProcessAffinity = ValidateBitmask(iniHnd, 0, "GameProcessAffinity", "Options");
+            setHnd.GameProcessPriority = ValidatePriority(iniHnd, String.Empty, "GameProcessPriority", "Options");
 
             if (ValidatePath(setHnd.GamePath))
                 return true; // continue if the GamePath works

@@ -1,4 +1,6 @@
-* b500355 (HEAD -> master, origin/master, origin/HEAD) Added a note about the dot net redist
+* 1d628ad (HEAD -> master) Forgot to remove debug code in ProcessTracking
+* d99da19 (origin/master, origin/HEAD) Implemented CPU affinity and fixed launcher path validation
+* b500355 Added a note about the dot net redist
 * 6a7e344 Code cleanup in ValidateProcTree logic
 * ec98ddc (tag: v1.06l) Update Changelog for v1.06l
 * 6324422 Make sure ValidateInt always returns a positive integer on parse
