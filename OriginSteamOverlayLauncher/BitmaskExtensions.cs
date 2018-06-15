@@ -32,6 +32,9 @@ namespace OriginSteamOverlayLauncher
             catch (ManagementException ex)
             {
                 Program.Logger("EXCEPTION", ex.Message);
+#if DEBUG
+                //throw new Exception(ex.Message);
+#endif
             }
 
             NumberOfPCores = 1;
@@ -64,23 +67,24 @@ namespace OriginSteamOverlayLauncher
         }
 
         public static bool TryParseCoreString(String inputString, out UInt64 result)
-        {// take a string of digits delimited by commas and return a boolean along with a result
+        {// take a string of numbers delimited by commas and return a boolean along with a result
             result = 0;
 
             try
             {
-                char[] _chr = !String.IsNullOrEmpty(inputString) ? inputString.Replace(",", "").ToCharArray() : null;
+                // convert our comma delimited string to an array of ints
+                int[] _nums = Array.ConvertAll(inputString.Split(','), int.Parse);
                 long _result = 0;
 
-                if (_chr.Length > 0)
+                if (_nums.Length > 0)
                 {
-                    for (int i = 0; i <= _chr.Length-1; i++)
+                    for (int i = 0; i <= _nums.Length-1; i++)
                     {
-                        if (Char.IsDigit(_chr[i]))
-                        {
-                            int x = int.Parse(_chr[i].ToString());
-                            _result = i == 0 ? (1 << x) : (1 << x) + _result;
-                        }
+                        /* 
+                         * convert each number item in the array to a bitmask...
+                         * ... then add the previous bitmask together with the current item
+                         */
+                        _result = i == 0 ? (1 << _nums[i]) : (1 << _nums[i]) + _result;
                     }
 
                     if (_result > 0)
@@ -92,8 +96,10 @@ namespace OriginSteamOverlayLauncher
             }
             catch (Exception ex)
             {
-                //Program.Logger("EXCEPTION", ex.Message);
+                Program.Logger("EXCEPTION", ex.Message);
+#if DEBUG
                 throw new Exception(ex.Message);
+#endif
             }
 
             return false;
@@ -108,13 +114,15 @@ namespace OriginSteamOverlayLauncher
 
             // provide shortcuts for common affinity masks (be smart about HT)
             if (Program.StringEquals(bitmask, "DualCore"))
-            {// avoid CPU0 if possible
-                result = _isHT ? (ulong)0xA : (ulong)0x3;
+            {// avoid CPU0 if threaded
+                result = _isHT ? (ulong)0xA : (ulong)0x5;
+                Program.Logger("OSOL", String.Format("Parsed core mask to: {0}", AffinityToCoreString(result)));
                 return true;
             }
             else if (Program.StringEquals(bitmask, "QuadCore"))
             {
-                result = _isHT ? (ulong)0xAA : (ulong)0x15;
+                result = _isHT ? (ulong)0xAA : (ulong)0xF;
+                Program.Logger("OSOL", String.Format("Parsed core mask to: {0}", AffinityToCoreString(result)));
                 return true;
             }
             else if (_isHT && Program.StringEquals(bitmask, "DisableHT"))
@@ -128,6 +136,7 @@ namespace OriginSteamOverlayLauncher
                 }
 
                 result = (UInt64)_aCores;
+                Program.Logger("OSOL", String.Format("Setting core mask to: {0}", AffinityToCoreString(result)));
                 return true;
             }
             else if (!String.IsNullOrEmpty(bitmask) && !Program.StringEquals(bitmask, "DisableHT"))
@@ -142,7 +151,7 @@ namespace OriginSteamOverlayLauncher
                 else if (bitmask.Length > 0
                     && !Program.OrdinalContains(",", bitmask) && UInt64.TryParse(bitmask, out result))
                 {// attempt to parse using ulong conversion
-                    Program.Logger("OSOL", String.Format("Parsed mumber mask to cores: {0}", AffinityToCoreString(result)));
+                    Program.Logger("OSOL", String.Format("Parsed number mask to cores: {0}", AffinityToCoreString(result)));
                 }
                 else if (bitmask.Length > 1
                     && Program.OrdinalContains("0x", bitmask)

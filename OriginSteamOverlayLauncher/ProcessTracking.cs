@@ -106,6 +106,10 @@ namespace OriginSteamOverlayLauncher
             int launcherPID = 0;
             int gamePID = 0;
 
+#if DEBUG
+            //Environment.Exit(0); // bail early to allow debugging
+#endif
+
             /*
              * Launcher Detection
              */

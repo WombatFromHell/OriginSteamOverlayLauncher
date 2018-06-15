@@ -1,4 +1,5 @@
-* 201d1cf (HEAD -> master, origin/master, origin/HEAD) Added ? to the list of help args
+* c51e65b (HEAD -> master, origin/master, origin/HEAD) Help panel revisions to add new INI stubs
+* 201d1cf Added ? to the list of help args
 * 9b18aa6 Implement suiciding OSOL upon request and some code cleanup
 * a78348d Implemented setting game process priority
 * 1d628ad Forgot to remove debug code in ProcessTracking
