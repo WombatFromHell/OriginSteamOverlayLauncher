@@ -1,5 +1,6 @@
-* 1d628ad (HEAD -> master) Forgot to remove debug code in ProcessTracking
-* d99da19 (origin/master, origin/HEAD) Implemented CPU affinity and fixed launcher path validation
+* a78348d (HEAD -> master, origin/master, origin/HEAD) Implemented setting game process priority
+* 1d628ad Forgot to remove debug code in ProcessTracking
+* d99da19 Implemented CPU affinity and fixed launcher path validation
 * b500355 Added a note about the dot net redist
 * 6a7e344 Code cleanup in ValidateProcTree logic
 * ec98ddc (tag: v1.06l) Update Changelog for v1.06l

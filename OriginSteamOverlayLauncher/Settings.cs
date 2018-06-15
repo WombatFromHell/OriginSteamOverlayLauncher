@@ -38,6 +38,7 @@ namespace OriginSteamOverlayLauncher
         public Boolean ElevateExternals { get; set; }
         public Boolean MinimizeLauncher { get; set; }
         public Boolean CommandlineProxy { get; set; }
+        public Boolean TerminateOSOLUponLaunch { get; set; }
 
         // ints for exposing internal timings
         public int PreGameLauncherWaitTime { get; set; }
@@ -131,7 +132,7 @@ namespace OriginSteamOverlayLauncher
                 // integer options (sensible defaults)
                 iniHnd.Write("PreGameLauncherWaitTime", "12", "Options"); //12s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
-                iniHnd.Write("PostGameLaunchWaitTime", "7", "Options"); //7s
+                iniHnd.Write("PostGameCommandWaitTime", "7", "Options"); //7s
                 iniHnd.Write("ProxyTimeout", "3", "Options"); //3s
                 iniHnd.Write("ProcessAcquisitionTimeout", "300", "Options"); //5mins
 
@@ -148,8 +149,12 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("CommandlineProxy", "False", "Options");
                 // Do not attempt to run external pre-post processes with elevated privs
                 iniHnd.Write("ElevateExternals", "False", "Options");
-                // Do not set a CPU affinity mask override
+                // Do not set a CPU affinity mask override by default
                 iniHnd.Write("GameProcessAffinity", String.Empty, "Options");
+                // Do not set a target game process priority by default
+                iniHnd.Write("GameProcessPriority", String.Empty, "Options");
+                // Disable OSOL suicide after game process by default
+                iniHnd.Write("TerminateOSOLUponLaunch", "False", "Options");
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -171,8 +176,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("ForceLauncher")
                     && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy")
                     && iniHnd.KeyExists("GameProcessAffinity") && iniHnd.KeyExists("PostGameCommandWaitTime") && iniHnd.KeyExists("GameProcessPriority")
-                    && iniHnd.KeyExists("ElevateExternals"))
-                    //&& iniHnd.KeyExists("ElevateExternals"))
+                    && iniHnd.KeyExists("ElevateExternals") && iniHnd.KeyExists("TerminateOSOLUponLaunch"))
                     return true;
                 else
                     return false;
@@ -393,6 +397,8 @@ namespace OriginSteamOverlayLauncher
             setHnd.CommandlineProxy = ValidateBool(iniHnd, false, "CommandlineProxy", "Options");
             // Default to not running external pre-post processes with elevated privs
             setHnd.ElevateExternals = ValidateBool(iniHnd, false, "ElevateExternals", "Options");
+            // Default to disallowing OSOL from suiciding after game launch
+            setHnd.TerminateOSOLUponLaunch = ValidateBool(iniHnd, false, "TerminateOSOLUponLaunch", "Options");
 
             // Default to no CPU core affinity (internally used as a bitmask - string, int, or hex)
             setHnd.GameProcessAffinity = ValidateBitmask(iniHnd, 0, "GameProcessAffinity", "Options");

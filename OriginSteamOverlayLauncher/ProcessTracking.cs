@@ -148,6 +148,10 @@ namespace OriginSteamOverlayLauncher
                     // if the user requests it minimize our launcher after detecting it
                     if (setHnd.MinimizeLauncher)
                         Program.MinimizeWindow(launcherProc.MainWindowHandle);
+
+                    // since the user requested it and no game/monitor path is set we should suicide after the launcher
+                    if (String.IsNullOrEmpty(setHnd.GamePath) || String.IsNullOrEmpty(monitorPath) && setHnd.TerminateOSOLUponLaunch)
+                        Environment.Exit(0);
                 }
             }
 
@@ -246,15 +250,22 @@ namespace OriginSteamOverlayLauncher
                     gameProc.ProcessorAffinity = (IntPtr)setHnd.GameProcessAffinity;
                     Program.Logger("OSOL", String.Format("Setting game process CPU affinity to: {0}", BitmaskExtensions.AffinityToCoreString(setHnd.GameProcessAffinity)));
                 }
-                if (!String.IsNullOrEmpty(_procPrio) && !Program.StringEquals(_procPrio, "Normal"))
+                if (!Program.StringEquals(_procPrio, "Normal"))
                 {// we have a custom process priority so let's use it
                     gameProc.PriorityClass = setHnd.GameProcessPriority;
                     Program.Logger("OSOL", String.Format("Setting game process priority to: {0}", setHnd.GameProcessPriority.ToString()));
                 }
 
-                while (Program.IsRunningPID(gamePID))
-                {// spin while game is running
-                    Thread.Sleep(1000);
+                if (setHnd.TerminateOSOLUponLaunch)
+                {// since we've done all that's been asked we can quit out if requested
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    while (Program.IsRunningPID(gamePID))
+                    {// spin while game is running
+                        Thread.Sleep(1000);
+                    }
                 }
 
                 Program.Logger("OSOL", String.Format("The {0} exited, moving on to clean up...", _launchType));
