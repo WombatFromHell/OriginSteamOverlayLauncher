@@ -1,4 +1,6 @@
-* a78348d (HEAD -> master, origin/master, origin/HEAD) Implemented setting game process priority
+* 201d1cf (HEAD -> master, origin/master, origin/HEAD) Added ? to the list of help args
+* 9b18aa6 Implement suiciding OSOL upon request and some code cleanup
+* a78348d Implemented setting game process priority
 * 1d628ad Forgot to remove debug code in ProcessTracking
 * d99da19 Implemented CPU affinity and fixed launcher path validation
 * b500355 Added a note about the dot net redist
