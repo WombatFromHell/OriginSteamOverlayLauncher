@@ -61,8 +61,8 @@ namespace OriginSteamOverlayLauncher
                     Application.EnableVisualStyles(); // enable DPI awareness
                     Application.SetCompatibleTextRenderingDefault(false);
 
-                    if (CliArgExists(args, "help"))
-                    {// display an INI settings overview if run with /help
+                    if (CliArgExists(args, "help") || CliArgExists(args, "?"))
+                    {// display an INI settings overview if run with /help or /?
                         DisplayHelpDialog();
                     }
                     else
