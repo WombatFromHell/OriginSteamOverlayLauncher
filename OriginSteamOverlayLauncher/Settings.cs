@@ -27,6 +27,8 @@ namespace OriginSteamOverlayLauncher
         public String PostGameExec { get; set; }
         public String PostGameExecArgs { get; set; }
         public String DetectedCommandline { get; set; }
+        // special options
+        public UInt64 GameProcessAffinity { get; set; }
 
         // bools for OSOL behavior
         public Boolean ReLaunch { get; set; }
@@ -39,10 +41,11 @@ namespace OriginSteamOverlayLauncher
         // ints for exposing internal timings
         public int PreGameLauncherWaitTime { get; set; }
         public int PostGameWaitTime { get; set; }
+        public int PostGameLaunchWaitTime { get; set; }
         public int ProxyTimeout { get; set; }
         public int ProcessAcquisitionTimeout { get; set; }
         #endregion
-
+        
         #region Helpers
         public String AssemblyPath = System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
 
@@ -135,6 +138,7 @@ namespace OriginSteamOverlayLauncher
                 // integer options (sensible defaults)
                 iniHnd.Write("PreGameLauncherWaitTime", "12", "Options"); //12s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
+                iniHnd.Write("PostGameLaunchWaitTime", "7", "Options"); //7s
                 iniHnd.Write("ProxyTimeout", "3", "Options"); //3s
                 iniHnd.Write("ProcessAcquisitionTimeout", "300", "Options"); //5mins
 
@@ -151,6 +155,8 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("CommandlineProxy", "False", "Options");
                 // Do not attempt to run external pre-post processes with elevated privs
                 iniHnd.Write("ElevateExternals", "False", "Options");
+                // Do not set a CPU affinity mask override
+                iniHnd.Write("GameProcessAffinity", String.Empty, "Options");
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -171,7 +177,8 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PreGameLauncherWaitTime") && iniHnd.KeyExists("PostGameWaitTime") && iniHnd.KeyExists("ProcessAcquisitionTimeout")
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("ForceLauncher")
                     && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy")
-                    && iniHnd.KeyExists("ElevateExternals"))
+                    && iniHnd.KeyExists("ElevateExternals") && iniHnd.KeyExists("GameProcessAffinity") && iniHnd.KeyExists("PostGameLaunchWaitTime"))
+                    //&& iniHnd.KeyExists("ElevateExternals"))
                     return true;
                 else
                     return false;
@@ -187,9 +194,9 @@ namespace OriginSteamOverlayLauncher
                 if (path != String.Empty && File.Exists(path))
                     return true;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Program.Logger("WARNING", String.Format("Path validator failed on: [{0}], because: {1}", path, e.ToString()));
+                Program.Logger("EXCEPTION", String.Format("Path validator failed on: [{0}], because: {1}", path, ex.ToString()));
                 return false;
             }
 
@@ -220,13 +227,12 @@ namespace OriginSteamOverlayLauncher
                 return String.Empty;
         }
 
-        public static Int32 ValidateInt(IniFile iniHnd, Int32 writeKey, Int32 setKey, String subKey, String keyName)
+        public static Int32 ValidateInt(IniFile iniHnd, Int32 writeKey, String subKey, String keyName)
         {// reusable key validator for ini ints
             /*
              * Takes:
              *     A ref to the IniFile: iniHnd
              *     An int to use as the default: writeKey
-             *     A ref to the int to set in the INI: setKey
              *     A string key to modify in the INI: subKey
              *     A string master-key to modify in the INI: keyName
              */
@@ -265,6 +271,31 @@ namespace OriginSteamOverlayLauncher
             }
             else
                 return false;
+        }
+
+        public static UInt64 ValidateBitmask(IniFile iniHnd, UInt64 writeKey, String subKey, String keyName)
+        {// reusable key validator for ini CoreString and ulong masks
+            /*
+             * Takes:
+             *     A ref to the IniFile: iniHnd
+             *     A 64bit unsigned integer to use as the default: writeKey
+             *     A ref to the integer string to set in the INI: setKey
+             *     A string key to modify in the INI: subKey
+             *     A string master-key to modify in the INI: keyName
+             */
+            if (iniHnd.KeyPopulated(subKey, keyName))
+            {// pass to custom TryParse to allow for shortcuts
+                BitmaskExtensions.TryParseAffinity(iniHnd.ReadString(subKey, keyName), out UInt64 _output);
+
+                return _output != 0 ? _output : 0;
+            }
+            else if (!iniHnd.KeyExists(subKey))
+            {// edge case - use writeKey as default (format as CoreString)
+                iniHnd.Write(subKey, BitmaskExtensions.AffinityToCoreString(writeKey), keyName);
+                return writeKey > 0 ? writeKey : 0;
+            }
+            else
+                return 0;
         }
 
         public static bool ValidateINI(Settings setHnd, IniFile iniHnd, String iniFilePath)
@@ -315,10 +346,11 @@ namespace OriginSteamOverlayLauncher
             setHnd.PostGameExecArgs = ValidateString(iniHnd, String.Empty, setHnd.PostGameExecArgs, "PostGameExecArgs", "Options");
 
             // treat ints differently
-            setHnd.ProxyTimeout = ValidateInt(iniHnd, 3, setHnd.ProxyTimeout, "ProxyTimeout", "Options"); // 3s default wait time
-            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, setHnd.PreGameLauncherWaitTime, "PreGameLauncherWaitTime", "Options"); // 12s default wait time
-            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, setHnd.ProcessAcquisitionTimeout, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time
-            setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, setHnd.PostGameWaitTime, "PostGameWaitTime", "Options"); // 7s default wait time
+            setHnd.ProxyTimeout = ValidateInt(iniHnd, 3, "ProxyTimeout", "Options"); // 3s default wait time
+            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, "PreGameLauncherWaitTime", "Options"); // 12s default wait time
+            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time
+            setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, "PostGameWaitTime", "Options"); // 7s default wait time
+            setHnd.PostGameLaunchWaitTime = ValidateInt(iniHnd, 7, "PostGameLaunchWaitTime", "Options"); // 7s default wait time
 
             // parse strings into bools
             // Default to closing the previously detected launcher PID
@@ -333,6 +365,9 @@ namespace OriginSteamOverlayLauncher
             setHnd.CommandlineProxy = ValidateBool(iniHnd, false, setHnd.CommandlineProxy, "CommandlineProxy", "Options");
             // Default to not running external pre-post processes with elevated privs
             setHnd.ElevateExternals = ValidateBool(iniHnd, false, setHnd.ElevateExternals, "ElevateExternals", "Options");
+
+            // Default to no CPU core affinity (internally used as a bitmask - string, int, or hex)
+            setHnd.GameProcessAffinity = ValidateBitmask(iniHnd, 0, "GameProcessAffinity", "Options");
 
             if (ValidatePath(setHnd.GamePath))
                 return true; // continue if the GamePath works

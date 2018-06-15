@@ -69,6 +69,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitmaskExtensions.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

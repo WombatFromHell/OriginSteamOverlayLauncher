@@ -8,6 +8,7 @@ using System.Threading;
 using System.Windows.Forms;
 using System.ComponentModel;
 using System.Management;
+using System.Text;
 
 namespace OriginSteamOverlayLauncher
 {

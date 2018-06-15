@@ -1,4 +1,6 @@
-* ec98ddc (HEAD -> master, origin/master) Update Changelog for v1.06l
+* b500355 (HEAD -> master, origin/master, origin/HEAD) Added a note about the dot net redist
+* 6a7e344 Code cleanup in ValidateProcTree logic
+* ec98ddc (tag: v1.06l) Update Changelog for v1.06l
 * 6324422 Make sure ValidateInt always returns a positive integer on parse
 * 92b2ee5 Removed redundant PreGameOverlayWaitTime option and improved wait logging
 * ae01ec8 Moved PreGameLauncherWaitTime outside of LauncherMode path
@@ -9,7 +11,7 @@
 | * 3957c97 Update README.md
 * | 3634c6c Fixed Win32Exception causing failure to return PID
 |/  
-* ecde9f5 (tag: v1.06j) Bug fixes for CommandlineProxy and Pre-PostGameExec with more code cleanups
+* ecde9f5 Bug fixes for CommandlineProxy and Pre-PostGameExec with more code cleanups
 *   9489414 Merge branch 'master' of github.com:WombatFromHell/OriginSteamOverlayLauncher
 |\  
 | * b19d840 Fix Gitter badge formatting
@@ -19,7 +21,7 @@
 * | aa70c44 Fixed blank LauncherPath exception upon game exit
 * | fcd1aa4 Make OSOL less reliant on LauncherPath when starting up
 |/  
-* c0d1758 (tag: v1.06i) Update our changelog
+* c0d1758 Update our changelog
 * 120ef5d A second attempt at fixing CommandlineProxy behavior for Tarkov
 * a410dfc Move ReLaunch inside ValidatePath and add sanity for DetectedCommandline
 * 5a146ce Fix exception in PostGameWaitTime timeout
@@ -57,7 +59,7 @@
 * 6302177 Updated Battle.net launcher uri string table
 * 47a8f5b Updated Battle.net launcher strings for Destiny 2
 * 83b4e37 (tag: v1.05c) Fixed non-launcher game execution and timing
-* 72d4038 (tag: v1.05b) Push git log output into Changelog.md before builds
+* 72d4038 Push git log output into Changelog.md before builds
 * 00a1dda Add our Changelog.md output to our project build package
 * a735a80 Make INI loading smarter when using old configs
 * 386d3e0 Refactoring of code base and more tuneables Major code cleanup, user tuneable wait times, loosened search timing of launcher process, launcher process is now optional, and pre-launcher event support in URI mode.

@@ -109,9 +109,9 @@ namespace OriginSteamOverlayLauncher
             /*
              * Launcher Detection
              */
-            
-            // only use launcher if CommandlineProxy is not enabled and we have no DetectedCommandline args
-            if (Settings.ValidatePath(setHnd.LauncherPath) && setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
+
+            // only use validated launcher if CommandlineProxy is not enabled, Launcher is not forced, and we have no DetectedCommandline
+            if (Settings.ValidatePath(setHnd.LauncherPath) & (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
             {
                 // obey the user and avoid killing and relaunching the target launcher
                 if (Program.IsRunning(launcherName) && setHnd.ReLaunch)
@@ -135,7 +135,8 @@ namespace OriginSteamOverlayLauncher
                 // loop until we have a valid process handle
                 launcherProc = GetProcessTreeHandle(setHnd, launcherName);
                 launcherPID = launcherProc != null ? launcherProc.Id : 0;
-                
+             
+                if (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
                 if (launcherPID > 0)
                 {
                     // do some waiting based on user tuneables to avoid BPM weirdness
@@ -153,6 +154,12 @@ namespace OriginSteamOverlayLauncher
             /*
              * Game Process Detection
              */
+
+#if DEBUG
+            // DEBUGGING ONLY!
+            Program.Logger("OSOL", String.Format("Setting game process CPU affinity to: {0}", BitmaskExtensions.AffinityToCoreString(setHnd.GameProcessAffinity)));
+            Environment.Exit(0);
+#endif
 
             if (Settings.StringEquals(launcherMode, "Normal"))
             {// only run game ourselves if the user asks
@@ -185,10 +192,9 @@ namespace OriginSteamOverlayLauncher
                     Program.Logger("OSOL", String.Format("Launching URI: {0}", setHnd.LauncherURI));
                     gameProc.Start();
                 }
-                catch (Exception x)
+                catch (Exception ex)
                 {// catch any exceptions and dump to log
-                    Program.Logger("WARNING", String.Format("Failed to launch URI [{0}] double check your launcher installation!", setHnd.LauncherURI));
-                    Program.Logger("EXCEPTION", x.ToString());
+                    Program.Logger("WARNING", String.Format("Failed to launch URI [{0}] double check your launcher installation: {1}", setHnd.LauncherURI, ex.ToString()));
                 }
             }
             
@@ -237,8 +243,17 @@ namespace OriginSteamOverlayLauncher
 
             if (gamePID > 0)
             {
+                // run our post-game launch commands after a sleep
+                Thread.Sleep((setHnd.PostGameLaunchWaitTime - 1) * 1000);
+
+                if (setHnd.GameProcessAffinity > 0)
+                {// use our specified CPU affinity bitmask
+                    gameProc.ProcessorAffinity = (IntPtr)setHnd.GameProcessAffinity;
+                    Program.Logger("OSOL", String.Format("Setting game process CPU affinity to: {0}", BitmaskExtensions.AffinityToCoreString(setHnd.GameProcessAffinity)));
+                }
+
                 while (Program.IsRunningPID(gamePID))
-                {
+                {// spin while game is running
                     Thread.Sleep(1000);
                 }
 
