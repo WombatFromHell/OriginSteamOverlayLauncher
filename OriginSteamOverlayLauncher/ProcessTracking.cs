@@ -89,6 +89,19 @@ namespace OriginSteamOverlayLauncher
             return _retProc; // returns null if nothing matched or we timed out, otherwise reports a validated Process handle
         }
 
+        public static void LaunchProcess(Process proc)
+        {// abstract Process.Start() for exception handling purposes...
+            try
+            {
+                proc.Start();
+            }
+            catch (Exception ex)
+            {
+                Program.Logger("FATAL EXCEPTION", ex.Message);
+                Environment.Exit(0);
+            }
+        }
+
         public void ProcessLauncher(Settings setHnd, IniFile iniHnd)
         {// pass our Settings and IniFile contexts into this workhorse routine
             String launcherName = Path.GetFileNameWithoutExtension(setHnd.LauncherPath);
@@ -128,31 +141,23 @@ namespace OriginSteamOverlayLauncher
                 // ask a non-async delegate to run a process before the launcher
                 Program.ExecuteExternalElevated(setHnd, setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
 
-                if (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
+                if (Program.StringEquals(launcherMode, "URI") && !String.IsNullOrEmpty(setHnd.LauncherURI))
+                {// use URI launching as an exclusive alternative to normal ShellExecute
+                    gameProc.StartInfo.UseShellExecute = true;
+                    gameProc.StartInfo.FileName = setHnd.LauncherURI;
+                    Program.Logger("OSOL", String.Format("Launching URI: {0}", setHnd.LauncherURI));
+
+                    LaunchProcess(gameProc);
+                }
+                else
                 {
                     launcherProc.StartInfo.UseShellExecute = true;
                     launcherProc.StartInfo.FileName = setHnd.LauncherPath;
                     launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
                     launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
-
                     Program.Logger("OSOL", String.Format("Attempting to start the launcher: {0}", setHnd.LauncherPath));
-                    launcherProc.Start();
-                }
 
-                if (Program.StringEquals(launcherMode, "URI"))
-                {
-                    gameProc.StartInfo.UseShellExecute = true;
-                    gameProc.StartInfo.FileName = setHnd.LauncherURI;
-
-                    try
-                    {// we can't control what will happen so try to catch exceptions
-                        Program.Logger("OSOL", String.Format("Launching URI: {0}", setHnd.LauncherURI));
-                        gameProc.Start();
-                    }
-                    catch (Exception ex)
-                    {// catch any exceptions and dump to log
-                        Program.Logger("WARNING", String.Format("Failed to launch URI [{0}] double check your launcher installation: {1}", setHnd.LauncherURI, ex.ToString()));
-                    }
+                    LaunchProcess(launcherProc);
                 }
 
                 // loop until we have a valid process handle
@@ -187,7 +192,7 @@ namespace OriginSteamOverlayLauncher
              */
 
             if (Program.StringEquals(launcherMode, "Normal"))
-            {// only run game ourselves if the user asks
+            {
                 gameProc.StartInfo.UseShellExecute = true;
                 gameProc.StartInfo.FileName = setHnd.GamePath;
                 gameProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.GamePath).ToString();
@@ -197,14 +202,16 @@ namespace OriginSteamOverlayLauncher
                 {// use the saved commandline from DetectedCommandline with GameArgs
                     gameProc.StartInfo.Arguments = setHnd.DetectedCommandline + " " + setHnd.GameArgs;
                     Program.Logger("OSOL", String.Format("Launching game with DetectedCommandline arguments, cmd: {0} {1} {2}", setHnd.GamePath, setHnd.DetectedCommandline, setHnd.GameArgs));
-                    gameProc.Start();
+
+                    LaunchProcess(gameProc);
                 }
                 else if (!setHnd.CommandlineProxy)
                 {// just use the specified GameArgs since CommandlineProxy is disabled
                     Program.Logger("OSOL", String.Format("Launching game, cmd: {0} {1}", setHnd.GamePath, setHnd.GameArgs));
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
-                    gameProc.Start();
-                }       
+
+                    LaunchProcess(gameProc);
+                }
             }
             
             // wait for the GamePath executable up to the ProcessAcquisitionTimeout and use our MonitorPath if the user requests it
@@ -238,7 +245,7 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.GameArgs + " " + _cmdLine;
                     Program.Logger("OSOL", String.Format("Relaunching with proxied commandline, cmd: {0} {1} {2}", setHnd.GamePath, _cmdLine, setHnd.GameArgs));
 
-                    gameProc.Start();
+                    LaunchProcess(gameProc);
                     Thread.Sleep(setHnd.ProxyTimeout * 1000);
 
                     // rebind to relaunched process

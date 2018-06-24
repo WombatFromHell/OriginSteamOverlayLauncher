@@ -242,7 +242,7 @@ namespace OriginSteamOverlayLauncher
             }
             catch (Exception e)
             {
-                Logger("WARNING", String.Format("Process delegate failed on [{0} {1}], due to: {2}", filePath, fileArgs, e.ToString()));
+                Logger("EXCEPTION", String.Format("Process delegate failed on [{0} {1}], due to: {2}", filePath, fileArgs, e.Message));
             }
         }
 
