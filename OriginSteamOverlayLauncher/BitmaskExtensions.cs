@@ -7,7 +7,7 @@ using System.Text;
 
 namespace OriginSteamOverlayLauncher
 {
-    public static class BitmaskExtensions
+    public class BitmaskExtensions
     {
         private static bool IsCPUHyperthreaded(out int NumberOfPCores)
         {// use WMI to return a bool if Logical CPUs do not match CPU Cores

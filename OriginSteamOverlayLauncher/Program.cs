@@ -18,6 +18,8 @@ namespace OriginSteamOverlayLauncher
         // for custom modal support
         [DllImport("User32.dll", CharSet = CharSet.Unicode)]
         public static extern int MessageBox(IntPtr hWnd, string msg, string caption, int type);
+        [DllImport("User32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
         // for BringToFront() support
         [DllImport("user32.dll")]
@@ -27,6 +29,9 @@ namespace OriginSteamOverlayLauncher
         public const int SW_SHOWDEFAULT = 10;
         public const int SW_MINIMIZE = 2;
         public const int SW_SHOW = 5;
+        // for SendMessage support
+        private static uint WM_KEYDOWN = 0x100, WM_KEYUP = 0x101;
+        public static char KEY_ENTER = (char)13;
 
         public static string codeBase = Assembly.GetExecutingAssembly().CodeBase;
         public static string appName = Path.GetFileNameWithoutExtension(codeBase);
@@ -296,6 +301,23 @@ namespace OriginSteamOverlayLauncher
             }
 
             return false;
+        }
+
+        public static bool MessageSendKey(Process proc, char key)
+        {// some windows don't take SendKeys so use the Window Message API instead
+            try
+            {
+                // we need to send two messages per key, KEYDOWN and KEYUP respectively
+                SendMessage(proc.MainWindowHandle, WM_KEYDOWN, (IntPtr)key, IntPtr.Zero);
+                SendMessage(proc.MainWindowHandle, WM_KEYUP, (IntPtr)key, IntPtr.Zero);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Program.Logger("WARNING", ex.Message);
+                return false;
+            }
         }
         #endregion
     }

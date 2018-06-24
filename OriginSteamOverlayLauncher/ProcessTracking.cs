@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace OriginSteamOverlayLauncher
 {
-    class ProcessTracking
+    public class ProcessTracking
     {
         public static int ValidateProcTree(Process[] procTree, int timeout)
         {
@@ -42,7 +42,7 @@ namespace OriginSteamOverlayLauncher
             return 0;
         }
 
-        private static Process GetProcessTreeHandle(Settings setHnd, String procName)
+        public static Process GetProcessTreeHandle(Settings setHnd, String procName)
         {// actively attempt to rebind process by PID via ValidateProcTree()
             int _result = 0;
             Process _retProc = null;
@@ -128,36 +128,59 @@ namespace OriginSteamOverlayLauncher
                 // ask a non-async delegate to run a process before the launcher
                 Program.ExecuteExternalElevated(setHnd, setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs);
 
-                launcherProc.StartInfo.UseShellExecute = true;
-                launcherProc.StartInfo.FileName = setHnd.LauncherPath;
-                launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
-                launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
+                if (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
+                {
+                    launcherProc.StartInfo.UseShellExecute = true;
+                    launcherProc.StartInfo.FileName = setHnd.LauncherPath;
+                    launcherProc.StartInfo.WorkingDirectory = Directory.GetParent(setHnd.LauncherPath).ToString();
+                    launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
 
-                Program.Logger("OSOL", String.Format("Attempting to start the launcher: {0}", setHnd.LauncherPath));
-                launcherProc.Start();
+                    Program.Logger("OSOL", String.Format("Attempting to start the launcher: {0}", setHnd.LauncherPath));
+                    launcherProc.Start();
+                }
+
+                if (Program.StringEquals(launcherMode, "URI"))
+                {
+                    gameProc.StartInfo.UseShellExecute = true;
+                    gameProc.StartInfo.FileName = setHnd.LauncherURI;
+
+                    try
+                    {// we can't control what will happen so try to catch exceptions
+                        Program.Logger("OSOL", String.Format("Launching URI: {0}", setHnd.LauncherURI));
+                        gameProc.Start();
+                    }
+                    catch (Exception ex)
+                    {// catch any exceptions and dump to log
+                        Program.Logger("WARNING", String.Format("Failed to launch URI [{0}] double check your launcher installation: {1}", setHnd.LauncherURI, ex.ToString()));
+                    }
+                }
 
                 // loop until we have a valid process handle
                 launcherProc = GetProcessTreeHandle(setHnd, launcherName);
                 launcherPID = launcherProc != null ? launcherProc.Id : 0;
-             
-                if (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0)
+
                 if (launcherPID > 0)
                 {
                     // do some waiting based on user tuneables to avoid BPM weirdness
                     Program.Logger("OSOL", String.Format("Waiting {0} seconds for potential launcher slowness...", setHnd.PreGameLauncherWaitTime));
                     Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
-
-                    // force the launcher window to activate before the game to avoid BPM hooking issues
                     Program.BringToFront(launcherProc.MainWindowHandle);
+
+                    if (setHnd.SendEnterToLauncher && launcherProc.MainWindowHandle != null)
+                    {// use the Enter-key workaround if the user requests it (thanks dafzor!)
+                        Program.MessageSendKey(launcherProc, Program.KEY_ENTER);
+                        Program.Logger("OSOL", "User requested SETL launcher workaround, so we sent Enter, game should launch presently...");
+                    }
+                    else if (launcherProc.MainWindowHandle == null)
+                    {
+                        Program.Logger("WARNING", "Cannot SetForegroundWindow of Launcher due to hWnd being null, skipping SETL workaround!");
+                    }
+
                     // if the user requests it minimize our launcher after detecting it
                     if (setHnd.MinimizeLauncher)
                         Program.MinimizeWindow(launcherProc.MainWindowHandle);
-
-                    // since the user requested it and no game/monitor path is set we should suicide after the launcher
-                    if (String.IsNullOrEmpty(setHnd.GamePath) || String.IsNullOrEmpty(monitorPath) && setHnd.TerminateOSOLUponLaunch)
-                        Environment.Exit(0);
                 }
-            }
+        }
 
             /*
              * Game Process Detection
@@ -181,23 +204,7 @@ namespace OriginSteamOverlayLauncher
                     Program.Logger("OSOL", String.Format("Launching game, cmd: {0} {1}", setHnd.GamePath, setHnd.GameArgs));
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
                     gameProc.Start();
-                }
-                    
-            }
-            else if (Program.StringEquals(launcherMode, "URI"))
-            {
-                gameProc.StartInfo.UseShellExecute = true;
-                gameProc.StartInfo.FileName = setHnd.LauncherURI;
-                
-                try
-                {// we can't control what will happen so try to catch exceptions
-                    Program.Logger("OSOL", String.Format("Launching URI: {0}", setHnd.LauncherURI));
-                    gameProc.Start();
-                }
-                catch (Exception ex)
-                {// catch any exceptions and dump to log
-                    Program.Logger("WARNING", String.Format("Failed to launch URI [{0}] double check your launcher installation: {1}", setHnd.LauncherURI, ex.ToString()));
-                }
+                }       
             }
             
             // wait for the GamePath executable up to the ProcessAcquisitionTimeout and use our MonitorPath if the user requests it
@@ -262,6 +269,7 @@ namespace OriginSteamOverlayLauncher
 
                 if (setHnd.TerminateOSOLUponLaunch)
                 {// since we've done all that's been asked we can quit out if requested
+                    Program.Logger("OSOL", "User requested self-termination after game launch, exiting now...");
                     Environment.Exit(0);
                 }
                 else

@@ -1,4 +1,5 @@
-* c51e65b (HEAD -> master, origin/master, origin/HEAD) Help panel revisions to add new INI stubs
+* 1c489b6 (HEAD -> master, origin/master, origin/HEAD) Fixes for parsing double-digit ints in affinity mask strings
+* c51e65b Help panel revisions to add new INI stubs
 * 201d1cf Added ? to the list of help args
 * 9b18aa6 Implement suiciding OSOL upon request and some code cleanup
 * a78348d Implemented setting game process priority

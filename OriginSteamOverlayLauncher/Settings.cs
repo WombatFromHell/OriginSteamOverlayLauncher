@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 namespace OriginSteamOverlayLauncher
 {
-    class Settings
+    public class Settings
     {// externalize our config variables for encapsulation
         #region SettingStubs
         // strings for execution paths and arguments
@@ -39,6 +39,7 @@ namespace OriginSteamOverlayLauncher
         public Boolean MinimizeLauncher { get; set; }
         public Boolean CommandlineProxy { get; set; }
         public Boolean TerminateOSOLUponLaunch { get; set; }
+        public Boolean SendEnterToLauncher { get; set; }
 
         // ints for exposing internal timings
         public int PreGameLauncherWaitTime { get; set; }
@@ -124,6 +125,7 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("DetectedCommandline", String.Empty, "Paths");
 
                 // options
+                iniHnd.Write("LauncherMode", "Normal", "Options");
                 iniHnd.Write("PreLaunchExec", String.Empty, "Options");
                 iniHnd.Write("PreLaunchExecArgs", String.Empty, "Options");
                 iniHnd.Write("PostGameExec", String.Empty, "Options");
@@ -155,6 +157,8 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("GameProcessPriority", String.Empty, "Options");
                 // Disable OSOL suicide after game process by default
                 iniHnd.Write("TerminateOSOLUponLaunch", "False", "Options");
+                // Do not send Enter key to Launcher when Launcher hWnd is detected
+                iniHnd.Write("SendEnterToLauncher", "False", "Options");
 
                 Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
@@ -176,7 +180,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("ProxyTimeout") && iniHnd.KeyExists("ReLaunch") && iniHnd.KeyExists("ForceLauncher")
                     && iniHnd.KeyExists("DoNotClose") && iniHnd.KeyExists("MinimizeLauncher") && iniHnd.KeyExists("CommandlineProxy")
                     && iniHnd.KeyExists("GameProcessAffinity") && iniHnd.KeyExists("PostGameCommandWaitTime") && iniHnd.KeyExists("GameProcessPriority")
-                    && iniHnd.KeyExists("ElevateExternals") && iniHnd.KeyExists("TerminateOSOLUponLaunch"))
+                    && iniHnd.KeyExists("ElevateExternals") && iniHnd.KeyExists("TerminateOSOLUponLaunch") && iniHnd.KeyExists("SendEnterToLauncher"))
                     return true;
                 else
                     return false;
@@ -363,10 +367,10 @@ namespace OriginSteamOverlayLauncher
                  *     work properly with the BPM overlay. This is to work around a Steam regression involving
                  *     hooking Origin titles launched through the Origin2 launcher.
                  */
-                setHnd.LauncherMode = iniHnd.ReadString("LauncherMode", "Options");
+                setHnd.LauncherMode = ValidateString(iniHnd, "Normal", setHnd.LauncherMode, "LauncherMode", "Options");
             }
             else
-            {// autocorrect for the user
+            {// auto-correct
                 iniHnd.Write("LauncherMode", "Normal", "Options");
                 setHnd.LauncherMode = "Normal";
             }
@@ -399,6 +403,8 @@ namespace OriginSteamOverlayLauncher
             setHnd.ElevateExternals = ValidateBool(iniHnd, false, "ElevateExternals", "Options");
             // Default to disallowing OSOL from suiciding after game launch
             setHnd.TerminateOSOLUponLaunch = ValidateBool(iniHnd, false, "TerminateOSOLUponLaunch", "Options");
+            // Default to not sending Enter to Launcher window upon detection
+            setHnd.SendEnterToLauncher = ValidateBool(iniHnd, false, "SendEnterToLauncher", "Options");
 
             // Default to no CPU core affinity (internally used as a bitmask - string, int, or hex)
             setHnd.GameProcessAffinity = ValidateBitmask(iniHnd, 0, "GameProcessAffinity", "Options");
