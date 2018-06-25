@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.ComponentModel;
 using System.Management;
 using System.Text;
+using System.Collections.Generic;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -164,6 +165,22 @@ namespace OriginSteamOverlayLauncher
                 proc.Kill();
             }
         }
+        
+        private static String ConvertUnixToDosPath(String path)
+        {
+            string output = "";
+
+            if (OrdinalContains(":/", path))
+            {// look for a unix style full-path
+                // strip escape chars from the beginning and end of path
+                string _path = path.Replace("\\\"", "");
+                // format to dos style
+                output = _path.Replace("/", "\\");
+            }
+
+            // pass back unchanged if no work performed
+            return !String.IsNullOrEmpty(output) ? output : path;
+        }
 
         public static string GetCommandLineToString(Process process, String startPath)
         { // credit to: https://stackoverflow.com/a/40501117
@@ -185,7 +202,11 @@ namespace OriginSteamOverlayLauncher
 
                     if (matchEnum.MoveNext())
                     {// this will always return at most 1 result
-                        cmdLine = matchEnum.Current["CommandLine"]?.ToString();
+                        string _cmdLine = matchEnum.Current["CommandLine"]?.ToString();
+
+                        // unix-style path in target - we need to convert it
+                        if (_cmdLine.Contains(@":/"))
+                            cmdLine = ConvertUnixToDosPath(_cmdLine);
                     }
                 }
 
