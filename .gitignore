@@ -1,5 +1,11 @@
-# explicitly ignore all build directories
-/.vs/
-/.git/
-OriginSteamOverlayLauncher/obj/
-OriginSteamOverlayLauncher/bin/
+# ignore non-build directories
+.vs/
+.git/
+packages/
+TestResults/
+# explicitly exclude build directories
+**/obj
+**/bin
+# exclude user settings
+*.user
+*.suo

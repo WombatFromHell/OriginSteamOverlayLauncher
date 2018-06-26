@@ -1,4 +1,7 @@
-* 929d56b (HEAD -> master, origin/master, origin/HEAD) Code cleanups for ProcessTracking
+* 0934bdb (HEAD -> staging) Ignore NuGet packages
+* 7665d95 Implement some unit tests for Program class
+* 1a1265b (origin/master, origin/HEAD, master) Fixes for CommandlineProxy when detecting unix-style paths (UE4)
+* 929d56b (tag: v1.07b) Code cleanups for ProcessTracking
 * fd4b512 Fixes and a workaround for Battle.net launcher
 * 1c489b6 Fixes for parsing double-digit ints in affinity mask strings
 * c51e65b Help panel revisions to add new INI stubs

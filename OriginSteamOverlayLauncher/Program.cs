@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace OriginSteamOverlayLauncher
 {
-    class Program
+    public class Program
     {
         #region Imports
         // for custom modal support
@@ -105,13 +105,24 @@ namespace OriginSteamOverlayLauncher
         }
 
         #region ProcessHelpers
-        private static bool CliArgExists(string[] args, string ArgName)
-        {// courtesy of: https://stackoverflow.com/a/30569947
-            var singleFound = args.Where(w => w.ToLower() == "/" + ArgName.ToLower()).FirstOrDefault();
+        public static bool CliArgExists(string[] args, string matchArg)
+        {// credit to: https://stackoverflow.com/a/30569947
+            string _argType1 = String.Format("/{0}", matchArg.ToLower());
+            string _argType2 = String.Format("-{0}", matchArg.ToLower());
+
+            // we accept -arg and /arg formats
+            var singleFound = args.Where(
+                    w => Program.StringEquals(w.ToLower(), _argType1)
+                    || Program.StringEquals(w.ToLower(), _argType2)
+                ).FirstOrDefault();
+
             if (singleFound != null)
-                return ArgName.Equals(ArgName.ToLower());
-            else
-                return false;
+            {// ugly equality check here (compare using ordinality)
+                return Program.StringEquals(singleFound, _argType1)
+                || Program.StringEquals(singleFound, _argType2) ? true : false;
+            }
+
+            return false;
         }
 
         public static void Logger(String cause, String message)
@@ -166,7 +177,7 @@ namespace OriginSteamOverlayLauncher
             }
         }
         
-        private static String ConvertUnixToDosPath(String path)
+        public static String ConvertUnixToDosPath(String path)
         {
             string output = "";
 
@@ -294,8 +305,8 @@ namespace OriginSteamOverlayLauncher
                 return false;
         }
 
-        private static string RemoveInPlace(String input, String match)
-        {
+        public static string RemoveInPlace(String input, String match)
+        {// remove matched substring from input string
             if (OrdinalContains(match, input))
             {
                 string _result = input.Replace(match, String.Empty);
