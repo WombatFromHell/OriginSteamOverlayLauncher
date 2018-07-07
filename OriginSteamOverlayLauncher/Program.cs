@@ -164,7 +164,7 @@ namespace OriginSteamOverlayLauncher
         }
 
         public static Process RebindProcessByID(int PID)
-        {
+        {// just a stub
             return Process.GetProcessById(PID);
         }
 
@@ -193,6 +193,29 @@ namespace OriginSteamOverlayLauncher
             return !String.IsNullOrEmpty(output) ? output : path;
         }
 
+        public static bool PathIsURI(String path)
+        {// take a string and check if it's similar to a URI
+            if (!String.IsNullOrEmpty(path) && !String.IsNullOrWhiteSpace(path)
+                && Program.OrdinalContains(@"://", path))
+                return true;
+
+            return false;
+        }
+
+        public static String GetCmdlineFromProcByName(String procName)
+        {// try using Process() to get CommandLine from ...StartInfo.Arguments
+            var _proc = RebindProcessByID(GetRunningPIDByName(procName));
+            var _cmdLine = "";
+
+            if (_proc != null)
+                _cmdLine = _proc.StartInfo.Arguments.ToString();
+
+            if (_cmdLine.Contains(@":/"))
+                _cmdLine = ConvertUnixToDosPath(_cmdLine);
+
+            return !String.IsNullOrEmpty(_cmdLine) ? _cmdLine : String.Empty;
+        }
+
         public static string GetCommandLineToString(Process process, String startPath)
         { // credit to: https://stackoverflow.com/a/40501117
             String cmdLine = String.Empty;
@@ -216,8 +239,10 @@ namespace OriginSteamOverlayLauncher
                         string _cmdLine = matchEnum.Current["CommandLine"]?.ToString();
 
                         // unix-style path in target - we need to convert it
-                        if (_cmdLine.Contains(@":/"))
+                        if (!String.IsNullOrEmpty(_cmdLine) && _cmdLine.Contains(@":/"))
                             cmdLine = ConvertUnixToDosPath(_cmdLine);
+                        else
+                            cmdLine = !String.IsNullOrEmpty(_cmdLine) ? _cmdLine : String.Empty;
                     }
                 }
 

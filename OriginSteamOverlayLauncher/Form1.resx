@@ -121,13 +121,13 @@
     <value>Here is a listing of all valid INI options with recommended defaults:
 
 [Paths]
-LauncherPath=C:\Your Launcher\Launcher.exe		(required!)
-LauncherArgs=Your Launcher Args Here
-LauncherURI=launchproto://launchertarget		(see project Wiki for URI strings)
-GamePath=C:\Your Game\Game.exe				(required!)
+LauncherPath=C:\Your Launcher\Launcher.exe	(required!)
+LauncherArgs=Your Launcher Args Here		(see project Wiki for special cases)
+LauncherURI=launchproto://launchertarget	(see project Wiki for URI strings)
+GamePath=C:\Your Game\Game.exe			(required!)
 GameArgs=Your Game Args Here
-MonitorPath=C:\Your Game\Game To Target.exe		(OSOL will watch for this exe instead of the GamePath, useful for BattleEye)
-DetectedCommandline=					(OSOL stores copied arguments from CommandlineProxy here, see wiki)
+MonitorPath=C:\Your Game\Game To Target.exe	(OSOL will watch for this exe instead of the GamePath, useful for BattleEye)
+DetectedCommandline=				(OSOL stores copied arguments from CommandlineProxy here, see wiki)
 [Options]
 PreLaunchExec=C:\Your PreLauncher\Executable.exe
 PreLaunchExecArgs=Your PreLauncher Executable Args Here

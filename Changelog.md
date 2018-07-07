@@ -1,5 +1,4 @@
-* 0934bdb (HEAD -> staging) Ignore NuGet packages
-* 7665d95 Implement some unit tests for Program class
+* 23ee505 (HEAD -> staging) Implement some unit testing
 * 1a1265b (origin/master, origin/HEAD, master) Fixes for CommandlineProxy when detecting unix-style paths (UE4)
 * 929d56b (tag: v1.07b) Code cleanups for ProcessTracking
 * fd4b512 Fixes and a workaround for Battle.net launcher

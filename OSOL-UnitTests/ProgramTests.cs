@@ -144,5 +144,35 @@ namespace OSOL.UnitTests
 
             Assert.IsFalse(result);
         }
+
+        [TestMethod]
+        public void PathIsURI_IsValid_ReturnsTrue()
+        {
+            var _input1 = "battlenet://SC2/";
+            var _input2 = "battlenet://Pro/";
+            var _input3 = "battlenet://WoW/";
+
+            var result1 = Program.PathIsURI(_input1);
+            var result2 = Program.PathIsURI(_input2);
+            var result3 = Program.PathIsURI(_input3);
+            var result = result1 && result2 && result3;
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void PathIsURI_IsNotValid_ReturnsFalse()
+        {
+            var _input1 = "a:/unixstyle/path";
+            var _input2 = "/b/another/unixstyle/path";
+            var _input3 = "proto;//stuff/";
+
+            var result1 = Program.PathIsURI(_input1);
+            var result2 = Program.PathIsURI(_input2);
+            var result3 = Program.PathIsURI(_input3);
+            var result = result1 || result2 || result3;
+
+            Assert.IsFalse(result);
+        }
     }
 }
