@@ -347,7 +347,6 @@ namespace OriginSteamOverlayLauncher
             // special case - check launchermode options
             if (iniHnd.KeyPopulated("LauncherMode", "Options")
                 && Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "Normal")
-                || Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "Mode1")
                 || Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "URI")
                 || Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "LauncherOnly"))
             {
