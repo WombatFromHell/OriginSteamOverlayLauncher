@@ -1,4 +1,11 @@
-# OSOL (O.rigin S.team O.verlay L.auncher) [![Join the chat at https://gitter.im/OriginSteamOverlayLauncher/Lobby](https://badges.gitter.im/OriginSteamOverlayLauncher/Lobby.svg)](https://gitter.im/OriginSteamOverlayLauncher/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# OSOL (O.rigin S.team O.verlay L.auncher)
+
+Why should I try OSOL
+=====================
+If you've tried using the Steam Controller (or any other Steam Input supported device) from a couch with a third-party non-Steam game (like with games on Battle.net, Origin, or UPlay) then you know how annoying this combination can be. OSOL was created to make this process significantly more friendly while also providing additional functionality not typically available using other tools (CPU affinity, process priority, and pre/post launch command execution).
+
+Aside from the most common mainstream launchers mentioned previously OSOL is also compatible with the vast majority of emulators and even some MMORPG/MMOFPS launchers. See the [OSOL project wiki](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki) for more details about this and other application specific notes.
+
 
 How To Install/Uninstall
 ========================
@@ -8,9 +15,9 @@ This wrapper requires no installation other than copying it into the directory o
 How To Use
 ==========
 * Place the "OriginSteamOverlayLauncher.exe" file in the directory with the game executable you wish to launch through Origin (you may rename it to whatever you wish).
-* Run OSOL from this directory once, it will ask for paths to your Game and Launcher executables.
-* Go into Steam and add the OriginSteamOverlayLauncher.exe (or whatever you named it) as a Non-Steam Game, selecting it from the directory you chose to place it in.
-* Rename the shortcut in Steam to the name of the game in your launcher so you can retrieve Steam Community profiles.
+* Run OSOL from this directory once, it will ask for paths to your Game and Launcher executables (a game path is required).
+* Go into Steam and add the OriginSteamOverlayLauncher.exe (or whatever you named it) as a Non-Steam Game - selecting it from the directory you chose to place it in.
+* Rename the non-Steam game shortcut inside Steam to the name of the game in your launcher so you can retrieve Steam Community profiles.
 * Launch the shortcut you've created in Steam and OSOL should run the launcher and then the game, and if everything went well Steam Overlay should appear in-game.
 
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using OriginSteamOverlayLauncher;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Diagnostics;
+using System.IO;
 
 namespace OSOL.UnitTests
 {
@@ -173,6 +173,19 @@ namespace OSOL.UnitTests
             var result = result1 || result2 || result3;
 
             Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void RemoveInPlace_ValidMatch_ReturnsTrue()
+        {
+            // typical use-case where we're grabbing only the cmdline args
+            var _container = "\\\"C:\\Program Files (x86)\\Steam\\steamapps\\common\\TestPath\\TestGame.exe\\\" -arg0 /Arg1 -ARG2";
+            var _match = "\\\"C:\\Program Files (x86)\\Steam\\steamapps\\common\\TestPath\\TestGame.exe\\\" ";
+
+            var _output = Program.RemoveInPlace(_container, _match);
+            var result = !String.IsNullOrEmpty(_output);
+
+            Assert.IsTrue(result);
         }
     }
 }
