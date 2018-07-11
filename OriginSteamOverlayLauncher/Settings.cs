@@ -28,7 +28,7 @@ namespace OriginSteamOverlayLauncher
         public String PostGameExecArgs { get; set; }
         public String DetectedCommandline { get; set; }
         // special options
-        public UInt64 GameProcessAffinity { get; set; }
+        public Int64 GameProcessAffinity { get; set; }
         public ProcessPriorityClass GameProcessPriority { get; set; }
 
         // bools for OSOL behavior
@@ -322,7 +322,7 @@ namespace OriginSteamOverlayLauncher
                 return false;
         }
 
-        public static UInt64 ValidateBitmask(IniFile iniHnd, UInt64 writeKey, String subKey, String keyName)
+        public static Int64 ValidateBitmask(IniFile iniHnd, Int64 writeKey, String subKey, String keyName)
         {// reusable key validator for ini CoreString and ulong masks
             /*
              * Takes:
@@ -334,7 +334,7 @@ namespace OriginSteamOverlayLauncher
              */
             if (iniHnd.KeyPopulated(subKey, keyName))
             {// pass to custom TryParse to allow for shortcuts
-                BitmaskExtensions.TryParseAffinity(iniHnd.ReadString(subKey, keyName), out UInt64 _output);
+                BitmaskExtensions.TryParseAffinity(iniHnd.ReadString(subKey, keyName), out long _output);
 
                 return _output != 0 ? _output : 0;
             }

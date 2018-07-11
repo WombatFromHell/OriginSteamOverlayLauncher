@@ -1,7 +1,6 @@
 ﻿using System;
 using OriginSteamOverlayLauncher;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
 
 namespace OSOL.UnitTests
 {

@@ -1,4 +1,5 @@
-* 2df305e (HEAD -> staging, origin/staging) Just list our options to be validated cleanly for readability
+* 928f8de (HEAD -> staging) Some more unit tests for Program class
+* 2df305e (origin/staging) Just list our options to be validated cleanly for readability
 * 67f72bd Remove a typo in validated INI options
 * 8a5f748 Implemented launcher type auto-detection
 * 23ee505 Implement some unit testing
