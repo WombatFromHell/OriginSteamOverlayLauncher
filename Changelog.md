@@ -1,9 +1,10 @@
-* 928f8de (HEAD -> staging) Some more unit tests for Program class
-* 2df305e (origin/staging) Just list our options to be validated cleanly for readability
+* e32b5b5 (HEAD -> staging, origin/staging, origin/master, origin/HEAD, master) Unit tests for BitmaskExtensions and bug fixes
+* 928f8de Some more unit tests for Program class
+* 2df305e Just list our options to be validated cleanly for readability
 * 67f72bd Remove a typo in validated INI options
 * 8a5f748 Implemented launcher type auto-detection
 * 23ee505 Implement some unit testing
-* 1a1265b (origin/master, origin/HEAD, master) Fixes for CommandlineProxy when detecting unix-style paths (UE4)
+* 1a1265b Fixes for CommandlineProxy when detecting unix-style paths (UE4)
 * 929d56b (tag: v1.07b) Code cleanups for ProcessTracking
 * fd4b512 Fixes and a workaround for Battle.net launcher
 * 1c489b6 Fixes for parsing double-digit ints in affinity mask strings

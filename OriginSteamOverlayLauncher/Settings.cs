@@ -33,6 +33,7 @@ namespace OriginSteamOverlayLauncher
 
         // bools for OSOL behavior
         public Boolean ReLaunch { get; set; }
+        public Boolean SkipLauncher { get; set; }
         public Boolean DoNotClose { get; set; }
         public Boolean ForceLauncher { get; set; }
         public Boolean ElevateExternals { get; set; }
@@ -138,8 +139,10 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("ProcessAcquisitionTimeout", "300", "Options"); //5mins
 
                 // options as parsed strings
-                //Kill and relaunch detected launcher PID before game
+                // Kill and relaunch detected launcher PID before game
                 iniHnd.Write("ReLaunch", "True", "Options");
+                // Do not skip executing LauncherPath by default
+                iniHnd.Write("SkipLauncher", "False", "Options");
                 // Do not kill detected launcher PID after game exits
                 iniHnd.Write("DoNotClose", "False", "Options");
                 // Do not launch LauncherPath separate from GamePath
@@ -185,6 +188,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("ProcessAcquisitionTimeout")
                     && iniHnd.KeyExists("ProxyTimeout") 
                     && iniHnd.KeyExists("ReLaunch") 
+                    && iniHnd.KeyExists("SkipLauncher")
                     && iniHnd.KeyExists("ForceLauncher")
                     && iniHnd.KeyExists("DoNotClose") 
                     && iniHnd.KeyExists("MinimizeLauncher") 
@@ -404,6 +408,8 @@ namespace OriginSteamOverlayLauncher
             // parse strings into bools
             // Default to closing the previously detected launcher PID
             setHnd.ReLaunch = ValidateBool(iniHnd, true, "ReLaunch", "Options");
+            // Default to execute LauncherPath (if defined)
+            setHnd.SkipLauncher = ValidateBool(iniHnd, false, "SkipLauncher", "Options");
             // Default to closing the detected launcher PID when a game exits
             setHnd.DoNotClose = ValidateBool(iniHnd, false, "DoNotClose", "Options");
             // Default to not launch LauncherPath separate from GamePath

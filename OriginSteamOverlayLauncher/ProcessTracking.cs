@@ -209,7 +209,7 @@ namespace OriginSteamOverlayLauncher
                 Environment.Exit(0);
             }
         }
-
+        
         public void ProcessLauncher(Settings setHnd, IniFile iniHnd)
         {// pass our Settings and IniFile contexts into this workhorse routine
             String launcherName = Path.GetFileNameWithoutExtension(setHnd.LauncherPath);
@@ -234,22 +234,23 @@ namespace OriginSteamOverlayLauncher
             /*
              * Launcher Detection:
              * 
-             * 1) Check for LauncherPath - if not set skip to Step 8
-             * 2) Check if LauncherPath is actively running - relaunch via Steam->OSOL
-             * 3) Execute pre-launcher delegate
-             * 4) Execute launcher (using ShellExecute) - use LauncherURI if set (not ShellExecute)
-             * 5) Hand off to GetProcessTreeHandle() for detection
+             * 1) If LauncherPath not set skip to Step 9
+             * 2) If SkipLauncher is set skip to Step 9
+             * 3) Check if LauncherPath is actively running - relaunch via Steam->OSOL
+             * 4) Execute pre-launcher delegate
+             * 5) Execute launcher (using ShellExecute) - use LauncherURI if set (not ShellExecute)
+             * 6) Hand off to GetProcessTreeHandle() for detection
              *    a) GetProcessTreeHandle() loops on timeout until valid process is detected
              *    b) ValidateProcessTree() attempts to validate Process and PID returns
              *    c) Returns Process with correct PID and Process handle
-             * 6) Validate detection return (pass back launcher type case number)
-             * 7) Perform post-launcher behaviors
-             * 8) Continue to game
+             * 7) Validate detection return (pass back launcher type case number)
+             * 8) Perform post-launcher behaviors
+             * 9) Continue to game
              */
 
             #region LauncherDetection
             // only use validated launcher if CommandlineProxy is not enabled, Launcher is not forced, and we have no DetectedCommandline
-            if (Settings.ValidatePath(setHnd.LauncherPath) & (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
+            if (!setHnd.SkipLauncher & Settings.ValidatePath(setHnd.LauncherPath) & (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
             {
                 // check for running instance of launcher (relaunch if required)
                 if (Program.IsRunning(launcherName) && setHnd.ReLaunch)
@@ -266,7 +267,8 @@ namespace OriginSteamOverlayLauncher
                 {// use URI launching as a mutually exclusive alternative to "Normal" launch mode (calls launcher->game)
                     gameProc.StartInfo.UseShellExecute = true;
                     gameProc.StartInfo.FileName = setHnd.LauncherURI;
-                    Program.Logger("OSOL", String.Format("Launching URI: {0}", setHnd.LauncherURI));
+                    gameProc.StartInfo.Arguments = setHnd.GameArgs;
+                    Program.Logger("OSOL", String.Format("Launching URI: {0} {1}", setHnd.LauncherURI, setHnd.GameArgs));
 
                     LaunchProcess(gameProc);
                 }
@@ -289,7 +291,7 @@ namespace OriginSteamOverlayLauncher
                 if (launcherPID > 0 && launcherType > -1)
                 {
                     // do some waiting based on user tuneables to avoid BPM weirdness
-                    Program.Logger("OSOL", String.Format("Waiting {0} seconds for launcher slowness...", setHnd.PreGameLauncherWaitTime));
+                    Program.Logger("OSOL", String.Format("Waiting {0}s for launcher process to load...", setHnd.PreGameLauncherWaitTime));
                     Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
                     Program.BringToFront(launcherProc.MainWindowHandle);
 
@@ -346,6 +348,25 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
 
                     LaunchProcess(gameProc);
+
+                    if (setHnd.SkipLauncher && Settings.ValidatePath(setHnd.LauncherPath))
+                    {// we still need LauncherPath tracking in Normal mode even though we didn't launch it ourselves (if defined)
+                        Program.Logger("OSOL", String.Format("Acquiring launcher handle because we didn't launch it ourselves..."));
+                        launcherProc = GetProcessTreeHandle(setHnd, launcherName, ref launcherType);
+                        launcherPID = launcherProc != null ? launcherProc.Id : 0;
+
+                        if (launcherPID > 0 && launcherType > -1)
+                        {
+                            // do some waiting based on user tuneables to avoid BPM weirdness
+                            Program.Logger("OSOL", String.Format("Waiting {0}s for launcher process to load...", setHnd.PreGameLauncherWaitTime));
+                            Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
+                            Program.BringToFront(launcherProc.MainWindowHandle);
+
+                            // if the user requests it minimize our launcher after detecting it
+                            if (setHnd.MinimizeLauncher)
+                                Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                        }
+                    }
                 }
             }
 
