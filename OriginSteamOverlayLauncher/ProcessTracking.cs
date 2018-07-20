@@ -123,6 +123,7 @@ namespace OriginSteamOverlayLauncher
             if (procChildren == 1 && !procTree[0].HasExited 
                 && procTree[0].MainWindowHandle != IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0)
             {
+                procTree[0].Refresh();
                 return procTree[0].Id; // just return the PID of the parent
             }
             else if (procChildren > 1)
@@ -130,6 +131,7 @@ namespace OriginSteamOverlayLauncher
                 for (int i = 0; i < procChildren; i++)
                 {// iterate through each process in the tree and determine which process we should bind to
                     var proc = procTree[i];
+                    proc.Refresh();
 
                     if (proc.Id > 0 && !proc.HasExited)
                     {
@@ -142,6 +144,13 @@ namespace OriginSteamOverlayLauncher
                             return procTree[0].Id;
                         }
                     }
+                }
+
+                for (int j = 0; j < procChildren; j++)
+                {// fall back to finding the ModuleHandle (breaks window messages)
+                    var proc = procTree[j];
+                    if (proc.Id > 0 && proc.MainWindowHandle == IntPtr.Zero && proc.MainModule != null && (long)proc.Handle > 0)
+                        return proc.Id;
                 }
             }
 
@@ -190,6 +199,10 @@ namespace OriginSteamOverlayLauncher
                     _retProc = Program.RebindProcessByID(_result);
                     processType = DetectWindowType(_retProc); // pass our process type out by ref
                     Program.Logger("OSOL", String.Format("Bound to a valid process at PID: {0} [{1}] in {2} seconds", _result, String.Format("{0}.exe", procName), sanity_counter));
+
+                    if (processType == -1)
+                        Program.Logger("WARNING", String.Format("Could not find MainWindowHandle of PID [{0}], fell back to ModuleHandle instead...", _retProc.Id));
+
                     break;
                 }
             }
@@ -288,16 +301,19 @@ namespace OriginSteamOverlayLauncher
                 launcherProc = GetProcessTreeHandle(setHnd, launcherName, ref launcherType);
                 launcherPID = launcherProc != null ? launcherProc.Id : 0;
 
-                if (launcherPID > 0 && launcherType > -1)
+                if (launcherPID > 0)
                 {
                     // do some waiting based on user tuneables to avoid BPM weirdness
                     Program.Logger("OSOL", String.Format("Waiting {0}s for launcher process to load...", setHnd.PreGameLauncherWaitTime));
                     Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
-                    Program.BringToFront(launcherProc.MainWindowHandle);
 
-                    // if the user requests it minimize our launcher after detecting it
-                    if (setHnd.MinimizeLauncher)
-                        Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                    if (launcherType > -1)
+                    {// we can only send window messages if we have a window handle
+                        Program.BringToFront(launcherProc.MainWindowHandle);
+                        if (setHnd.MinimizeLauncher)
+                            Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                    }
+                    
                 }
             }
             #endregion
@@ -355,16 +371,18 @@ namespace OriginSteamOverlayLauncher
                         launcherProc = GetProcessTreeHandle(setHnd, launcherName, ref launcherType);
                         launcherPID = launcherProc != null ? launcherProc.Id : 0;
 
-                        if (launcherPID > 0 && launcherType > -1)
+                        if (launcherPID > 0)
                         {
                             // do some waiting based on user tuneables to avoid BPM weirdness
                             Program.Logger("OSOL", String.Format("Waiting {0}s for launcher process to load...", setHnd.PreGameLauncherWaitTime));
                             Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
-                            Program.BringToFront(launcherProc.MainWindowHandle);
 
-                            // if the user requests it minimize our launcher after detecting it
-                            if (setHnd.MinimizeLauncher)
-                                Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                            if (launcherType > -1)
+                            {// we can only send window messages if we have a window handle
+                                Program.BringToFront(launcherProc.MainWindowHandle);
+                                if (setHnd.MinimizeLauncher)
+                                    Program.MinimizeWindow(launcherProc.MainWindowHandle);
+                            }
                         }
                     }
                 }

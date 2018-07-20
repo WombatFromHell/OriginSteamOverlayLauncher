@@ -1,4 +1,5 @@
-* e32b5b5 (HEAD -> staging, origin/staging, origin/master, origin/HEAD, master) Unit tests for BitmaskExtensions and bug fixes
+* 413eef6 (HEAD -> staging, origin/staging) Implemented SkipLauncher option and GameArgs for URI mode
+* e32b5b5 (origin/master, origin/HEAD, master) Unit tests for BitmaskExtensions and bug fixes
 * 928f8de Some more unit tests for Program class
 * 2df305e Just list our options to be validated cleanly for readability
 * 67f72bd Remove a typo in validated INI options
