@@ -1,4 +1,5 @@
-* 413eef6 (HEAD -> staging, origin/staging) Implemented SkipLauncher option and GameArgs for URI mode
+* 353f904 (HEAD -> staging, origin/staging) Improved process detection for hidden windows
+* 413eef6 Implemented SkipLauncher option and GameArgs for URI mode
 * e32b5b5 (origin/master, origin/HEAD, master) Unit tests for BitmaskExtensions and bug fixes
 * 928f8de Some more unit tests for Program class
 * 2df305e Just list our options to be validated cleanly for readability
