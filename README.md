@@ -17,8 +17,8 @@ How To Use
 * Unpack the OSOL .exe file from the OSOL archive into the game directory (where the game's executable is located for example).
 * Run the OSOL .exe file from this directory and it will prompt you to choose the path to your game executable (required) and the game launcher (which is optional).
 * Add the OSOL .exe to Steam as a non-Steam game by clicking the "Add a game" button on the bottom left of the Steam window, clicking "Add a Non-Steam Game" and selecting the OSOL .exe file in the path chooser.
-* Name this new non-Steam game shortcut of OSOL (in Steam) whatever you like (such as your game's name)
-* Run this non-Steam game shortcut from the Steam library as any other Steam game and the Steam overlay and third-party overlay should show up in-game (if enabled)
+* Name this new non-Steam game shortcut of OSOL (in Steam) whatever you like (such as your game's name).
+* Run this non-Steam game shortcut from the Steam library as any other Steam game and the Steam overlay and third-party overlay should show up in-game (if enabled).
 * Optional: for advanced functionality or compatibility options for particular launchers see the OSOL Wiki [FAQ page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki).
 
 
