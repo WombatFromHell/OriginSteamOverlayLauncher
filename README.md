@@ -14,11 +14,12 @@ This wrapper requires no installation other than copying it into the directory o
 
 How To Use
 ==========
-* Place the "OriginSteamOverlayLauncher.exe" file in the directory with the game executable you wish to launch through Origin (you may rename it to whatever you wish).
-* Run OSOL from this directory once, it will ask for paths to your Game and Launcher executables (a game path is required).
-* Go into Steam and add the OriginSteamOverlayLauncher.exe (or whatever you named it) as a Non-Steam Game - selecting it from the directory you chose to place it in.
-* Rename the non-Steam game shortcut inside Steam to the name of the game in your launcher so you can retrieve Steam Community profiles.
-* Launch the shortcut you've created in Steam and OSOL should run the launcher and then the game, and if everything went well Steam Overlay should appear in-game.
+* Unpack the OSOL .exe file from the OSOL archive into the game directory (where the game's executable is located for example).
+* Run the OSOL .exe file from this directory and it will prompt you to choose the path to your game executable (required) and the game launcher (which is optional).
+* Add the OSOL .exe to Steam as a non-Steam game by clicking the "Add a game" button on the bottom left of the Steam window, clicking "Add a Non-Steam Game" and selecting the OSOL .exe file in the path chooser.
+* Name this new non-Steam game shortcut of OSOL (in Steam) whatever you like (such as your game's name)
+* Run this non-Steam game shortcut from the Steam library as any other Steam game and the Steam overlay and third-party overlay should show up in-game (if enabled)
+* Optional: for advanced functionality or compatibility options for particular launchers see the OSOL Wiki [FAQ page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki).
 
 
 Notes
