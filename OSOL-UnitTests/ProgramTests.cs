@@ -13,7 +13,7 @@ namespace OSOL.UnitTests
             var _cmdline1 = " -arg0 -arg1 -arg2 -TEST_AUTH_STRING=0123456789";
             var _cmdline2 = " -arg0 -arg1 -arg2 -TEST_AUTH_STRING=0123456789";
 
-            var result = Program.CompareCommandlines(_cmdline1, _cmdline2);
+            var result = ProcessUtils.CompareCommandlines(_cmdline1, _cmdline2);
 
             Assert.IsTrue(result);
         }
@@ -24,7 +24,7 @@ namespace OSOL.UnitTests
             var _cmdline1 = " -arg0 -arg1 -arg2 -TEST_AUTH_STRING=9876543210";
             var _cmdline2 = " -arg0 -arg1 -arg2 -TEST_AUTH_STRING=0123456789";
 
-            var result = Program.CompareCommandlines(_cmdline1, _cmdline2);
+            var result = ProcessUtils.CompareCommandlines(_cmdline1, _cmdline2);
 
             Assert.IsFalse(result);
         }
@@ -35,7 +35,7 @@ namespace OSOL.UnitTests
             var _match = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\" ";
             var _cmdline = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\"  -arg0 -arg1 -arg2 -TEST_AUTH_STRING=0123456789";
 
-            var result = String.IsNullOrEmpty(Program.RemoveInPlace(_cmdline, _match));
+            var result = String.IsNullOrEmpty(ProcessUtils.RemoveInPlace(_cmdline, _match));
 
             Assert.IsFalse(result);
         }
@@ -46,7 +46,7 @@ namespace OSOL.UnitTests
             var _match = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\" ";
             var _cmdline = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\" ";
 
-            var result = String.IsNullOrEmpty(Program.RemoveInPlace(_cmdline, _match));
+            var result = String.IsNullOrEmpty(ProcessUtils.RemoveInPlace(_cmdline, _match));
 
             Assert.IsTrue(result);
         }
@@ -57,7 +57,7 @@ namespace OSOL.UnitTests
             var _match = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\" ";
             var _cmdline = "\\\"C:/Sample/Path/To/Game/Game.exe\"  -arg0 -arg1 -arg2 -TEST_AUTH_STRING=0123456789";
 
-            var result = String.IsNullOrEmpty(Program.RemoveInPlace(_cmdline, _match));
+            var result = String.IsNullOrEmpty(ProcessUtils.RemoveInPlace(_cmdline, _match));
 
             Assert.IsTrue(result);
         }
@@ -68,7 +68,7 @@ namespace OSOL.UnitTests
             var _string1 = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\" ";
             var _string2 = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\" ";
 
-            var result = Program.StringEquals(_string1, _string2);
+            var result = ProcessUtils.StringEquals(_string1, _string2);
 
             Assert.IsTrue(result);
         }
@@ -79,7 +79,7 @@ namespace OSOL.UnitTests
             var _string1 = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\" ";
             var _string2 = "\\\"D:\\Another\\Sample\\Path\\To\\Another\\Game\\Game.exe\" ";
 
-            var result = Program.StringEquals(_string1, _string2);
+            var result = ProcessUtils.StringEquals(_string1, _string2);
 
             Assert.IsFalse(result);
         }
@@ -89,7 +89,7 @@ namespace OSOL.UnitTests
         {
             var _cmdline = "\\\"C:/Sample/Path/To/Game/Game.exe\"";
 
-            var result = String.Equals(Program.ConvertUnixToDosPath(_cmdline), _cmdline);
+            var result = String.Equals(ProcessUtils.ConvertUnixToDosPath(_cmdline), _cmdline);
 
             Assert.IsFalse(result);
         }
@@ -99,7 +99,7 @@ namespace OSOL.UnitTests
         {
             var _cmdline = "\\\"C:\\Sample\\Path\\To\\Game\\Game.exe\"";
 
-            var result = String.Equals(Program.ConvertUnixToDosPath(_cmdline), _cmdline);
+            var result = String.Equals(ProcessUtils.ConvertUnixToDosPath(_cmdline), _cmdline);
 
             Assert.IsTrue(result);
         }
@@ -109,7 +109,7 @@ namespace OSOL.UnitTests
         {
             var _args = new string[] { "/arg0", "-ARG1", "/Arg2" }; // try typical permutations
 
-            var result = Program.CliArgExists(_args, "arg1");
+            var result = ProcessUtils.CliArgExists(_args, "arg1");
 
             Assert.IsTrue(result);
         }
@@ -119,7 +119,7 @@ namespace OSOL.UnitTests
         {
             var _args = new string[] { "/arg0", "-ARG1", "/Arg2" };
 
-            var result = Program.CliArgExists(_args, "arg2");
+            var result = ProcessUtils.CliArgExists(_args, "arg2");
 
             Assert.IsTrue(result);
         }
@@ -129,7 +129,7 @@ namespace OSOL.UnitTests
         {
             var _args = new string[] { "/arg0", "-ARG1", "/Arg2" };
 
-            var result = Program.CliArgExists(_args, "arg6");
+            var result = ProcessUtils.CliArgExists(_args, "arg6");
 
             Assert.IsFalse(result);
         }
@@ -139,7 +139,7 @@ namespace OSOL.UnitTests
         {
             var _args = new string[] { "/arg0", "-ARG1", "/Arg2" };
 
-            var result = Program.CliArgExists(_args, "/Arg0");
+            var result = ProcessUtils.CliArgExists(_args, "/Arg0");
 
             Assert.IsFalse(result);
         }
@@ -151,9 +151,9 @@ namespace OSOL.UnitTests
             var _input2 = "battlenet://Pro/";
             var _input3 = "battlenet://WoW/";
 
-            var result1 = Program.PathIsURI(_input1);
-            var result2 = Program.PathIsURI(_input2);
-            var result3 = Program.PathIsURI(_input3);
+            var result1 = ProcessUtils.PathIsURI(_input1);
+            var result2 = ProcessUtils.PathIsURI(_input2);
+            var result3 = ProcessUtils.PathIsURI(_input3);
             var result = result1 && result2 && result3;
 
             Assert.IsTrue(result);
@@ -166,9 +166,9 @@ namespace OSOL.UnitTests
             var _input2 = "/b/another/unixstyle/path";
             var _input3 = "proto;//stuff/";
 
-            var result1 = Program.PathIsURI(_input1);
-            var result2 = Program.PathIsURI(_input2);
-            var result3 = Program.PathIsURI(_input3);
+            var result1 = ProcessUtils.PathIsURI(_input1);
+            var result2 = ProcessUtils.PathIsURI(_input2);
+            var result3 = ProcessUtils.PathIsURI(_input3);
             var result = result1 || result2 || result3;
 
             Assert.IsFalse(result);
@@ -181,7 +181,7 @@ namespace OSOL.UnitTests
             var _container = "\\\"C:\\Program Files (x86)\\Steam\\steamapps\\common\\TestPath\\TestGame.exe\\\" -arg0 /Arg1 -ARG2";
             var _match = "\\\"C:\\Program Files (x86)\\Steam\\steamapps\\common\\TestPath\\TestGame.exe\\\" ";
 
-            var _output = Program.RemoveInPlace(_container, _match);
+            var _output = ProcessUtils.RemoveInPlace(_container, _match);
             var result = !String.IsNullOrEmpty(_output);
 
             Assert.IsTrue(result);

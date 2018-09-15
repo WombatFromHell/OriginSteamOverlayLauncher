@@ -81,10 +81,12 @@
     </Compile>
     <Compile Include="IniFile.cs" />
     <Compile Include="ProcessTracking.cs" />
+    <Compile Include="ProcessUtils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TrayIconUtil.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="WindowUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Changelog.md">

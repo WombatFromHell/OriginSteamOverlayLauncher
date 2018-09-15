@@ -1,10 +1,12 @@
 # OSOL (O.rigin S.team O.verlay L.auncher)
 
-Why should I try OSOL
+Why should I use OSOL
 =====================
-If you've tried using the Steam Controller (or any other Steam Input supported device) from a couch with a third-party non-Steam game (like with games on Battle.net, Origin, or UPlay) then you know how annoying this combination can be. OSOL was created to make this process significantly more friendly while also providing additional functionality not typically available using other tools (CPU affinity, process priority, and pre/post launch command execution).
+If you've tried using the Steam Controller (or any other Steam Input supported device) from a couch with a third-party non-Steam game (like with games on Battle.net, Origin, or UPlay) then you know how annoying this combination can be. OSOL was created to make this process significantly more user-friendly while also providing additional functionality not typically available using other tools (CPU affinity, process priority, and pre/post launch command execution).
 
 Aside from the most common mainstream launchers mentioned previously OSOL is also compatible with the vast majority of emulators and even some MMORPG/MMOFPS launchers. See the [OSOL project wiki](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki) for more details about this and other application specific notes.
+
+**OSOL currently supports the following launchers:** _Battle.net, UPlay, Origin, GOG Galaxy, Epic Games Launcher, Steam, and most Emulators/Master Launchers that call a game's executable file._
 
 
 How To Install/Uninstall
@@ -19,12 +21,12 @@ How To Use
 * Add the OSOL .exe to Steam as a non-Steam game by clicking the "Add a game" button on the bottom left of the Steam window, clicking "Add a Non-Steam Game" and selecting the OSOL .exe file in the path chooser.
 * Name this new non-Steam game shortcut of OSOL (in Steam) whatever you like (such as your game's name).
 * Run this non-Steam game shortcut from the Steam library as any other Steam game and the Steam overlay and third-party overlay should show up in-game (if enabled).
-* Optional: for advanced functionality or compatibility options for particular launchers see the OSOL Wiki [FAQ page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki).
+* **Optional:** _for advanced functionality or compatibility options for particular launchers see the OSOL project [Wiki](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki)._
 
 
 Notes
 =====
-__If you're looking for specific instructions on getting OSOL working with a particular launcher or are having issues with certain behavior you believe is related to OSOL please read the [Project Wiki Page](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki) before making an issue ticket.__
+__If you're looking for specific instructions on getting OSOL working with a particular launcher or are having issues with behavior you believe is related to OSOL please read the [project Wiki](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/wiki) before making an issue ticket.__
 
 If you experience crashes when starting OSOL and are running Windows 7, make sure you install the .NET 4.7.1 Redistributable found [here](https://www.microsoft.com/en-us/download/details.aspx?id=56115).
 
@@ -38,14 +40,14 @@ If you have issues with games not launching with the Steam Overlay and are using
 
 **NOTE:** _This will break FreeSync functionality, but allow the Steam Overlay to hook into Origin games._
 
-**OSOL currently supports the following launchers: _Battle.net, UPlay, Origin, GOG Galaxy, Epic Games Launcher, and most Emulators/Master Launchers_**
-
 If you find a launcher that doesn't work with OSOL please [report it](https://github.com/WombatFromHell/OriginSteamOverlayLauncher/issues/new) so I can consider adding it to the supported launchers list.
 
 
 How To Compile
 ==============
-If you wish to compile this project from github source, you'll need Visual Studio v14+ or Visual Studio Community and target the .NET Framework v4.7.1 for C#. There are no external libraries required. The source code can be modified freely under the MIT license as long as the contributers and creator are given credit.
+If you wish to compile this project from Github source, you'll need Visual Studio v14+ or Visual Studio Community (targetting the .NET Framework v4.7.1 for C#). There are no external libraries required except for the .NET v4.7.1 framework package. The source code can be modified freely under the MIT license as long as the contributers and creator are given credit.
+
+If you wish to contribute via pull-request please make sure to comment your code thoroughly and give plenty of time for your PR to be considered. Forks are acceptable as long as there is little additional code overlap between the fork and my project; if you're unsure feel free to open an issue ticket and we can discuss it if necessary.
 
 
 Credits

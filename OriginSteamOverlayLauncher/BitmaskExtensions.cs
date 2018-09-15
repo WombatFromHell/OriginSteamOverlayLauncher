@@ -21,7 +21,7 @@ namespace OriginSteamOverlayLauncher
                     _pCores += Int32.Parse(item["NumberOfCores"].ToString());
                 }
 
-                Program.Logger("OSOL", String.Format("Physical CPUs: {0} / Logical CPUs: {1}", _pCores, _lCores));
+                ProcessUtils.Logger("OSOL", String.Format("Physical CPUs: {0} / Logical CPUs: {1}", _pCores, _lCores));
                 NumberOfPCores = _pCores > 0 ? _pCores : 1; // share our physical core count externally
 
                 if (_pCores != _lCores)
@@ -31,7 +31,7 @@ namespace OriginSteamOverlayLauncher
             }
             catch (ManagementException ex)
             {
-                Program.Logger("EXCEPTION", ex.Message);
+                ProcessUtils.Logger("EXCEPTION", ex.Message);
 #if DEBUG
                 //throw new Exception(ex.Message);
 #endif
@@ -113,7 +113,7 @@ namespace OriginSteamOverlayLauncher
             }
             catch (Exception ex)
             {
-                Program.Logger("EXCEPTION", ex.Message);
+                ProcessUtils.Logger("EXCEPTION", ex.Message);
 #if DEBUG
                 if (ex is FormatException)
                 {// do not throw if input is invalid - default to 0
@@ -137,19 +137,19 @@ namespace OriginSteamOverlayLauncher
             var maxResult = 0xFFFFFFFF;
 
             // provide shortcuts for common affinity masks (be smart about HT)
-            if (Program.StringEquals(bitmask, "DualCore"))
+            if (ProcessUtils.StringEquals(bitmask, "DualCore"))
             {// avoid CPU0 if threaded
                 result = _isHT ? (long)0xA : (long)0x5;
-                Program.Logger("OSOL", String.Format("Parsed core mask to: {0}", AffinityToCoreString(result)));
+                ProcessUtils.Logger("OSOL", String.Format("Parsed core mask to: {0}", AffinityToCoreString(result)));
                 return true;
             }
-            else if (Program.StringEquals(bitmask, "QuadCore"))
+            else if (ProcessUtils.StringEquals(bitmask, "QuadCore"))
             {
                 result = _isHT ? (long)0xAA : (long)0xF;
-                Program.Logger("OSOL", String.Format("Parsed core mask to: {0}", AffinityToCoreString(result)));
+                ProcessUtils.Logger("OSOL", String.Format("Parsed core mask to: {0}", AffinityToCoreString(result)));
                 return true;
             }
-            else if (_isHT && Program.StringEquals(bitmask, "DisableHT"))
+            else if (_isHT && ProcessUtils.StringEquals(bitmask, "DisableHT"))
             {
                 long _aCores = 0;
 
@@ -160,28 +160,28 @@ namespace OriginSteamOverlayLauncher
                 }
 
                 result = (long)_aCores;
-                Program.Logger("OSOL", String.Format("Setting core mask to: {0}", AffinityToCoreString(result)));
+                ProcessUtils.Logger("OSOL", String.Format("Setting core mask to: {0}", AffinityToCoreString(result)));
                 return true;
             }
-            else if (!String.IsNullOrEmpty(bitmask) && !Program.StringEquals(bitmask, "DisableHT"))
+            else if (!String.IsNullOrEmpty(bitmask) && !ProcessUtils.StringEquals(bitmask, "DisableHT"))
             {// just convert what's there if possible
                 // pass string along to TryParseCoreString first
                 if (bitmask.Length > 1
-                    && Program.OrdinalContains(",", bitmask) && TryParseCoreString(bitmask, out long _stringResult))
+                    && ProcessUtils.OrdinalContains(",", bitmask) && TryParseCoreString(bitmask, out long _stringResult))
                 {// try parsing as a core string - ints delimited by commas
-                    Program.Logger("OSOL", String.Format("Parsed core mask: {0}", AffinityToCoreString(_stringResult)));
+                    ProcessUtils.Logger("OSOL", String.Format("Parsed core mask: {0}", AffinityToCoreString(_stringResult)));
                     result = _stringResult; // copy our output externally
                 }
                 else if (bitmask.Length > 0
-                    && !Program.OrdinalContains(",", bitmask) && Int64.TryParse(bitmask, out result))
+                    && !ProcessUtils.OrdinalContains(",", bitmask) && Int64.TryParse(bitmask, out result))
                 {// attempt to parse using ulong conversion
-                    Program.Logger("OSOL", String.Format("Parsed number mask to cores: {0}", AffinityToCoreString(result)));
+                    ProcessUtils.Logger("OSOL", String.Format("Parsed number mask to cores: {0}", AffinityToCoreString(result)));
                 }
                 else if (bitmask.Length > 1
-                    && Program.OrdinalContains("0x", bitmask)
+                    && ProcessUtils.OrdinalContains("0x", bitmask)
                     && Int64.TryParse(bitmask.Replace("0x", ""), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result))
                 {// last ditch attempt to parse using hex conversion (in ordinal/invariant mode)
-                    Program.Logger("OSOL", String.Format("Parsed hex mask to cores: {0}", AffinityToCoreString(result)));
+                    ProcessUtils.Logger("OSOL", String.Format("Parsed hex mask to cores: {0}", AffinityToCoreString(result)));
                 }
 
                 // sanity check our max return

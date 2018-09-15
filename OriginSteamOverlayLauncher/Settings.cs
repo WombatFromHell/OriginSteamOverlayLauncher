@@ -101,11 +101,11 @@ namespace OriginSteamOverlayLauncher
 
             if (!ValidatePath(setHnd.GamePath))
             {// sanity check in case of cancelling both path inputs
-                Program.Logger("FATAL", "A valid GamePath is required to function!");
+                ProcessUtils.Logger("FATAL", "A valid GamePath is required to function!");
                 Process.GetCurrentProcess().Kill(); // bail!
             }
 
-            Program.MessageBox(IntPtr.Zero, "INI updated, OSOL should be restarted for normal behavior, exiting...", "Notice", (int)0x00001000L);
+            ProcessUtils.MessageBox(IntPtr.Zero, "INI updated, OSOL should be restarted for normal behavior, exiting...", "Notice", (int)0x00001000L);
             Process.GetCurrentProcess().Kill();
         }
 
@@ -160,7 +160,7 @@ namespace OriginSteamOverlayLauncher
                 // Disable OSOL suicide after game process by default
                 iniHnd.Write("TerminateOSOLUponLaunch", "False", "Options");
 
-                Program.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
+                ProcessUtils.Logger("OSOL", "Created the INI file from stubs after we couldn't find it...");
                 return false;
             }
             else
@@ -215,7 +215,7 @@ namespace OriginSteamOverlayLauncher
             }
             catch (Exception ex)
             {
-                Program.Logger("EXCEPTION", String.Format("Path validator failed on: [{0}], because: {1}", path, ex.ToString()));
+                ProcessUtils.Logger("EXCEPTION", String.Format("Path validator failed on: [{0}], because: {1}", path, ex.ToString()));
                 return false;
             }
 
@@ -259,15 +259,15 @@ namespace OriginSteamOverlayLauncher
                 string _key = iniHnd.ReadString(subKey, keyName);
                 if (!String.IsNullOrEmpty(_key))
                 {
-                    if (Program.OrdinalContains("Idle", _key))
+                    if (ProcessUtils.OrdinalContains("Idle", _key))
                         return ProcessPriorityClass.Idle;
-                    else if (Program.OrdinalContains("BelowNormal", _key))
+                    else if (ProcessUtils.OrdinalContains("BelowNormal", _key))
                         return ProcessPriorityClass.BelowNormal;
-                    else if (Program.OrdinalContains("AboveNormal", _key))
+                    else if (ProcessUtils.OrdinalContains("AboveNormal", _key))
                         return ProcessPriorityClass.AboveNormal;
-                    else if (Program.OrdinalContains("High", _key))
+                    else if (ProcessUtils.OrdinalContains("High", _key))
                         return ProcessPriorityClass.High;
-                    else if (Program.OrdinalContains("RealTime", _key))
+                    else if (ProcessUtils.OrdinalContains("RealTime", _key))
                         return ProcessPriorityClass.RealTime;
                 }
             }
@@ -366,9 +366,9 @@ namespace OriginSteamOverlayLauncher
 
             // special case - check launchermode options
             if (iniHnd.KeyPopulated("LauncherMode", "Options")
-                && Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "Normal")
-                || Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "URI")
-                || Program.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "LauncherOnly"))
+                && ProcessUtils.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "Normal")
+                || ProcessUtils.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "URI")
+                || ProcessUtils.StringEquals(iniHnd.ReadString("LauncherMode", "Options"), "LauncherOnly"))
             {
                 /*
                  * "LauncherMode" can have three options:

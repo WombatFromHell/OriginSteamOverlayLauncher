@@ -1,6 +1,9 @@
-* 353f904 (HEAD -> staging, origin/staging) Improved process detection for hidden windows
+* 3418ca5 (HEAD -> staging, origin/master, origin/HEAD, master) Forgot periods in install bullets
+* 1ef2952 Changed install instructions to be more concise
+* 222a138 (tag: v1.07d) Update Changelog for v1.07d point release
+* 353f904 (origin/staging) Improved process detection for hidden windows
 * 413eef6 Implemented SkipLauncher option and GameArgs for URI mode
-* e32b5b5 (origin/master, origin/HEAD, master) Unit tests for BitmaskExtensions and bug fixes
+* e32b5b5 (tag: v1.07c) Unit tests for BitmaskExtensions and bug fixes
 * 928f8de Some more unit tests for Program class
 * 2df305e Just list our options to be validated cleanly for readability
 * 67f72bd Remove a typo in validated INI options
