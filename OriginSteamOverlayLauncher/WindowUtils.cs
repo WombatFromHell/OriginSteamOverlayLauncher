@@ -92,7 +92,6 @@ namespace OriginSteamOverlayLauncher
 
             return className;
         }
-        //
 
         public static bool MatchWindowDetails(String windowTitle, String windowClass, IntPtr hWnd)
         {// match exact ordinal title and class using the provided hWnd

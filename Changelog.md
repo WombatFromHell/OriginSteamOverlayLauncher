@@ -1,7 +1,8 @@
-* 3418ca5 (HEAD -> staging, origin/master, origin/HEAD, master) Forgot periods in install bullets
+* 9751f47 (HEAD -> staging, origin/staging) Code cleanup and abstraction from core Program class
+* 3418ca5 (origin/master, origin/HEAD, master) Forgot periods in install bullets
 * 1ef2952 Changed install instructions to be more concise
 * 222a138 (tag: v1.07d) Update Changelog for v1.07d point release
-* 353f904 (origin/staging) Improved process detection for hidden windows
+* 353f904 Improved process detection for hidden windows
 * 413eef6 Implemented SkipLauncher option and GameArgs for URI mode
 * e32b5b5 (tag: v1.07c) Unit tests for BitmaskExtensions and bug fixes
 * 928f8de Some more unit tests for Program class

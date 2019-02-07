@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -16,7 +17,7 @@ namespace OriginSteamOverlayLauncher
             Thread.Sleep(timeout * 1000); // let process stabilize before gathering data
 
             if (procChildren == 1 && !procTree[0].HasExited 
-                && WindowUtils.HwndFromProc(procTree[0]) != IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0)
+                && procTree[0].Handle != IntPtr.Zero || WindowUtils.HwndFromProc(procTree[0]) != IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0)
             {
                 procTree[0].Refresh();
                 return procTree[0].Id; // just return the PID of the parent
@@ -137,6 +138,8 @@ namespace OriginSteamOverlayLauncher
             // save PIDs that we find
             int launcherPID = 0;
             int gamePID = 0;
+
+            // TODO: IMPLEMENT ASYNC TASK SYSTEM FOR LAUNCHER AND GAME!
 
 
             /*
