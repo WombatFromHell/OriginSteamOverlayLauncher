@@ -154,7 +154,7 @@ namespace OriginSteamOverlayLauncher
                 //
 
                 // just check if we've got a window class and title
-                if (WindowHasDetails(_hWnd))
+                if (WindowHasDetails(_hWnd) || procHnd.Handle != IntPtr.Zero)
                     return processType = 0;
             }
 

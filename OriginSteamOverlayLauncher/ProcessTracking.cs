@@ -17,7 +17,7 @@ namespace OriginSteamOverlayLauncher
             Thread.Sleep(timeout * 1000); // let process stabilize before gathering data
 
             if (procChildren == 1 && !procTree[0].HasExited 
-                && procTree[0].Handle != IntPtr.Zero || WindowUtils.HwndFromProc(procTree[0]) != IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0)
+                && (WindowUtils.HwndFromProc(procTree[0]) != IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0) || procTree[0].Handle != IntPtr.Zero)
             {
                 procTree[0].Refresh();
                 return procTree[0].Id; // just return the PID of the parent
