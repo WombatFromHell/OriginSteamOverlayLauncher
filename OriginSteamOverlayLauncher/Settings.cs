@@ -47,6 +47,7 @@ namespace OriginSteamOverlayLauncher
         public int PostGameCommandWaitTime { get; set; }
         public int ProxyTimeout { get; set; }
         public int ProcessAcquisitionTimeout { get; set; }
+        public int ProcessAcquisitionAttempts { get; set; }
         #endregion
 
         #region Helpers
@@ -132,11 +133,12 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
 
                 // integer options (sensible defaults)
-                iniHnd.Write("PreGameLauncherWaitTime", "12", "Options"); //12s
+                iniHnd.Write("PreGameLauncherWaitTime", "5", "Options"); //5s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
                 iniHnd.Write("PostGameCommandWaitTime", "7", "Options"); //7s
-                iniHnd.Write("ProxyTimeout", "3", "Options"); //3s
+                iniHnd.Write("ProxyTimeout", "2", "Options"); //2s
                 iniHnd.Write("ProcessAcquisitionTimeout", "300", "Options"); //5mins
+                iniHnd.Write("ProcessAcquisitionAttempts", "5", "Options"); //5 attempts * ProxyTimeout (~10s)
 
                 // options as parsed strings
                 // Kill and relaunch detected launcher PID before game
@@ -186,6 +188,7 @@ namespace OriginSteamOverlayLauncher
                     && iniHnd.KeyExists("PreGameLauncherWaitTime") 
                     && iniHnd.KeyExists("PostGameWaitTime") 
                     && iniHnd.KeyExists("ProcessAcquisitionTimeout")
+                    && iniHnd.KeyExists("ProcessAcquisitionAttempts")
                     && iniHnd.KeyExists("ProxyTimeout") 
                     && iniHnd.KeyExists("ReLaunch") 
                     && iniHnd.KeyExists("SkipLauncher")
@@ -399,9 +402,10 @@ namespace OriginSteamOverlayLauncher
             setHnd.PostGameExecArgs = ValidateString(iniHnd, String.Empty, setHnd.PostGameExecArgs, "PostGameExecArgs", "Options");
 
             // treat ints differently
-            setHnd.ProxyTimeout = ValidateInt(iniHnd, 3, "ProxyTimeout", "Options"); // 3s default wait time
-            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 12, "PreGameLauncherWaitTime", "Options"); // 12s default wait time
-            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, "ProcessAcquisitionTimeout", "Options"); // 5mins default wait time
+            setHnd.ProxyTimeout = ValidateInt(iniHnd, 2, "ProxyTimeout", "Options"); // 3s default wait time
+            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 5, "PreGameLauncherWaitTime", "Options"); // 5s default wait time
+            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 300, "ProcessAcquisitionTimeout", "Options"); // 5mins default max wait time
+            setHnd.ProcessAcquisitionAttempts = ValidateInt(iniHnd, 5, "ProcessAcquisitionAttempts", "Options"); // 10s (5*ProxyTimeout) default max wait time
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, "PostGameWaitTime", "Options"); // 7s default wait time
             setHnd.PostGameCommandWaitTime = ValidateInt(iniHnd, 7, "PostGameCommandWaitTime", "Options"); // 7s default wait time
 

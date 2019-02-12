@@ -11,96 +11,53 @@ namespace OriginSteamOverlayLauncher
 {
     public class ProcessTracking
     {
-        public static int ValidateProcTree(Process[] procTree, int timeout)
+        public static int ValidateProcessByName(string procName, int timeout, int maxTimeout, int reattempts)
         {
-            var procChildren = procTree.Count();
-            Thread.Sleep(timeout * 1000); // let process stabilize before gathering data
-
-            if (procChildren == 1 && !procTree[0].HasExited 
-                && (WindowUtils.HwndFromProc(procTree[0]) != IntPtr.Zero && procTree[0].MainWindowTitle.Length > 0) || procTree[0].Handle != IntPtr.Zero)
+            int timeoutCounter = 0, _pid = 0, prevPID = 0, totalTime = 0; ;
+            Process targetProc = null;
+            while (timeoutCounter < maxTimeout)
             {
-                procTree[0].Refresh();
-                return procTree[0].Id; // just return the PID of the parent
-            }
-            else if (procChildren > 1)
-            {// our parent is likely a caller or proxy
-                for (int i = 0; i < procChildren; i++)
-                {// iterate through each process in the tree and determine which process we should bind to
-                    var proc = procTree[i];
-                    proc.Refresh();
-
-                    if (proc.Id > 0 && !proc.HasExited)
+                for (int i = 0; i <= reattempts; i++)
+                {
+                    targetProc = ProcessUtils.GetRunningProcByName(procName);
+                    targetProc.Refresh();
+                    Thread.Sleep(50);
+                    _pid = targetProc.Id;
+                    // wait for attempts to elapse (~10s by default) before validating the PID
+                    if (i == reattempts && _pid > 0 && _pid == prevPID &&
+                        ProcessUtils.IsValidProcess(targetProc))
                     {
-                        if (WindowUtils.HwndFromProc(proc) != (IntPtr)null && !proc.SafeHandle.IsInvalid && proc.MainWindowTitle.Length > 0)
-                        {// probably a real process (launcher or game) because it has a real hwnd and title
-                            return proc.Id;
-                        }
-                        else if (!procTree[0].HasExited && WindowUtils.HwndFromProc(procTree[0]) == (IntPtr)null && procTree[0].MainWindowTitle.Length > 0)
-                        {// child returns an invalid hwnd, return the parent PID instead
-                            return procTree[0].Id;
-                        }
+                        int _time = (totalTime + 50) / 1000;
+                        ProcessUtils.Logger("OSOL", String.Format("Found a valid process at PID: {0} [{1}] in {2} seconds", _pid, String.Format("{0}.exe", procName), _time));
+                        return _pid;
                     }
-                }
 
-                for (int j = 0; j < procChildren; j++)
-                {// fall back to finding the ModuleHandle (breaks window messages)
-                    var proc = procTree[j];
-                    if (proc.Id > 0 && WindowUtils.HwndFromProc(proc) == (IntPtr)null && proc.MainModule != null && (long)proc.Handle > 0)
-                        return proc.Id;
+                    prevPID = _pid;
+                    Thread.Sleep(timeout);
+                    totalTime += timeout+50;
                 }
+                timeoutCounter += totalTime;
             }
-
+            ProcessUtils.Logger("WARNING", String.Format("Could not bind to a valid process after waiting {0} seconds!", timeoutCounter));
             return 0;
         }
 
-        public static Process GetProcessTreeHandle(Settings setHnd, String procName, ref int processType)
-        {// actively attempt to rebind process by PID via ValidateProcTree()
+        public static Process GetProcessTreeHandle(Settings setHnd, string procName, ref int processType)
+        {// actively attempt to rebind process by PID via ValidateProcessByName()
             int _result = 0;
             Process _retProc = null;
-            int sanity_counter = 0;
             processType = -1;
 
             ProcessUtils.Logger("OSOL", String.Format("Searching for valid process by name: {0}", procName));
-            while (sanity_counter < setHnd.ProcessAcquisitionTimeout)
-            {// loop every ProxyTimeout (via ValidateProcTree()) until we get a validated PID by procName
-                var _procTree = ProcessUtils.GetProcessTreeByName(procName);
-                // grab our first matching validated window PID
-                _result = ValidateProcTree(_procTree, setHnd.ProxyTimeout);
-                // update our counter for logging purposes
-                sanity_counter = sanity_counter + setHnd.ProxyTimeout;
+            _result = ValidateProcessByName(procName, setHnd.ProxyTimeout * 1000, setHnd.ProcessAcquisitionTimeout * 1000, setHnd.ProcessAcquisitionAttempts);
 
-                // first check if we should bail early due to timeout
-                if (sanity_counter >= setHnd.ProcessAcquisitionTimeout)
-                {
-                    ProcessUtils.Logger("WARNING", String.Format("Could not bind to a valid process after waiting {0} seconds!", setHnd.ProcessAcquisitionTimeout));
-                    break;
-                }
+            if (_result > 0)
+            {// rebind our process handle using our validated PID
+                _retProc = ProcessUtils.RebindProcessByID(_result);
+                processType = WindowUtils.DetectWindowType(_retProc); // pass our process type out by ref
 
-#if DEBUG
-                if (_procTree.Count() != 0)
-                {
-                    StringBuilder _procOut = new StringBuilder();
-                    _procOut.Append("Trying to bind to detected processes at PIDs: ");
-
-                    foreach (Process proc in _procTree)
-                    {
-                        _procOut.Append(proc.Id + " ");
-                    }
-                    ProcessUtils.Logger("DEBUG", _procOut.ToString());
-                }
-#endif
-
-                if (_result > 0)
-                {// rebind our process handle using our validated PID
-                    _retProc = ProcessUtils.RebindProcessByID(_result);
-                    processType = WindowUtils.DetectWindowType(_retProc); // pass our process type out by ref
-                    ProcessUtils.Logger("OSOL", String.Format("Bound to a valid process at PID: {0} [{1}] in {2} seconds", _result, String.Format("{0}.exe", procName), sanity_counter));
-
-                    if (processType == -1)
-                        ProcessUtils.Logger("WARNING", String.Format("Could not find MainWindowHandle of PID [{0}], fell back to ModuleHandle instead...", _retProc.Id));
-
-                    break;
-                }
+                if (processType == -1)
+                    ProcessUtils.Logger("WARNING", String.Format("Could not find MainWindowHandle of PID [{0}], fell back to ModuleHandle instead...", _retProc.Id));
             }
 
             return _retProc; // returns null if nothing matched or we timed out, otherwise reports a validated Process handle
@@ -208,7 +165,7 @@ namespace OriginSteamOverlayLauncher
                     if (launcherType > -1)
                     {// we can only send window messages if we have a window handle
                         WindowUtils.BringToFront(WindowUtils.HwndFromProc(launcherProc));
-                        if (setHnd.MinimizeLauncher)
+                        if (setHnd.MinimizeLauncher && launcherProc.MainWindowHandle != IntPtr.Zero)
                             WindowUtils.MinimizeWindow(WindowUtils.HwndFromProc(launcherProc));
                     }
                     
@@ -378,7 +335,7 @@ namespace OriginSteamOverlayLauncher
                 Thread.Sleep(1000);
 
                 // resend the message to minimize our launcher
-                if (setHnd.MinimizeLauncher)
+                if (setHnd.MinimizeLauncher && launcherProc.MainWindowHandle != IntPtr.Zero)
                     WindowUtils.MinimizeWindow(WindowUtils.HwndFromProc(launcherProc));
 
                 // let Origin sync with the cloud

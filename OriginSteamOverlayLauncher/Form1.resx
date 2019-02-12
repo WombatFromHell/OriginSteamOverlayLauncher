@@ -133,11 +133,10 @@ PreLaunchExec=C:\Your PreLauncher\Executable.exe
 PreLaunchExecArgs=Your PreLauncher Executable Args Here
 PostGameExec=C:\Your PostGame\Executable.exe
 PostGameExecArgs=Your PostGame Executable Args Here
-PreGameOverlayWaitTime=5			(seconds to wait for overlay after launching launcher)
-PreGameLauncherWaitTime=12			(seconds to wait for launcher before launching game)
+PreGameLauncherWaitTime=5			(seconds to wait for launcher before launching game)
 PostGameWaitTime=7				(seconds to wait after game exits for cloud syncing)
 PostGameCommandWaitTime=7			(seconds to wait before post-game launch commands run)
-ProxyTimeout=5					(seconds to wait for launcher proxy to exit before detecting game PID)
+ProxyTimeout=2					(seconds to wait before attempts to validate process PIDs)
 LauncherMode=Normal				(Normal mode launches the LauncherPath and GamePath)
 LauncherMode=LauncherOnly			(LauncherOnly mode launches only the LauncherPath)
 LauncherMode=URI				(URI mode launches LauncherPath with the argument in LauncherURI)
@@ -150,6 +149,7 @@ CommandlineProxy=False				(set to True to copy token arguments from child game p
 ElevateExternals=False				(set to True to run Pre/PostGameExec with elevated privileges)
 TerminateOSOLUponLaunch=False			(set to True to request OSOL exit upon game/launcher launch)
 GameProcessAffinity=0,1,2,3			(set to a string of digits delimited by commas representing the target CPUs)
-GameProcessPriority=				(can be Idle, BelowNormal, AboveNormal, High, or RealTime)</value>
+GameProcessPriority=				(can be Idle, BelowNormal, AboveNormal, High, or RealTime)
+ProcessAcquisitionAttempts=5                    (number of iterations before determining process validity)</value>
   </data>
 </root>

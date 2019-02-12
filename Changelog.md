@@ -1,5 +1,6 @@
-* 9c22010 (HEAD -> staging) Fixed some games not being detected if their launcher starts minimized
-* 5d2d665 (origin/staging) Bumped version number for point release
+* 1236acc (HEAD -> staging) Reimplemented process acquisition ... also added a user tuneable to allow customizing process wait timer
+* c43d031 (tag: v1.07f, origin/staging) Fixed some games not being detected if their launcher starts minimized
+* 5d2d665 Bumped version number for point release
 * 19f0797 Fixed Epic Games Launcher not being detected in URI mode
 * 9751f47 Code cleanup and abstraction from core Program class
 * 3418ca5 (origin/master, origin/HEAD, master) Forgot periods in install bullets

@@ -62,6 +62,32 @@ namespace OriginSteamOverlayLauncher
                 return 0;
         }
 
+        public static int GetParentProcessByPID(int PID)
+        {
+            int _pid = 0;
+            using (ManagementObject parentProcess = new ManagementObject("win32_process.handle='" + PID.ToString() + "'"))
+            {
+                parentProcess.Get();
+                _pid = Convert.ToInt32(parentProcess["ParentProcessId"]);
+            }
+            return _pid;
+        }
+
+        public static bool IsValidProcess(Process targetProc)
+        {// rough process validation - must have an hwnd or handle
+            if (!targetProc.HasExited &&
+                WindowUtils.HwndFromProc(targetProc) != IntPtr.Zero &&
+                targetProc.MainWindowTitle.Length > 0 ||
+                targetProc.Handle != IntPtr.Zero)
+                return true;
+            return false;
+        }
+
+        public static Process GetRunningProcByName(string procName)
+        {
+            return RebindProcessByID(GetRunningPIDByName(procName));
+        }
+
         public static Process RebindProcessByID(int PID)
         {// just a stub
             return Process.GetProcessById(PID);
