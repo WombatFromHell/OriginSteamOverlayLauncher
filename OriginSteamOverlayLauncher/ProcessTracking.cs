@@ -20,8 +20,6 @@ namespace OriginSteamOverlayLauncher
                 for (int i = 0; i <= reattempts; i++)
                 {
                     targetProc = ProcessUtils.GetRunningProcByName(procName);
-                    targetProc.Refresh();
-                    Thread.Sleep(50);
                     _pid = targetProc.Id;
                     // wait for attempts to elapse (~10s by default) before validating the PID
                     if (i == reattempts && _pid > 0 && _pid == prevPID &&

@@ -75,11 +75,15 @@ namespace OriginSteamOverlayLauncher
 
         public static bool IsValidProcess(Process targetProc)
         {// rough process validation - must have an hwnd or handle
+            if (targetProc == null || targetProc.Id == 0)
+                return false; // sanity check
+
             if (!targetProc.HasExited &&
                 WindowUtils.HwndFromProc(targetProc) != IntPtr.Zero &&
                 targetProc.MainWindowTitle.Length > 0 ||
                 targetProc.Handle != IntPtr.Zero)
                 return true;
+
             return false;
         }
 
