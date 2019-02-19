@@ -1,6 +1,7 @@
-* 011d437 (HEAD -> staging) Shorten the default max process acquisition wait time
+* 84b1b2a (HEAD -> staging, origin/staging) Improvements to process acquisition and monitoring
+* 011d437 Shorten the default max process acquisition wait time
 * 69e7b2b Prevent exceptions when a rebound process is invalid
-* ae3bee2 (origin/staging) Reimplemented process acquisition ... also added a user tuneable to allow customizing process wait timer
+* ae3bee2 Reimplemented process acquisition ... also added a user tuneable to allow customizing process wait timer
 * c43d031 (tag: v1.07f) Fixed some games not being detected if their launcher starts minimized
 * 5d2d665 Bumped version number for point release
 * 19f0797 Fixed Epic Games Launcher not being detected in URI mode

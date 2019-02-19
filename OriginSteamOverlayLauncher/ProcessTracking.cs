@@ -225,7 +225,7 @@ namespace OriginSteamOverlayLauncher
             #endregion
 
             #region WaitForGame
-            if (gameProcObj.ProcessId > 0 && gameProcObj.ProcessType > -1)
+            if (gameProcObj != null && gameProcObj.ProcessId > 0 && gameProcObj.ProcessType > -1)
             {
                 // run our post-game launch commands after a configurable sleep
                 Thread.Sleep((setHnd.PostGameCommandWaitTime - 1) * 1000);
@@ -253,16 +253,12 @@ namespace OriginSteamOverlayLauncher
                         Thread.Sleep(setHnd.ProxyTimeout * 1000);
                     }
                 }
-
-                if (gameProcObj.ProcessRef.HasExited)
-                    ProcessUtils.Logger("OSOL", String.Format("The {0} exited, moving on to clean up after {0}s...", _launchType, setHnd.PostGameWaitTime));
-                else
-                    ProcessUtils.Logger("WARNING", String.Format("Something went wrong while tracking a process: {0}.exe [{1}]", gameProcObj.ProcessName, gameProcObj.ProcessId));
+                ProcessUtils.Logger("OSOL", String.Format("The {0} exited, moving on to clean up after {1}s...", _launchType, setHnd.PostGameWaitTime));
             }
             else
             {
                 ProcessUtils.Logger("WARNING",
-                    String.Format("Could not find a {0} process by name: {1}",
+                    String.Format("Could not find a {0} process by name, exiting: {1}",
                         _launchType,
                         ProcessUtils.StringEquals("monitor", _launchType) ? gameProcObj.ProcessName : monitorName
                     )
