@@ -137,7 +137,7 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PreGameLauncherWaitTime", "5", "Options"); //5s
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //10s
                 iniHnd.Write("PostGameCommandWaitTime", "3", "Options"); //3s
-                iniHnd.Write("ProcessAcquisitionTimeout", "20", "Options"); //20s
+                iniHnd.Write("ProcessAcquisitionTimeout", "30", "Options"); //30s
                 iniHnd.Write("ProcessAcquisitionAttempts", "6", "Options"); //6 attempts * ProxyTimeout (~12s)
 
                 // options as parsed strings
@@ -406,7 +406,7 @@ namespace OriginSteamOverlayLauncher
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 5, "PreGameLauncherWaitTime", "Options");
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, "PostGameWaitTime", "Options");
             setHnd.PostGameCommandWaitTime = ValidateInt(iniHnd, 3, "PostGameCommandWaitTime", "Options");
-            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 20, "ProcessAcquisitionTimeout", "Options");
+            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 30, "ProcessAcquisitionTimeout", "Options");
             setHnd.ProcessAcquisitionAttempts = ValidateInt(iniHnd, 6, "ProcessAcquisitionAttempts", "Options");
 
             // parse strings into bools

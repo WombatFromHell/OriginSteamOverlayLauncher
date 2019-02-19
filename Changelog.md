@@ -1,4 +1,5 @@
-* 84b1b2a (HEAD -> staging, origin/staging) Improvements to process acquisition and monitoring
+* 45d30c0 (HEAD -> staging, origin/staging) Some minor fixes to the game detection loop
+* 84b1b2a Improvements to process acquisition and monitoring
 * 011d437 Shorten the default max process acquisition wait time
 * 69e7b2b Prevent exceptions when a rebound process is invalid
 * ae3bee2 Reimplemented process acquisition ... also added a user tuneable to allow customizing process wait timer

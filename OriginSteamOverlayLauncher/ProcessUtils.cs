@@ -41,7 +41,7 @@ namespace OriginSteamOverlayLauncher
         {
             using (StreamWriter stream = File.AppendText(Program.appName + "_Log.txt"))
             {
-                stream.Write("[{0}] [{1}] {2}\r\n", DateTime.Now.ToUniversalTime(), cause, message);
+                stream.Write("[{0}] [{1}] {2}\r\n", DateTime.Now.ToLocalTime(), cause, message);
             }
         }
 
