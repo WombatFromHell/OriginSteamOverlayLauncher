@@ -80,6 +80,7 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="IniFile.cs" />
+    <Compile Include="ProcessObj.cs" />
     <Compile Include="ProcessTracking.cs" />
     <Compile Include="ProcessUtils.cs" />
     <Compile Include="Program.cs" />

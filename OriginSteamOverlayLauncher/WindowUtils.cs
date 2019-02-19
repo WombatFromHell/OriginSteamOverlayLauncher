@@ -118,7 +118,7 @@ namespace OriginSteamOverlayLauncher
 
         public static IntPtr HwndFromProc(Process procHandle)
         {// just a helper to return an hWnd from a given Process (if it has a window handle)
-            return procHandle.MainWindowHandle != null ? procHandle.MainWindowHandle : (IntPtr)null;
+            return procHandle.MainWindowHandle != null ? procHandle.MainWindowHandle : IntPtr.Zero;
         }
 
         public static int DetectWindowType(Process procHnd)
@@ -126,7 +126,7 @@ namespace OriginSteamOverlayLauncher
             var processType = -1;
             var _hWnd = HwndFromProc(procHnd);
 
-            if (_hWnd != null)
+            if (_hWnd != IntPtr.Zero)
             {// since we've got a window handle let's pass on what we find
                 var _titleComp = "";
                 var _classComp = "";
@@ -157,7 +157,6 @@ namespace OriginSteamOverlayLauncher
                 if (WindowHasDetails(_hWnd) || procHnd.Handle != IntPtr.Zero)
                     return processType = 0;
             }
-
             return processType;
         }
 

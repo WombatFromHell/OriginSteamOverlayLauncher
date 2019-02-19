@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -46,12 +47,9 @@ namespace OriginSteamOverlayLauncher
 
         public static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
 
-        public static bool IsRunningPID(Int64 pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
+        public static bool IsRunningPID(int pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
 
-        public static Process[] GetProcessTreeByName(String procName)
-        {
-            return Process.GetProcessesByName(procName);
-        }
+        public static Process[] GetProcessTreeByName(String procName) { return Process.GetProcessesByName(procName); }
 
         public static int GetRunningPIDByName(String procName)
         {
@@ -199,7 +197,7 @@ namespace OriginSteamOverlayLauncher
             return RemoveInPlace(cmdLine, _parsedPath);
         }
 
-        public static void ExecuteExternalElevated(Settings setHnd, String filePath, String fileArgs)
+        public static void ExecuteExternalElevated(Settings setHnd, String filePath, String fileArgs, int standoffTimer)
         {// generic process delegate for executing pre-launcher/post-game
             try
             {
@@ -216,7 +214,14 @@ namespace OriginSteamOverlayLauncher
                     if (setHnd.ElevateExternals)
                         execProc.StartInfo.Verb = "runas";
 
-                    Logger("OSOL", String.Format("Attempting to run external process: {0} {1}", filePath, fileArgs));
+                    if (standoffTimer > 0)
+                    {
+                        Thread.Sleep(standoffTimer * 1000);
+                        Logger("OSOL", String.Format("Attempting to run external process after {2}s: {0} {1}", filePath, fileArgs, standoffTimer));
+                    }
+                    else
+                        Logger("OSOL", String.Format("Attempting to run external process: {0} {1}", filePath, fileArgs));
+
                     execProc.Start();
                     execProc.WaitForExit(); // idle waiting for outside process to return
                     Logger("OSOL", "External process delegate returned, continuing...");
