@@ -50,11 +50,19 @@ namespace OriginSteamOverlayLauncher
                     Thread.Sleep(1000);
                 }
                 _isw.Stop();
-                ProcessUtils.Logger("OSOL", String.Format("Monitored process exited after {0:0.##}m, attempting to reaquire {1}.exe",
-                    Convert.ToDouble(_isw.ElapsedMilliseconds/1000/60),
+                ProcessUtils.Logger("OSOL", String.Format("Monitored process exited after {0}, attempting to reaquire {1}.exe",
+                    ConvertElapsedToString(_isw.ElapsedMilliseconds),
                     process.ProcessName)
                 );
             }
+        }
+
+        public static String ConvertElapsedToString(long stopwatchElapsed)
+        {
+            double tempSecs = Convert.ToDouble(stopwatchElapsed / 1000);
+            double tempMins = Convert.ToDouble(tempSecs / 60);
+            // return minutes or seconds (if applicable)
+            return tempSecs > 60 ? String.Format("{0:0.##}m", tempMins) : String.Format("{0:0.##}s", tempSecs);
         }
 
         public void ProcessLauncher(Settings setHnd, IniFile iniHnd)
