@@ -1,4 +1,5 @@
-* 4d4f8bb (HEAD -> staging) Use local time for logging and increase acquisition timeout
+* dfa0df7 (HEAD -> staging) Implemented reacquisition of game process if it is respawned within a timeout
+* 4d4f8bb Use local time for logging and increase acquisition timeout
 * 45d30c0 (origin/staging) Some minor fixes to the game detection loop
 * 84b1b2a Improvements to process acquisition and monitoring
 * 011d437 Shorten the default max process acquisition wait time
