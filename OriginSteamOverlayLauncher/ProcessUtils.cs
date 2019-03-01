@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -45,19 +46,70 @@ namespace OriginSteamOverlayLauncher
             }
         }
 
-        public static bool IsRunning(String name) { return Process.GetProcessesByName(name).Any(); }
-
-        public static bool IsRunningPID(int pid) { return Process.GetProcesses().Any(x => x.Id == pid); }
-
-        public static Process[] GetProcessTreeByName(String procName) { return Process.GetProcessesByName(procName); }
-
-        public static int GetRunningPIDByName(String procName)
+        public static bool IsRunningPID(int PID)
         {
-            Process tmpProc = Process.GetProcessesByName(procName).FirstOrDefault();
-            if (tmpProc != null)
-                return tmpProc.Id;
-            else
-                return 0;
+            var _proc = Process.GetProcessById(PID);
+            if (_proc != null && !_proc.HasExited)
+                return true;
+            return false;
+        }
+
+        public static bool IsRunningByName(String exeName)
+        {
+            var _procs = GetProcessesByName(exeName);
+            if (_procs == null) return false;
+
+            var _lastChild = GetLastProcessChild(_procs);
+            if (_procs != null && _lastChild != null && !_lastChild.HasExited)
+                return true;
+
+            return false;
+        }
+
+        public static Process GetLastProcessChild(List<Process> procList)
+        {
+            if (procList != null)
+                return procList.LastOrDefault();
+            return null;
+        }
+
+        public static Process GetLastProcessChildByName(String exeName)
+        {
+            var _procs = GetProcessesByName(exeName);
+            var _lastChild = GetLastProcessChild(_procs);
+            if (_procs != null && _lastChild != null && !_lastChild.HasExited)
+                return _lastChild;
+            return null;
+        }
+
+        public static List<Process> GetProcessesByName(String exeName)
+        {// returns a List() of Process refs from an executable name search via WMI
+            var _query = new SelectQuery(String.Format("SELECT * FROM Win32_Process where Name LIKE '{0}.exe'", exeName));
+            try
+            {
+                using (ManagementObjectSearcher search = new ManagementObjectSearcher(_query))
+                {
+                    var _procs = search.Get();
+                    if (_procs.Count > 0)
+                    {
+                        List<Process> output = new List<Process>();
+                        foreach (ManagementObject proc in _procs)
+                        {
+                            proc.Get();
+                            var procProps = proc.Properties;
+                            int _pid = Convert.ToInt32(procProps["ProcessID"].Value);
+                            // add Process refs to our list that match this executable name
+                            output.Add(Process.GetProcessById(_pid));
+                        }
+                        return output;
+                    }
+                }
+            }
+            catch (ManagementException ex)
+            {
+                // throw away "Not Found" exceptions
+            }
+            return null;
         }
 
         public static int GetParentProcessByPID(int PID)
@@ -83,16 +135,6 @@ namespace OriginSteamOverlayLauncher
                 return true;
 
             return false;
-        }
-
-        public static Process GetRunningProcByName(string procName)
-        {
-            return RebindProcessByID(GetRunningPIDByName(procName));
-        }
-
-        public static Process RebindProcessByID(int PID)
-        {// just a stub
-            return Process.GetProcessById(PID);
         }
 
         public static void KillProcTreeByName(String procName)
@@ -131,7 +173,7 @@ namespace OriginSteamOverlayLauncher
 
         public static String GetCmdlineFromProcByName(String procName)
         {// try using Process() to get CommandLine from ...StartInfo.Arguments
-            var _proc = RebindProcessByID(GetRunningPIDByName(procName));
+            var _proc = GetLastProcessChildByName(procName);
             var _cmdLine = "";
 
             if (_proc != null)
@@ -281,6 +323,19 @@ namespace OriginSteamOverlayLauncher
             }
 
             return false;
+        }
+
+        public static void LaunchProcess(Process proc)
+        {// abstract Process.Start() for exception handling purposes...
+            try
+            {
+                proc.Start();
+            }
+            catch (Exception ex)
+            {
+                ProcessUtils.Logger("FATAL EXCEPTION", ex.Message);
+                Environment.Exit(0);
+            }
         }
     }
 }

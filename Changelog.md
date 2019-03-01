@@ -1,4 +1,5 @@
-* 45d30c0 (HEAD -> staging, origin/staging) Some minor fixes to the game detection loop
+* 4d4f8bb (HEAD -> staging) Use local time for logging and increase acquisition timeout
+* 45d30c0 (origin/staging) Some minor fixes to the game detection loop
 * 84b1b2a Improvements to process acquisition and monitoring
 * 011d437 Shorten the default max process acquisition wait time
 * 69e7b2b Prevent exceptions when a rebound process is invalid

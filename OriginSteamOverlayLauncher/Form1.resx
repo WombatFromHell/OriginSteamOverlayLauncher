@@ -135,12 +135,12 @@ PostGameExec=C:\Your PostGame\Executable.exe
 PostGameExecArgs=Your PostGame Executable Args Here
 PreGameLauncherWaitTime=5			(seconds to wait for launcher before launching game)
 PostGameWaitTime=7				(seconds to wait after game exits for cloud syncing)
-PostGameCommandWaitTime=7			(seconds to wait before post-game launch commands run)
-ProxyTimeout=2					(seconds to wait before attempts to validate process PIDs)
+PostGameCommandWaitTime=5			(seconds to wait before post-game launch commands run)
+ProxyTimeout=3					(seconds to wait before attempts to validate process PIDs)
 LauncherMode=Normal				(Normal mode launches the LauncherPath and GamePath)
 LauncherMode=LauncherOnly			(LauncherOnly mode launches only the LauncherPath)
 LauncherMode=URI				(URI mode launches LauncherPath with the argument in LauncherURI)
-ProcessAcquisitionTimeout=300			(seconds to wait for launcher/game process detection)
+ProcessAcquisitionTimeout=60			(seconds to wait for process detection)
 ReLaunch=True					(set to False to prevent OSOL from relaunching LauncherPath if detected)
 DoNotClose=False				(set to True to stop OSOL killing the LauncherPath when the game exits)
 ForceLauncher=False				(set to True to launch LauncherPath separate from GamePath)
@@ -150,6 +150,7 @@ ElevateExternals=False				(set to True to run Pre/PostGameExec with elevated pri
 TerminateOSOLUponLaunch=False			(set to True to request OSOL exit upon game/launcher launch)
 GameProcessAffinity=0,1,2,3			(set to a string of digits delimited by commas representing the target CPUs)
 GameProcessPriority=				(can be Idle, BelowNormal, AboveNormal, High, or RealTime)
-ProcessAcquisitionAttempts=5                    (number of iterations before determining process validity)</value>
+ProcessAcquisitionAttempts=5                    (number of iterations before determining process validity)
+InterProcessAcquisitionTimeout=10               (seconds to wait before assuming a monitored process has exited)</value>
   </data>
 </root>

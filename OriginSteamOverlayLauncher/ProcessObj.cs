@@ -17,10 +17,11 @@ namespace OriginSteamOverlayLauncher
 
         public void Refresh()
         {
-            ProcessId = ProcessUtils.GetRunningPIDByName(this.ProcessName);
+            var _procRef = ProcessUtils.GetLastProcessChildByName(this.ProcessName);
+            ProcessId = _procRef != null ? _procRef.Id : 0;
             if (this.ProcessId > 0)
             {
-                ProcessRef = ProcessUtils.RebindProcessByID(ProcessId);
+                ProcessRef = _procRef;
                 ProcessType = WindowUtils.DetectWindowType(ProcessRef);
                 IsValid = ProcessUtils.IsValidProcess(ProcessRef);
             }
@@ -42,21 +43,25 @@ namespace OriginSteamOverlayLauncher
         /// <returns></returns>
         public static ProcessObj ValidateProcessByName(string procName, int timer, int maxTimeout, int reattempts)
         {// check every x seconds (up to y seconds) for z iterations to determine valid running proc by name
-            int timeoutCounter = 0, _pid = 0, prevPID = 0, totalTime = 0;
+            int timeoutCounter = 0, _pid = 0, prevPID = 0, elapsedTime = 0;
             ProcessUtils.Logger("OSOL", String.Format("Searching for valid process by name: {0}", procName));
 
             while (timeoutCounter < (maxTimeout * 1000))
             {// wait up to maxTimeout (secs)
                 ProcessObj _ret = internalLoop();
                 if (_ret != null) { return _ret; }
-                timeoutCounter += totalTime;
+                timeoutCounter += elapsedTime;
             }
-            ProcessUtils.Logger("WARNING", String.Format("Could not bind to a valid process after waiting {0} seconds!", timeoutCounter/1000));
+            ProcessUtils.Logger("WARNING", String.Format("Could not bind to a valid process after waiting {0} seconds",
+                timeoutCounter/1000)
+            );
             return null;
 
             // nest our internal loop so we can break out early if necessary
             ProcessObj internalLoop()
             {
+                Stopwatch _sw = new Stopwatch();
+                _sw.Start();
                 for (int i = 0; i <= reattempts; i++)
                 {// try up to the specified number of times
                     ProcessObj _proc = new ProcessObj(procName);
@@ -65,21 +70,29 @@ namespace OriginSteamOverlayLauncher
                     if (prevPID > 0 && _pid != prevPID)
                     {
                         Thread.Sleep(timer * 1000);
-                        totalTime += (timer * 1000) + 50;
+                        _sw.Stop();
+                        elapsedTime = Convert.ToInt32(_sw.ElapsedMilliseconds);
                         prevPID = 0;
                         break; // restart the search if we lose our target
                     }
 
                     if (i == reattempts && _pid == prevPID && _proc.IsValid)
                     {// wait for attempts to elapse (~15s by default) before validating the PID
-                        ProcessUtils.Logger("OSOL", String.Format("Found a valid process at PID: {0} [{1}] in {2} seconds", _pid, String.Format("{0}.exe", procName), totalTime/1000));
+                        _sw.Stop();
+                        elapsedTime = Convert.ToInt32(_sw.ElapsedMilliseconds);
+                        ProcessUtils.Logger("OSOL", String.Format("Found a valid process at PID: {0} [{1}] in {2}s",
+                            _pid,
+                            String.Format("{0}.exe", procName),
+                            (elapsedTime / 1000))
+                        );
                         return _proc;
                     }
 
                     prevPID = _pid;
                     Thread.Sleep(timer * 1000);
-                    totalTime += (timer * 1000) + 50;
                 }
+                _sw.Stop();
+                elapsedTime = Convert.ToInt32(_sw.ElapsedMilliseconds);
                 return null;
             }
         }

@@ -7,16 +7,53 @@ namespace OriginSteamOverlayLauncher
 {
     public class ProcessTracking
     {
-        public static void LaunchProcess(Process proc)
-        {// abstract Process.Start() for exception handling purposes...
-            try
-            {
-                proc.Start();
+        private static void ProcessMonitor(Settings setHnd, ProcessObj procObj)
+        {// attempt to reacquire the target process by name within a timeout if it exits
+            int globalElapsed = 0;
+            internalSpinner(procObj);
+
+            while (globalElapsed < setHnd.InterProcessAcquisitionTimeout * 1000)
+            {// by default we wait up to 10s for a named process to respawn
+                Stopwatch _sw = new Stopwatch();
+                _sw.Start();
+                ProcessObj _proc = new ProcessObj(procObj.ProcessName);
+                _sw.Stop();
+                globalElapsed += Convert.ToInt32(_sw.ElapsedMilliseconds);
+
+                if (_proc.ProcessId > 0 && _proc.ProcessRef != null && !_proc.ProcessRef.HasExited)
+                {
+                    ProcessUtils.Logger("OSOL", String.Format("Process monitor found another matching process ({0}.exe [{1}])",
+                        _proc.ProcessName,
+                        _proc.ProcessId)
+                    );
+                    globalElapsed = 0;
+                    internalSpinner(_proc);
+                }
+                else if (_proc.ProcessId == 0)
+                {// we failed to get a running process so wait a tick
+                    Thread.Sleep(1000);
+                    globalElapsed += 1000;
+                }
             }
-            catch (Exception ex)
-            {
-                ProcessUtils.Logger("FATAL EXCEPTION", ex.Message);
-                Environment.Exit(0);
+
+            ProcessUtils.Logger("OSOL", String.Format("Timed out waiting for monitored process {1}.exe after {0}s",
+                setHnd.InterProcessAcquisitionTimeout,
+                procObj.ProcessName)
+            );
+
+            void internalSpinner(ProcessObj process)
+            {// spin while target process is running
+                Stopwatch _isw = new Stopwatch();
+                _isw.Start();
+                while (!process.ProcessRef.HasExited)
+                {
+                    Thread.Sleep(1000);
+                }
+                _isw.Stop();
+                ProcessUtils.Logger("OSOL", String.Format("Monitored process exited after {0:0.##}m, attempting to reaquire {1}.exe",
+                    Convert.ToDouble(_isw.ElapsedMilliseconds/1000/60),
+                    process.ProcessName)
+                );
             }
         }
 
@@ -58,7 +95,7 @@ namespace OriginSteamOverlayLauncher
             if (!setHnd.SkipLauncher & Settings.ValidatePath(setHnd.LauncherPath) & (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
             {
                 // check for running instance of launcher (relaunch if required)
-                if (ProcessUtils.IsRunning(launcherName) && setHnd.ReLaunch)
+                if (ProcessUtils.IsRunningByName(launcherName) && setHnd.ReLaunch)
                 {// if the launcher is running before the game kill it so we can run it through Steam
                     ProcessUtils.Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
                     ProcessUtils.KillProcTreeByName(launcherName);
@@ -75,7 +112,7 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
                     ProcessUtils.Logger("OSOL", String.Format("Launching URI: {0} {1}", setHnd.LauncherURI, setHnd.GameArgs));
 
-                    LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(gameProc);
                 }
                 else
                 {
@@ -85,10 +122,9 @@ namespace OriginSteamOverlayLauncher
                     launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
                     ProcessUtils.Logger("OSOL", String.Format("Attempting to start the launcher: {0}", setHnd.LauncherPath));
 
-                    LaunchProcess(launcherProc);
+                    ProcessUtils.LaunchProcess(launcherProc);
                 }
 
-                // loop until we have a valid process object
                 launcherProcObj = ProcessObj.GetProcessObj(setHnd, launcherName);
                 launcherProc = launcherProcObj.ProcessRef;
 
@@ -104,7 +140,6 @@ namespace OriginSteamOverlayLauncher
                         if (setHnd.MinimizeLauncher && launcherProc.MainWindowHandle != IntPtr.Zero)
                             WindowUtils.MinimizeWindow(WindowUtils.HwndFromProc(launcherProc));
                     }
-                    
                 }
             }
             #endregion
@@ -121,7 +156,7 @@ namespace OriginSteamOverlayLauncher
              * 4) If we're using CommandlineProxy attempt to detect the target process cmdline
              *    a) If we've got a cmdline relaunch GamePath with it
              * 5) Do post-game-detection steps
-             * 6) Spin for Game process until it exits
+             * 6) Hand off to MonitorProcess() for watching our launched game
              */
 
             #region GameDetection
@@ -138,7 +173,7 @@ namespace OriginSteamOverlayLauncher
 
                     ProcessUtils.Logger("OSOL", String.Format("Detected Battle.net launcher, calling game via: {0} {1}", setHnd.LauncherPath, setHnd.LauncherArgs));
 
-                    LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(gameProc);
                 }
                 else if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length > 0)
                 {// avoid executing GamePath if we need to grab arguments from a child of the launcher
@@ -146,14 +181,14 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.DetectedCommandline + " " + setHnd.GameArgs;
                     ProcessUtils.Logger("OSOL", String.Format("Launching game with DetectedCommandline arguments, cmd: {0} {1} {2}", setHnd.GamePath, setHnd.DetectedCommandline, setHnd.GameArgs));
 
-                    LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(gameProc);
                 }
                 else if (!setHnd.CommandlineProxy)
                 {// just launch the game since we've fallen through all the exclusive cases
                     ProcessUtils.Logger("OSOL", String.Format("Launching game, cmd: {0} {1}", setHnd.GamePath, setHnd.GameArgs));
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
 
-                    LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(gameProc);
 
                     if (setHnd.SkipLauncher && Settings.ValidatePath(setHnd.LauncherPath))
                     {// we still need LauncherPath tracking in Normal mode even though we didn't launch it ourselves (if defined)
@@ -209,7 +244,7 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.GameArgs + " " + _cmdLine;
                     ProcessUtils.Logger("OSOL", String.Format("Relaunching with proxied commandline, cmd: {0} {1} {2}", setHnd.GamePath, _cmdLine, setHnd.GameArgs));
 
-                    LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(gameProc);
                     Thread.Sleep(setHnd.ProxyTimeout * 1000);
 
                     // rebind to relaunched process
@@ -233,7 +268,9 @@ namespace OriginSteamOverlayLauncher
                 if (setHnd.GameProcessAffinity > 0)
                 {// use our specified CPU affinity bitmask
                     gameProc.ProcessorAffinity = (IntPtr)setHnd.GameProcessAffinity;
-                    ProcessUtils.Logger("OSOL", String.Format("Setting game process CPU affinity to: {0}", BitmaskExtensions.AffinityToCoreString(setHnd.GameProcessAffinity)));
+                    ProcessUtils.Logger("OSOL", String.Format("Setting game process CPU affinity to: {0}",
+                        BitmaskExtensions.AffinityToCoreString(setHnd.GameProcessAffinity))
+                    );
                 }
                 if (!ProcessUtils.StringEquals(_procPrio, "Normal"))
                 {// we have a custom process priority so let's use it
@@ -248,12 +285,14 @@ namespace OriginSteamOverlayLauncher
                 }
                 else
                 {
-                    while (!gameProcObj.ProcessRef.HasExited)
-                    {// spin while game process is running
-                        Thread.Sleep(setHnd.ProxyTimeout * 1000);
-                    }
+                    // watch for our game process and return when appropriate
+                    ProcessMonitor(setHnd, gameProcObj);
+                    ProcessUtils.Logger("OSOL", String.Format("Process exited ({0}.exe [{1}]) moving on to clean up after {2}s...",
+                        gameProcObj.ProcessName,
+                        gameProcObj.ProcessId,
+                        setHnd.PostGameWaitTime)
+                    );
                 }
-                ProcessUtils.Logger("OSOL", String.Format("The {0} exited, moving on to clean up after {1}s...", _launchType, setHnd.PostGameWaitTime));
             }
             else
             {
