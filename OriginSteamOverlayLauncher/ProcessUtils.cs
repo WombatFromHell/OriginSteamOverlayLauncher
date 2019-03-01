@@ -105,9 +105,12 @@ namespace OriginSteamOverlayLauncher
                     }
                 }
             }
-            catch (ManagementException ex)
+            catch (Exception ex)
             {
-                // throw away "Not Found" exceptions
+                if (ex is ManagementException)
+                    return null; // throw away "Not Found" exceptions
+                else
+                    Logger("FATAL EXCEPTION", ex.Message);
             }
             return null;
         }
