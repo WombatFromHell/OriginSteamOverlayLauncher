@@ -146,6 +146,7 @@ namespace OriginSteamOverlayLauncher
             foreach (Process proc in foundProcs)
             {
                 proc.Kill();
+                proc.Dispose();
             }
         }
 

@@ -1,4 +1,5 @@
-* 51f6668 (HEAD -> staging, origin/staging) Bumped changelog for posterity
+* 2018e4f (HEAD -> staging) Make sure to log exceptions from ManagementObjectSearcher
+* 51f6668 (origin/staging) Bumped changelog for posterity
 * dfa0df7 Implemented reacquisition of game process if it is respawned within a timeout
 * 4d4f8bb Use local time for logging and increase acquisition timeout
 * 45d30c0 Some minor fixes to the game detection loop
