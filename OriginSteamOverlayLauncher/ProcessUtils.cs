@@ -20,8 +20,8 @@ namespace OriginSteamOverlayLauncher
 
         public static bool CliArgExists(string[] args, string matchArg)
         {// credit to: https://stackoverflow.com/a/30569947
-            string _argType1 = String.Format("/{0}", matchArg.ToLower());
-            string _argType2 = String.Format("-{0}", matchArg.ToLower());
+            string _argType1 = $"/{matchArg.ToLower()}";
+            string _argType2 = $"-{matchArg.ToLower()}";
 
             // we accept -arg and /arg formats
             var singleFound = args.Where(
@@ -42,7 +42,7 @@ namespace OriginSteamOverlayLauncher
         {
             using (StreamWriter stream = File.AppendText(Program.appName + "_Log.txt"))
             {
-                stream.Write("[{0}] [{1}] {2}\r\n", DateTime.Now.ToLocalTime(), cause, message);
+                stream.Write($"[{DateTime.Now.ToLocalTime()}] [{cause}] {message}\r\n");
             }
         }
 
@@ -84,7 +84,7 @@ namespace OriginSteamOverlayLauncher
 
         public static List<Process> GetProcessesByName(String exeName)
         {// returns a List() of Process refs from an executable name search via WMI
-            var _query = new SelectQuery(String.Format("SELECT * FROM Win32_Process where Name LIKE '{0}.exe'", exeName));
+            var _query = new SelectQuery($"SELECT * FROM Win32_Process where Name LIKE '{exeName}.exe'");
             try
             {
                 using (ManagementObjectSearcher search = new ManagementObjectSearcher(_query))
@@ -202,9 +202,9 @@ namespace OriginSteamOverlayLauncher
 
                     // include a space to clean up the output parsed args
                     if (startPath.Contains(" "))
-                        _parsedPath = String.Format("\"{0}\" ", startPath);
+                        _parsedPath = $"\"{startPath}\" ";
                     else
-                        _parsedPath = String.Format("{0} ", startPath);
+                        _parsedPath = $"{startPath} ";
 
 
                     if (matchEnum.MoveNext())
@@ -263,10 +263,10 @@ namespace OriginSteamOverlayLauncher
                     if (standoffTimer > 0)
                     {
                         Thread.Sleep(standoffTimer * 1000);
-                        Logger("OSOL", String.Format("Attempting to run external process after {2}s: {0} {1}", filePath, fileArgs, standoffTimer));
+                        Logger("OSOL", $"Attempting to run external process after {standoffTimer}s: {filePath} {fileArgs}");
                     }
                     else
-                        Logger("OSOL", String.Format("Attempting to run external process: {0} {1}", filePath, fileArgs));
+                        Logger("OSOL", $"Attempting to run external process: {filePath} {fileArgs}");
 
                     execProc.Start();
                     execProc.WaitForExit(); // idle waiting for outside process to return
@@ -274,12 +274,12 @@ namespace OriginSteamOverlayLauncher
                 }
                 else if (filePath != null && filePath.Length > 0)
                 {
-                    Logger("WARNING", String.Format("External process path is invalid: {0} {1}", filePath, fileArgs));
+                    Logger("WARNING", $"External process path is invalid: {filePath} {fileArgs}");
                 }
             }
             catch (Exception e)
             {
-                Logger("EXCEPTION", String.Format("Process delegate failed on [{0} {1}], due to: {2}", filePath, fileArgs, e.Message));
+                Logger("EXCEPTION", $"Process delegate failed on [{filePath} {fileArgs}], due to: {e.Message}");
             }
         }
 

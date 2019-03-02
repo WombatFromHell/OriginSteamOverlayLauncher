@@ -44,7 +44,7 @@ namespace OriginSteamOverlayLauncher
         public static ProcessObj ValidateProcessByName(string procName, int timer, int maxTimeout, int reattempts)
         {// check every x seconds (up to y seconds) for z iterations to determine valid running proc by name
             int timeoutCounter = 0, _pid = 0, prevPID = 0, elapsedTime = 0;
-            ProcessUtils.Logger("OSOL", String.Format("Searching for valid process by name: {0}", procName));
+            ProcessUtils.Logger("OSOL", $"Searching for valid process by name: {procName}");
 
             while (timeoutCounter < (maxTimeout * 1000))
             {// wait up to maxTimeout (secs)
@@ -52,9 +52,7 @@ namespace OriginSteamOverlayLauncher
                 if (_ret != null) { return _ret; }
                 timeoutCounter += elapsedTime;
             }
-            ProcessUtils.Logger("WARNING", String.Format("Could not bind to a valid process after waiting {0} seconds",
-                timeoutCounter/1000)
-            );
+            ProcessUtils.Logger("WARNING", $"Could not bind to a valid process after waiting {timeoutCounter / 1000} seconds");
             return null;
 
             // nest our internal loop so we can break out early if necessary
@@ -80,10 +78,9 @@ namespace OriginSteamOverlayLauncher
                     {// wait for attempts to elapse (~15s by default) before validating the PID
                         _sw.Stop();
                         elapsedTime = Convert.ToInt32(_sw.ElapsedMilliseconds);
-                        ProcessUtils.Logger("OSOL", String.Format("Found a valid process at PID: {0} [{1}] in {2}s",
-                            _pid,
-                            String.Format("{0}.exe", procName),
-                            (elapsedTime / 1000))
+                        string _procString = $"{procName}.exe";
+                        ProcessUtils.Logger("OSOL",
+                            $"Found a valid process at PID: {_pid} [{_procString}] in {elapsedTime / 1000}s"
                         );
                         return _proc;
                     }

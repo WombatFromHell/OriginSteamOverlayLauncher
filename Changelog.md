@@ -1,6 +1,7 @@
-* a2ee1c7 (HEAD -> staging) Prevent handle leaks when force killing processes
+* 565b462 (HEAD -> staging, origin/staging) Let process monitor return applicable string time format
+* a2ee1c7 Prevent handle leaks when force killing processes
 * 2018e4f Make sure to log exceptions from ManagementObjectSearcher
-* 51f6668 (origin/staging) Bumped changelog for posterity
+* 51f6668 Bumped changelog for posterity
 * dfa0df7 Implemented reacquisition of game process if it is respawned within a timeout
 * 4d4f8bb Use local time for logging and increase acquisition timeout
 * 45d30c0 Some minor fixes to the game detection loop

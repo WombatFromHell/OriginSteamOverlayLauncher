@@ -23,7 +23,7 @@ namespace OriginSteamOverlayLauncher
         {
             // get our current mutex id based off our AssemblyInfo.cs
             string appGuid = ((GuidAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value.ToString();
-            string mutexId = string.Format("Global\\{{{0}}}", appGuid);
+            string mutexId = $"Global\\{{{appGuid}}}";
 
             // simple global mutex, courtesy of: https://stackoverflow.com/a/1213517
             using (var mutex = new Mutex(false, mutexId))
