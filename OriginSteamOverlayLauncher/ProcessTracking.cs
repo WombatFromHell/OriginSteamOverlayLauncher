@@ -21,7 +21,7 @@ namespace OriginSteamOverlayLauncher
                 _sw.Stop();
                 globalElapsed += Convert.ToInt32(_sw.ElapsedMilliseconds);
 
-                if (_proc.ProcessId > 0 && _proc.ProcessRef != null && !_proc.ProcessRef.HasExited)
+                if (_proc != null && _proc.ProcessRef != null && !_proc.ProcessRef.HasExited)
                 {
                     ProcessUtils.Logger("OSOL",
                         $"Process monitor found another matching process ({_proc.ProcessName}.exe [{_proc.ProcessId}])"
@@ -29,8 +29,8 @@ namespace OriginSteamOverlayLauncher
                     globalElapsed = 0;
                     internalSpinner(_proc);
                 }
-                else if (_proc.ProcessId == 0)
-                {// we failed to get a running process so wait a tick
+                else
+                {// catch an uncommon but possible edge case
                     Thread.Sleep(1000);
                     globalElapsed += 1000;
                 }

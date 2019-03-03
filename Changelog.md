@@ -1,4 +1,5 @@
-* c350298 (HEAD -> staging, origin/staging) Use string interpolation instead of string formatting
+* 4a4e248 (HEAD -> staging) Write logs to the debugger console for convenience
+* c350298 (origin/staging) Use string interpolation instead of string formatting
 * 565b462 Let process monitor return applicable string time format
 * a2ee1c7 Prevent handle leaks when force killing processes
 * 2018e4f Make sure to log exceptions from ManagementObjectSearcher
