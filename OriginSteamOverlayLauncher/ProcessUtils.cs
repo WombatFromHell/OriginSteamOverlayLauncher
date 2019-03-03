@@ -40,10 +40,14 @@ namespace OriginSteamOverlayLauncher
 
         public static void Logger(String cause, String message)
         {
+            string _msg = $"[{DateTime.Now.ToLocalTime()}] [{cause}] {message}\r\n";
             using (StreamWriter stream = File.AppendText(Program.appName + "_Log.txt"))
             {
-                stream.Write($"[{DateTime.Now.ToLocalTime()}] [{cause}] {message}\r\n");
+                stream.Write(_msg);
             }
+#if DEBUG
+            Debug.WriteLine(_msg);
+#endif
         }
 
         public static bool IsRunningPID(int PID)
