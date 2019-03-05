@@ -1,5 +1,7 @@
-* 4a4e248 (HEAD -> staging) Write logs to the debugger console for convenience
-* c350298 (origin/staging) Use string interpolation instead of string formatting
+* 48d5519 (HEAD -> staging) Be intelligent about newlines when writing to the console
+* 946d3b7 (origin/staging) Catch null ref of procObj in ProcessMonitor
+* 4a4e248 Write logs to the debugger console for convenience
+* c350298 Use string interpolation instead of string formatting
 * 565b462 Let process monitor return applicable string time format
 * a2ee1c7 Prevent handle leaks when force killing processes
 * 2018e4f Make sure to log exceptions from ManagementObjectSearcher

@@ -98,7 +98,8 @@ namespace OriginSteamOverlayLauncher
 
             #region LauncherDetection
             // only use validated launcher if CommandlineProxy is not enabled, Launcher is not forced, and we have no DetectedCommandline
-            if (!setHnd.SkipLauncher & Settings.ValidatePath(setHnd.LauncherPath) & (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
+            if (!String.IsNullOrEmpty(setHnd.LauncherURI) ||
+                !setHnd.SkipLauncher & Settings.ValidatePath(setHnd.LauncherPath) & (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
             {
                 // check for running instance of launcher (relaunch if required)
                 if (ProcessUtils.IsRunningByName(launcherName) && setHnd.ReLaunch)
