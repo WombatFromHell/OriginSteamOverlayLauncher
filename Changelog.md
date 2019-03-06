@@ -1,4 +1,5 @@
-* a90482f (HEAD -> staging, origin/staging) Fixed URI launcher mode not working with a blank LauncherPath
+* 1e7c2ef (HEAD -> staging, origin/staging) Major overhaul of how process monitoring is done
+* a90482f Fixed URI launcher mode not working with a blank LauncherPath
 * 48d5519 Be intelligent about newlines when writing to the console
 * 946d3b7 Catch null ref of procObj in ProcessMonitor
 * 4a4e248 Write logs to the debugger console for convenience
