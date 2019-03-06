@@ -1,4 +1,5 @@
-* 1e7c2ef (HEAD -> staging, origin/staging) Major overhaul of how process monitoring is done
+* 1d18921 (HEAD -> staging, origin/staging) Bump our changelog for posterity
+* 1e7c2ef Major overhaul of how process monitoring is done
 * a90482f Fixed URI launcher mode not working with a blank LauncherPath
 * 48d5519 Be intelligent about newlines when writing to the console
 * 946d3b7 Catch null ref of procObj in ProcessMonitor
