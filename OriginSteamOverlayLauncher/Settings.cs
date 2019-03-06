@@ -134,11 +134,11 @@ namespace OriginSteamOverlayLauncher
                 iniHnd.Write("PostGameExecArgs", String.Empty, "Options");
 
                 // integer options (sensible defaults)
-                iniHnd.Write("ProxyTimeout", "3", "Options"); //2s
-                iniHnd.Write("PreGameLauncherWaitTime", "5", "Options"); //5s
-                iniHnd.Write("PostGameWaitTime", "7", "Options"); //10s
+                iniHnd.Write("ProxyTimeout", "3", "Options"); //3s
+                iniHnd.Write("PreGameLauncherWaitTime", "7", "Options"); //7s
+                iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
                 iniHnd.Write("PostGameCommandWaitTime", "5", "Options"); //5s
-                iniHnd.Write("ProcessAcquisitionTimeout", "60", "Options"); //60s
+                iniHnd.Write("ProcessAcquisitionTimeout", "120", "Options"); //2mins
                 iniHnd.Write("InterProcessAcquisitionTimeout", "10", "Options"); //10s
                 iniHnd.Write("ProcessAcquisitionAttempts", "5", "Options"); //5 attempts * ProxyTimeout (~15s)
 
@@ -405,10 +405,10 @@ namespace OriginSteamOverlayLauncher
 
             // treat ints differently (use defaults if these don't exist)
             setHnd.ProxyTimeout = ValidateInt(iniHnd, 3, "ProxyTimeout", "Options");
-            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 5, "PreGameLauncherWaitTime", "Options");
+            setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 7, "PreGameLauncherWaitTime", "Options");
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, "PostGameWaitTime", "Options");
             setHnd.PostGameCommandWaitTime = ValidateInt(iniHnd, 5, "PostGameCommandWaitTime", "Options");
-            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 60, "ProcessAcquisitionTimeout", "Options");
+            setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 120, "ProcessAcquisitionTimeout", "Options");
             setHnd.InterProcessAcquisitionTimeout = ValidateInt(iniHnd, 10, "InterProcessAcquisitionTimeout", "Options");
             setHnd.ProcessAcquisitionAttempts = ValidateInt(iniHnd, 5, "ProcessAcquisitionAttempts", "Options");
 

@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
-using System.ComponentModel;
-using System.Management;
-using System.Text;
-using System.Collections.Generic;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -65,7 +60,7 @@ namespace OriginSteamOverlayLauncher
                         if (Settings.CheckINI(iniFile)
                             && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
                         {
-                            procTrack.ProcessLauncher(curSet, iniFile); // normal functionality
+                            procTrack.ProcessLauncher(curSet, iniFile).Wait();
                         }
                         else
                         {// ini doesn't match our comparison, recreate from stubs
@@ -79,6 +74,7 @@ namespace OriginSteamOverlayLauncher
                 finally
                 {
                     mutex.ReleaseMutex();
+                    ProcessUtils.Logger("OSOL", "Exiting...");
                     Environment.Exit(0);
                 }
             }

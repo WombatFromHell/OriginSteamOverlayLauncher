@@ -273,7 +273,7 @@ namespace OriginSteamOverlayLauncher
                         Logger("OSOL", $"Attempting to run external process: {filePath} {fileArgs}");
 
                     execProc.Start();
-                    execProc.WaitForExit(); // idle waiting for outside process to return
+                    execProc.WaitForExit(); // idle waiting for outside process to return (blocking!)
                     Logger("OSOL", "External process delegate returned, continuing...");
                 }
                 else if (filePath != null && filePath.Length > 0)

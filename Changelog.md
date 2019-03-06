@@ -1,5 +1,6 @@
-* 48d5519 (HEAD -> staging) Be intelligent about newlines when writing to the console
-* 946d3b7 (origin/staging) Catch null ref of procObj in ProcessMonitor
+* a90482f (HEAD -> staging, origin/staging) Fixed URI launcher mode not working with a blank LauncherPath
+* 48d5519 Be intelligent about newlines when writing to the console
+* 946d3b7 Catch null ref of procObj in ProcessMonitor
 * 4a4e248 Write logs to the debugger console for convenience
 * c350298 Use string interpolation instead of string formatting
 * 565b462 Let process monitor return applicable string time format

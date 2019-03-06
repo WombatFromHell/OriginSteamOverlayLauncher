@@ -8,62 +8,7 @@ namespace OriginSteamOverlayLauncher
 {
     public class ProcessTracking
     {
-        private static void ProcessMonitor(Settings setHnd, ProcessObj procObj)
-        {// attempt to reacquire the target process by name within a timeout if it exits
-            int globalElapsed = 0;
-            internalSpinner(procObj);
-
-            while (globalElapsed < setHnd.InterProcessAcquisitionTimeout * 1000)
-            {// by default we wait up to 10s for a named process to respawn
-                Stopwatch _sw = new Stopwatch();
-                _sw.Start();
-                ProcessObj _proc = new ProcessObj(procObj.ProcessName);
-                _sw.Stop();
-                globalElapsed += Convert.ToInt32(_sw.ElapsedMilliseconds);
-
-                if (_proc != null && _proc.ProcessRef != null && !_proc.ProcessRef.HasExited)
-                {
-                    ProcessUtils.Logger("OSOL",
-                        $"Process monitor found another matching process ({_proc.ProcessName}.exe [{_proc.ProcessId}])"
-                    );
-                    globalElapsed = 0;
-                    internalSpinner(_proc);
-                }
-                else
-                {// catch an uncommon but possible edge case
-                    Thread.Sleep(1000);
-                    globalElapsed += 1000;
-                }
-            }
-
-            ProcessUtils.Logger("OSOL",
-                $"Timed out waiting for monitored process {procObj.ProcessName}.exe after {setHnd.InterProcessAcquisitionTimeout}s"
-            );
-
-            void internalSpinner(ProcessObj process)
-            {// spin while target process is running
-                Stopwatch _isw = new Stopwatch();
-                _isw.Start();
-                while (!process.ProcessRef.HasExited)
-                {
-                    Thread.Sleep(1000);
-                }
-                _isw.Stop();
-                ProcessUtils.Logger("OSOL",
-                    $"Monitored process exited after {ConvertElapsedToString(_isw.ElapsedMilliseconds)} attempting to reaquire {process.ProcessName}.exe"
-                );
-            }
-        }
-
-        public static String ConvertElapsedToString(long stopwatchElapsed)
-        {
-            double tempSecs = Convert.ToDouble(stopwatchElapsed / 1000);
-            double tempMins = Convert.ToDouble(tempSecs / 60);
-            // return minutes or seconds (if applicable)
-            return tempSecs > 60 ? $"{tempMins:0.##}m" : $"{tempSecs:0.##}s";
-        }
-
-        public void ProcessLauncher(Settings setHnd, IniFile iniHnd)
+        public async Task ProcessLauncher(Settings setHnd, IniFile iniHnd)
         {// pass our Settings and IniFile contexts into this workhorse routine
             String launcherName = Path.GetFileNameWithoutExtension(setHnd.LauncherPath);
             String gameName = Path.GetFileNameWithoutExtension(setHnd.GamePath);
@@ -99,7 +44,8 @@ namespace OriginSteamOverlayLauncher
             #region LauncherDetection
             // only use validated launcher if CommandlineProxy is not enabled, Launcher is not forced, and we have no DetectedCommandline
             if (!String.IsNullOrEmpty(setHnd.LauncherURI) ||
-                !setHnd.SkipLauncher & Settings.ValidatePath(setHnd.LauncherPath) & (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
+                !setHnd.SkipLauncher & Settings.ValidatePath(setHnd.LauncherPath) &
+                (setHnd.ForceLauncher || !setHnd.CommandlineProxy || setHnd.DetectedCommandline.Length == 0))
             {
                 // check for running instance of launcher (relaunch if required)
                 if (ProcessUtils.IsRunningByName(launcherName) && setHnd.ReLaunch)
@@ -109,8 +55,10 @@ namespace OriginSteamOverlayLauncher
                     Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
                 }
 
-                // ask a non-async delegate to run a process before the launcher
-                ProcessUtils.ExecuteExternalElevated(setHnd, setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs, 0);
+                // ask a delegate to run a process before the launcher and wait for it to return
+                await Task.Run(() =>
+                    ProcessUtils.ExecuteExternalElevated(setHnd, setHnd.PreLaunchExec, setHnd.PreLaunchExecArgs, 0)
+                );
 
                 if (ProcessUtils.StringEquals(launcherMode, "URI") && !String.IsNullOrEmpty(setHnd.LauncherURI))
                 {// use URI launching as a mutually exclusive alternative to "Normal" launch mode (calls launcher->game)
@@ -137,16 +85,17 @@ namespace OriginSteamOverlayLauncher
 
                 if (launcherProcObj.ProcessId > 0)
                 {
-                    // do some waiting based on user tuneables to avoid BPM weirdness
-                    ProcessUtils.Logger("OSOL", $"Waiting {setHnd.PreGameLauncherWaitTime}s for launcher process to load...");
-                    Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
-
                     if (launcherProcObj.ProcessType > -1)
                     {// we can only send window messages if we have a window handle
                         WindowUtils.BringToFront(WindowUtils.HwndFromProc(launcherProc));
                         if (setHnd.MinimizeLauncher && launcherProc.MainWindowHandle != IntPtr.Zero)
                             WindowUtils.MinimizeWindow(WindowUtils.HwndFromProc(launcherProc));
                     }
+
+                    // wait a bit for the launcher to stabilize
+                    ProcessMonitor launcherMonitor = new ProcessMonitor(launcherProcObj, setHnd.PreGameLauncherWaitTime);
+                    launcherProcObj = await launcherMonitor.InterruptibleMonitorAsync();
+                    launcherProc = launcherProcObj.ProcessRef;
                 }
             }
             #endregion
@@ -205,16 +154,15 @@ namespace OriginSteamOverlayLauncher
 
                         if (launcherProcObj.ProcessId > 0)
                         {
-                            // do some waiting based on user tuneables to avoid BPM weirdness
-                            ProcessUtils.Logger("OSOL", $"Waiting {setHnd.PreGameLauncherWaitTime}s for launcher process to load...");
-                            Thread.Sleep(setHnd.PreGameLauncherWaitTime * 1000);
-
                             if (launcherProcObj.ProcessType > -1)
                             {// we can only send window messages if we have a window handle
                                 WindowUtils.BringToFront(WindowUtils.HwndFromProc(launcherProc));
                                 if (setHnd.MinimizeLauncher)
                                     WindowUtils.MinimizeWindow(WindowUtils.HwndFromProc(launcherProc));
                             }
+                            ProcessMonitor launcherMonitor = new ProcessMonitor(launcherProcObj, setHnd.PreGameLauncherWaitTime);
+                            launcherProcObj = await launcherMonitor.InterruptibleMonitorAsync();
+                            launcherProc = launcherProcObj.ProcessRef;
                         }
                     }
                 }
@@ -269,9 +217,6 @@ namespace OriginSteamOverlayLauncher
             #region WaitForGame
             if (gameProcObj != null && gameProcObj.ProcessId > 0 && gameProcObj.ProcessType > -1)
             {
-                // run our post-game launch commands after a configurable sleep
-                Thread.Sleep((setHnd.PostGameCommandWaitTime - 1) * 1000);
-
                 if (setHnd.GameProcessAffinity > 0)
                 {// use our specified CPU affinity bitmask
                     gameProc.ProcessorAffinity = (IntPtr)setHnd.GameProcessAffinity;
@@ -292,11 +237,10 @@ namespace OriginSteamOverlayLauncher
                 }
                 else
                 {
-                    // watch for our game process and return when appropriate
-                    ProcessMonitor(setHnd, gameProcObj);
-                    ProcessUtils.Logger("OSOL",
-                        $"Process exited ({gameProcObj.ProcessName}.exe [{gameProcObj.ProcessId}]) moving on to clean up after {setHnd.PostGameWaitTime}s..."
-                    );
+                    // monitor our game process until it exits
+                    ProcessMonitor gameMonitor = new ProcessMonitor(gameProcObj, setHnd.InterProcessAcquisitionTimeout);
+                    await gameMonitor.MonitorAsync();
+                    ProcessUtils.Logger("OSOL", $"Game exited, moving on to clean up after {setHnd.PostGameWaitTime}s...");
                 }
             }
             else
@@ -312,14 +256,12 @@ namespace OriginSteamOverlayLauncher
             #region PostGame
             if (launcherProcObj.ProcessId > 0 && !launcherProcObj.ProcessRef.HasExited && !setHnd.DoNotClose)
             {
-                Thread.Sleep(1000); // let the launcher settle after exiting the game
-
                 // resend the message to minimize our launcher
                 if (setHnd.MinimizeLauncher && launcherProc.MainWindowHandle != IntPtr.Zero)
                     WindowUtils.MinimizeWindow(WindowUtils.HwndFromProc(launcherProc));
 
                 // let Origin sync with the cloud
-                Thread.Sleep((setHnd.PostGameWaitTime - 1) * 1000);
+                await Task.Delay(setHnd.PostGameWaitTime * 1000);
 
                 ProcessUtils.Logger("OSOL", "Found launcher still running, cleaning up...");
 
@@ -327,11 +269,11 @@ namespace OriginSteamOverlayLauncher
                 ProcessUtils.KillProcTreeByName(launcherName);
             }
 
-            // ask a non-async delegate to run a process after the game and launcher exit
-            ProcessUtils.ExecuteExternalElevated(setHnd, setHnd.PostGameExec, setHnd.PostGameExecArgs, setHnd.PostGameCommandWaitTime);
+            // ask a delegate to run a process after the game exits and wait for it to return (with an initial standoff period)
+            await Task.Run(() => 
+                ProcessUtils.ExecuteExternalElevated(setHnd, setHnd.PostGameExec, setHnd.PostGameExecArgs, setHnd.PostGameCommandWaitTime)
+            );
 
-            // make sure we sleep a bit to ensure the external process and launcher terminate properly
-            Thread.Sleep(setHnd.ProxyTimeout * 1000);
             // clean up system tray if process related icons are leftover
             trayUtil.RefreshTrayArea();
             #endregion

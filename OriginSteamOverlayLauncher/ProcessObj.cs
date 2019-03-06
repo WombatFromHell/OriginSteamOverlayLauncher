@@ -33,6 +33,15 @@ namespace OriginSteamOverlayLauncher
             this.Refresh();
         }
 
+        public static bool Equals(ProcessObj procA, ProcessObj procB)
+        {// helper for basic equality of ProcessObj objects
+            if (procA != null && procB != null &&
+                procA.ProcessId == procB.ProcessId &&
+                procA.ProcessName.Equals(procB.ProcessName))
+                return true;
+            return false;
+        }
+
         /// <summary>
         /// Helper function for validating a process within a timeout
         /// </summary>
@@ -49,10 +58,14 @@ namespace OriginSteamOverlayLauncher
             while (timeoutCounter < (maxTimeout * 1000))
             {// wait up to maxTimeout (secs)
                 ProcessObj _ret = internalLoop();
-                if (_ret != null) { return _ret; }
+                if (_ret != null && _ret.IsValid) {
+                    timeoutCounter += elapsedTime;
+                    ProcessUtils.Logger("OSOL", $"Found a valid process in {timeoutCounter / 1000}s: {_ret.ProcessName}.exe [{_ret.ProcessId}]");
+                    return _ret;
+                }
                 timeoutCounter += elapsedTime;
             }
-            ProcessUtils.Logger("WARNING", $"Could not bind to a valid process after waiting {timeoutCounter / 1000} seconds");
+            ProcessUtils.Logger("WARNING", $"Could not bind to a valid process after waiting {timeoutCounter / 1000}s");
             return null;
 
             // nest our internal loop so we can break out early if necessary
@@ -78,10 +91,6 @@ namespace OriginSteamOverlayLauncher
                     {// wait for attempts to elapse (~15s by default) before validating the PID
                         _sw.Stop();
                         elapsedTime = Convert.ToInt32(_sw.ElapsedMilliseconds);
-                        string _procString = $"{procName}.exe";
-                        ProcessUtils.Logger("OSOL",
-                            $"Found a valid process at PID: {_pid} [{_procString}] in {elapsedTime / 1000}s"
-                        );
                         return _proc;
                     }
 
