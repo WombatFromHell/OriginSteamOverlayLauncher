@@ -135,9 +135,9 @@ namespace OriginSteamOverlayLauncher
             if (targetProc == null || targetProc.Id == 0)
                 return false; // sanity check
 
+            var _hwnd = WindowUtils.HwndFromProc(targetProc);
             if (!targetProc.HasExited &&
-                WindowUtils.HwndFromProc(targetProc) != IntPtr.Zero &&
-                targetProc.MainWindowTitle.Length > 0 ||
+                _hwnd != IntPtr.Zero && WindowUtils.WindowHasDetails(_hwnd) ||
                 targetProc.Handle != IntPtr.Zero)
                 return true;
 

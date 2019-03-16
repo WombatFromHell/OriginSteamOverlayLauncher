@@ -10,25 +10,34 @@ namespace OriginSteamOverlayLauncher
     public class ProcessObj
     {
         public string ProcessName { get; private set; }
-        public int ProcessId { get; private set; }
-        public int ProcessType { get; private set; }
-        public Process ProcessRef { get; private set; }
-        public bool IsValid { get; private set; }
+        public int ProcessId { get; private set; } = 0;
+        public int ProcessType { get; private set; } = -1;
+        public Process ProcessRef { get; private set; } = null;
+        public bool IsValid { get; private set; } = false;
 
-        public void Refresh()
+        public bool Refresh()
         {
-            var _procRef = ProcessUtils.GetLastProcessChildByName(this.ProcessName);
-            ProcessId = _procRef != null ? _procRef.Id : 0;
-            if (this.ProcessId > 0)
+            var _procRefs = ProcessUtils.GetProcessesByName(this.ProcessName);
+            if (_procRefs != null && _procRefs.Count > 0)
             {
-                ProcessRef = _procRef;
-                ProcessType = WindowUtils.DetectWindowType(ProcessRef);
-                IsValid = ProcessUtils.IsValidProcess(ProcessRef);
+                foreach (Process p in _procRefs)
+                {// check each returned process for validity
+                    if (p.Id > 0 && (p.MainWindowHandle != IntPtr.Zero && p.MainWindowTitle.Length > 0) ||
+                        p.Id > 0)
+                    {// prefer a process with a title and handle
+                        ProcessRef = p;
+                        ProcessId = ProcessRef.Id;
+                        ProcessType = WindowUtils.DetectWindowType(ProcessRef);
+                        IsValid = ProcessUtils.IsValidProcess(ProcessRef);
+                        return true;
+                    }
+                }
             }
+            return false;
         }
 
         public ProcessObj(string processName)
-        {
+        {// search for a Process by name
             ProcessName = processName;
             this.Refresh();
         }

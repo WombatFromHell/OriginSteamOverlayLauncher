@@ -1,5 +1,7 @@
-* 0bbdab3 (HEAD -> master, origin/master, origin/HEAD, staging) Sync release changelog before merging with master
-* 1d18921 (origin/staging) Bump our changelog for posterity
+* d29c0ba (HEAD -> staging) Improved aggregate exception handling
+* 0d9379d (origin/staging) Don't check game process for window type to avoid early exit
+* 0bbdab3 (tag: v1.08, origin/master, origin/HEAD, master) Sync release changelog before merging with master
+* 1d18921 Bump our changelog for posterity
 * 1e7c2ef Major overhaul of how process monitoring is done
 * a90482f Fixed URI launcher mode not working with a blank LauncherPath
 * 48d5519 Be intelligent about newlines when writing to the console
@@ -16,7 +18,7 @@
 * 84b1b2a Improvements to process acquisition and monitoring
 * 011d437 Shorten the default max process acquisition wait time
 * 69e7b2b Prevent exceptions when a rebound process is invalid
-* ae3bee2 Reimplemented process acquisition ... also added a user tuneable to allow customizing process wait timer
+* ae3bee2 (tag: v1.07g) Reimplemented process acquisition ... also added a user tuneable to allow customizing process wait timer
 * c43d031 (tag: v1.07f) Fixed some games not being detected if their launcher starts minimized
 * 5d2d665 Bumped version number for point release
 * 19f0797 Fixed Epic Games Launcher not being detected in URI mode

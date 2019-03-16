@@ -130,29 +130,32 @@ namespace OriginSteamOverlayLauncher
             {// since we've got a window handle let's pass on what we find
                 // Epic Games Launcher [Type 4]
                 if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", _hWnd))
-                    return processType = 4;
+                    processType = 4;
 
                 // Uplay [Type 3] (splash & normal)
-                if (MatchWindowDetails("Uplay", "uplay_main", _hWnd) ||
+                if (processType == -1 && MatchWindowDetails("Uplay", "uplay_main", _hWnd) ||
                     MatchWindowDetails("Uplay", "uplay_start", _hWnd))
-                    return processType = 3;
+                    processType = 3;
 
                 // Origin [Type 2]
-                if (MatchWindowDetails("Origin", "Qt5QWindowIcon", _hWnd))
-                    return processType = 2;
+                if (processType == -1 && MatchWindowDetails("Origin", "Qt5QWindowIcon", _hWnd))
+                    processType = 2;
 
                 // Blizzard Battle.net [Type 1]
-                if (MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", _hWnd))
-                    return processType = 1;
+                if (processType == -1 && MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", _hWnd))
+                    processType = 1;
 
                 //
                 // catch-all for everything else [Type 0]
                 //
 
                 // just check if we've got a window class and title
-                if (WindowHasDetails(_hWnd) || procHnd.Handle != IntPtr.Zero)
-                    return processType = 0;
+                if (processType == -1 && (WindowHasDetails(_hWnd) || procHnd.Handle != IntPtr.Zero))
+                    processType = 0;
             }
+#if DEBUG
+            ProcessUtils.Logger("DETECT", $"Process ({procHnd.ProcessName}.exe [{procHnd.Id}]) is of type {processType}");
+#endif
             return processType;
         }
 
