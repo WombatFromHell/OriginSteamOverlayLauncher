@@ -60,7 +60,17 @@ namespace OriginSteamOverlayLauncher
                         if (Settings.CheckINI(iniFile)
                             && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
                         {
-                            procTrack.ProcessLauncher(curSet, iniFile).Wait();
+                            try
+                            {
+                                procTrack.ProcessLauncher(curSet, iniFile).Wait();
+                            }
+                            catch (AggregateException ae)
+                            {
+                                foreach (var ex in ae.InnerExceptions)
+                                {
+                                    ProcessUtils.Logger("EXCEPTION", $"{ex.ToString()}: {ex.Message}");
+                                }
+                            }
                         }
                         else
                         {// ini doesn't match our comparison, recreate from stubs
