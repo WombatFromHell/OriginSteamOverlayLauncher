@@ -215,7 +215,7 @@ namespace OriginSteamOverlayLauncher
             #endregion
 
             #region WaitForGame
-            if (gameProcObj != null && gameProcObj.ProcessId > 0 && gameProcObj.ProcessType > -1)
+            if (gameProcObj != null && gameProcObj.ProcessId > 0)
             {
                 if (setHnd.GameProcessAffinity > 0)
                 {// use our specified CPU affinity bitmask
@@ -245,8 +245,8 @@ namespace OriginSteamOverlayLauncher
             }
             else
             {
-                string _procName = ProcessUtils.StringEquals("monitor", _launchType) ? gameProcObj.ProcessName : monitorName;
-                ProcessUtils.Logger("WARNING", $"Could not find a {_launchType} process by name, exiting: {_procName}");
+                string _procName = ProcessUtils.StringEquals("monitor", _launchType) ? gameName : monitorName;
+                ProcessUtils.Logger("WARNING", $"Could not find a process by name ({_procName}.exe), exiting...");
             }
             #endregion
 

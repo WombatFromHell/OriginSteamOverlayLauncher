@@ -1,4 +1,5 @@
-* 1d18921 (HEAD -> staging, origin/staging) Bump our changelog for posterity
+* 0bbdab3 (HEAD -> master, origin/master, origin/HEAD, staging) Sync release changelog before merging with master
+* 1d18921 (origin/staging) Bump our changelog for posterity
 * 1e7c2ef Major overhaul of how process monitoring is done
 * a90482f Fixed URI launcher mode not working with a blank LauncherPath
 * 48d5519 Be intelligent about newlines when writing to the console
@@ -20,7 +21,7 @@
 * 5d2d665 Bumped version number for point release
 * 19f0797 Fixed Epic Games Launcher not being detected in URI mode
 * 9751f47 Code cleanup and abstraction from core Program class
-* 3418ca5 (origin/master, origin/HEAD, master) Forgot periods in install bullets
+* 3418ca5 Forgot periods in install bullets
 * 1ef2952 Changed install instructions to be more concise
 * 222a138 (tag: v1.07d) Update Changelog for v1.07d point release
 * 353f904 Improved process detection for hidden windows

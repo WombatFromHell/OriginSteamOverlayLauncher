@@ -128,25 +128,21 @@ namespace OriginSteamOverlayLauncher
 
             if (_hWnd != IntPtr.Zero)
             {// since we've got a window handle let's pass on what we find
-                var _titleComp = "";
-                var _classComp = "";
+                // Epic Games Launcher [Type 4]
+                if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", _hWnd))
+                    return processType = 4;
 
-                //
-                // test for QT5 based launchers
-                //
+                // Uplay [Type 3] (splash & normal)
+                if (MatchWindowDetails("Uplay", "uplay_main", _hWnd) ||
+                    MatchWindowDetails("Uplay", "uplay_start", _hWnd))
+                    return processType = 3;
 
-                // Origin Launcher [Type 2]
-                _titleComp = "Origin";
-                _classComp = "Qt5QWindowIcon";
-
-                // class must match but title may differ
-                if (MatchWindowDetails(_titleComp, _classComp, _hWnd))
+                // Origin [Type 2]
+                if (MatchWindowDetails("Origin", "Qt5QWindowIcon", _hWnd))
                     return processType = 2;
 
-                // Blizzard Battle.net Launcher [Type 1]
-                _titleComp = "Blizzard Battle.net";
-
-                if (MatchWindowDetails(_titleComp, _classComp, _hWnd))
+                // Blizzard Battle.net [Type 1]
+                if (MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", _hWnd))
                     return processType = 1;
 
                 //
