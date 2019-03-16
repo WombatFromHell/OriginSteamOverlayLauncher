@@ -1,5 +1,6 @@
-* d29c0ba (HEAD -> staging) Improved aggregate exception handling
-* 0d9379d (origin/staging) Don't check game process for window type to avoid early exit
+* 4fad8ea (HEAD -> staging, origin/staging) Improved process detection of launcher windows
+* d29c0ba Improved aggregate exception handling
+* 0d9379d Don't check game process for window type to avoid early exit
 * 0bbdab3 (tag: v1.08, origin/master, origin/HEAD, master) Sync release changelog before merging with master
 * 1d18921 Bump our changelog for posterity
 * 1e7c2ef Major overhaul of how process monitoring is done
