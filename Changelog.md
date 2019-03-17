@@ -1,4 +1,5 @@
-* 67b985d (HEAD -> staging, origin/staging) Bump the changelog
+* 54425b7 (HEAD -> staging, origin/staging) Fixed an exception in process handling during reacquisition
+* 67b985d Bump the changelog
 * 4fad8ea Improved process detection of launcher windows
 * d29c0ba Improved aggregate exception handling
 * 0d9379d Don't check game process for window type to avoid early exit
