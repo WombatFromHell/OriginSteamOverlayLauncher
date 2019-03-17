@@ -13,7 +13,9 @@ namespace OriginSteamOverlayLauncher
         public int ProcessId { get; private set; } = 0;
         public int ProcessType { get; private set; } = -1;
         public Process ProcessRef { get; private set; } = null;
-        public bool IsValid { get; private set; } = false;
+        public bool IsValid {
+            get { return ProcessUtils.IsValidProcess(this.ProcessRef); }
+        }
 
         public bool Refresh()
         {
@@ -22,14 +24,12 @@ namespace OriginSteamOverlayLauncher
             {
                 foreach (Process p in _procRefs)
                 {// check each returned process for validity
-                    if (p.Id > 0 && (p.MainWindowHandle != IntPtr.Zero && p.MainWindowTitle.Length > 0) ||
-                        p.Id > 0)
+                    if (ProcessUtils.IsValidProcess(p))
                     {// prefer a process with a title and handle
                         ProcessRef = p;
                         ProcessId = ProcessRef.Id;
                         ProcessType = WindowUtils.DetectWindowType(ProcessRef);
-                        IsValid = ProcessUtils.IsValidProcess(ProcessRef);
-                        return true;
+                        return true; // return early on the first match
                     }
                 }
             }

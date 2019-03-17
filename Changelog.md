@@ -1,4 +1,5 @@
-* 4fad8ea (HEAD -> staging, origin/staging) Improved process detection of launcher windows
+* 67b985d (HEAD -> staging, origin/staging) Bump the changelog
+* 4fad8ea Improved process detection of launcher windows
 * d29c0ba Improved aggregate exception handling
 * 0d9379d Don't check game process for window type to avoid early exit
 * 0bbdab3 (tag: v1.08, origin/master, origin/HEAD, master) Sync release changelog before merging with master
