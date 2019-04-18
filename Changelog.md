@@ -1,4 +1,5 @@
-* da67b54 (HEAD -> staging, origin/staging) Bump the changelog again
+* 68c0ffd (HEAD -> staging) Added pretty app icon and project file fixes
+* da67b54 (origin/staging) Bump the changelog again
 * 54425b7 Fixed an exception in process handling during reacquisition
 * 67b985d Bump the changelog
 * 4fad8ea Improved process detection of launcher windows
