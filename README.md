@@ -52,6 +52,8 @@ If you wish to contribute via pull-request please make sure to comment your code
 
 Credits
 =======
+Special thanks to CriticalComposer for his art/icon contribution to the OSOL project.
+
 Thanks to Dafzor and his bnetlauncher wrapper (http://madalien.com/stuff/bnetlauncher/) for giving me the idea to make this.
 
 

@@ -52,11 +52,12 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
+  <PropertyGroup />
   <PropertyGroup>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>OSOL-lrg.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -86,6 +87,11 @@
     <Compile Include="ProcessUtils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="TrayIconUtil.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="WindowUtils.cs" />
@@ -116,12 +122,20 @@
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="OSOL-lrg.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if $(ConfigurationName) == Release (
-  del /q $(TargetDir)OriginSteamOverlayLauncher.zip
-"C:\Program Files\7-Zip\7z.exe" a   $(TargetDir)OriginSteamOverlayLauncher.zip   $(TargetDir)OriginSteamOverlayLauncher.exe $(SolutionDir)README.md   $(SolutionDir)Changelog.md
+del /q $(TargetDir)OriginSteamOverlayLauncher.zip
+
+"C:\Program Files\7-Zip\7z.exe" a $(TargetDir)OriginSteamOverlayLauncher.zip $(TargetDir)OriginSteamOverlayLauncher.exe $(TargetDir)OriginSteamOverlayLauncher.exe.config $(SolutionDir)README.md $(SolutionDir)Changelog.md
 )</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
