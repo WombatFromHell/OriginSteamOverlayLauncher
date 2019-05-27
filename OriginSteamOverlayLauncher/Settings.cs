@@ -43,6 +43,7 @@ namespace OriginSteamOverlayLauncher
 
         // ints for exposing internal timings
         public int PreGameLauncherWaitTime { get; set; }
+        public int PreGameWaitTime { get; set; }
         public int PostGameWaitTime { get; set; }
         public int PostGameCommandWaitTime { get; set; }
         public int ProxyTimeout { get; set; }
@@ -136,6 +137,7 @@ namespace OriginSteamOverlayLauncher
                 // integer options (sensible defaults)
                 iniHnd.Write("ProxyTimeout", "3", "Options"); //3s
                 iniHnd.Write("PreGameLauncherWaitTime", "7", "Options"); //7s
+                iniHnd.Write("PreGameWaitTime", "0", "Options"); // disabled by default
                 iniHnd.Write("PostGameWaitTime", "7", "Options"); //7s
                 iniHnd.Write("PostGameCommandWaitTime", "5", "Options"); //5s
                 iniHnd.Write("ProcessAcquisitionTimeout", "120", "Options"); //2mins
@@ -297,7 +299,7 @@ namespace OriginSteamOverlayLauncher
             if (iniHnd.KeyPopulated(subKey, keyName))
             {
                 Int32.TryParse(iniHnd.ReadString(subKey, keyName), out int _output);
-                return _output > 0 ? _output : 1; // must always be greater than 0s
+                return _output >= 0 ? _output : 0; // must be a positive int
             }
             else if (!iniHnd.KeyExists(subKey))
             {// edge case
@@ -406,6 +408,7 @@ namespace OriginSteamOverlayLauncher
             // treat ints differently (use defaults if these don't exist)
             setHnd.ProxyTimeout = ValidateInt(iniHnd, 3, "ProxyTimeout", "Options");
             setHnd.PreGameLauncherWaitTime = ValidateInt(iniHnd, 7, "PreGameLauncherWaitTime", "Options");
+            setHnd.PreGameWaitTime = ValidateInt(iniHnd, 0, "PreGameWaitTime", "Options");
             setHnd.PostGameWaitTime = ValidateInt(iniHnd, 7, "PostGameWaitTime", "Options");
             setHnd.PostGameCommandWaitTime = ValidateInt(iniHnd, 5, "PostGameCommandWaitTime", "Options");
             setHnd.ProcessAcquisitionTimeout = ValidateInt(iniHnd, 120, "ProcessAcquisitionTimeout", "Options");

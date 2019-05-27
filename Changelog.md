@@ -1,11 +1,11 @@
-* 68c0ffd (HEAD -> staging) Added pretty app icon and project file fixes
-* da67b54 (origin/staging) Bump the changelog again
+* 68c0ffd (HEAD -> master) Added pretty app icon and project file fixes
+* da67b54 Bump the changelog again
 * 54425b7 Fixed an exception in process handling during reacquisition
 * 67b985d Bump the changelog
 * 4fad8ea Improved process detection of launcher windows
 * d29c0ba Improved aggregate exception handling
 * 0d9379d Don't check game process for window type to avoid early exit
-* 0bbdab3 (tag: v1.08, origin/master, origin/HEAD, master) Sync release changelog before merging with master
+* 0bbdab3 (tag: v1.08) Sync release changelog before merging with master
 * 1d18921 Bump our changelog for posterity
 * 1e7c2ef Major overhaul of how process monitoring is done
 * a90482f Fixed URI launcher mode not working with a blank LauncherPath

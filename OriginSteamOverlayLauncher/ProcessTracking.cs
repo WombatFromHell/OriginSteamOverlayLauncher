@@ -52,7 +52,7 @@ namespace OriginSteamOverlayLauncher
                 {// if the launcher is running before the game kill it so we can run it through Steam
                     ProcessUtils.Logger("OSOL", "Found previous instance of launcher by name, killing and relaunching...");
                     ProcessUtils.KillProcTreeByName(launcherName);
-                    Thread.Sleep(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
+                    await Task.Delay(setHnd.ProxyTimeout * 1000); // pause a moment for the launcher to close
                 }
 
                 // ask a delegate to run a process before the launcher and wait for it to return
@@ -67,7 +67,7 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
                     ProcessUtils.Logger("OSOL", $"Launching URI: {setHnd.LauncherURI} {setHnd.GameArgs}");
 
-                    ProcessUtils.LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(0, gameProc);
                 }
                 else
                 {
@@ -77,7 +77,7 @@ namespace OriginSteamOverlayLauncher
                     launcherProc.StartInfo.Arguments = setHnd.LauncherArgs;
                     ProcessUtils.Logger("OSOL", $"Attempting to start the launcher: {setHnd.LauncherPath}");
 
-                    ProcessUtils.LaunchProcess(launcherProc);
+                    ProcessUtils.LaunchProcess(0, launcherProc);
                 }
 
                 launcherProcObj = ProcessObj.GetProcessObj(setHnd, launcherName);
@@ -129,7 +129,7 @@ namespace OriginSteamOverlayLauncher
 
                     ProcessUtils.Logger("OSOL", $"Detected Battle.net launcher, calling game via: {setHnd.LauncherPath} {setHnd.LauncherArgs}");
 
-                    ProcessUtils.LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(setHnd.PreGameWaitTime, gameProc);
                 }
                 else if (setHnd.CommandlineProxy && setHnd.DetectedCommandline.Length > 0)
                 {// avoid executing GamePath if we need to grab arguments from a child of the launcher
@@ -137,14 +137,14 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.DetectedCommandline + " " + setHnd.GameArgs;
                     ProcessUtils.Logger("OSOL", $"Launching game with DetectedCommandline arguments, cmd: {setHnd.GamePath} {setHnd.DetectedCommandline} {setHnd.GameArgs}");
 
-                    ProcessUtils.LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(setHnd.PreGameWaitTime, gameProc);
                 }
                 else if (!setHnd.CommandlineProxy)
                 {// just launch the game since we've fallen through all the exclusive cases
                     ProcessUtils.Logger("OSOL", $"Launching game, cmd: {setHnd.GamePath} {setHnd.GameArgs}");
                     gameProc.StartInfo.Arguments = setHnd.GameArgs;
 
-                    ProcessUtils.LaunchProcess(gameProc);
+                    ProcessUtils.LaunchProcess(setHnd.PreGameWaitTime, gameProc);
 
                     if (setHnd.SkipLauncher && Settings.ValidatePath(setHnd.LauncherPath))
                     {// we still need LauncherPath tracking in Normal mode even though we didn't launch it ourselves (if defined)
@@ -191,7 +191,7 @@ namespace OriginSteamOverlayLauncher
                     && !ProcessUtils.StringEquals(setHnd.GameArgs, _cmdLine))
                 {// only proxy arguments if our target arguments differ
                     gameProc.Kill();
-                    Thread.Sleep(setHnd.ProxyTimeout * 1000);
+                    await Task.Delay(setHnd.ProxyTimeout * 1000);
 
                     gameProc.StartInfo.UseShellExecute = true;
                     gameProc.StartInfo.FileName = setHnd.GamePath;
@@ -199,8 +199,8 @@ namespace OriginSteamOverlayLauncher
                     gameProc.StartInfo.Arguments = setHnd.GameArgs + " " + _cmdLine;
                     ProcessUtils.Logger("OSOL", $"Relaunching with proxied commandline, cmd: {setHnd.GamePath} {_cmdLine} {setHnd.GameArgs}");
 
-                    ProcessUtils.LaunchProcess(gameProc);
-                    Thread.Sleep(setHnd.ProxyTimeout * 1000);
+                    ProcessUtils.LaunchProcess(0, gameProc);
+                    await Task.Delay(setHnd.ProxyTimeout * 1000);
 
                     // rebind to relaunched process
                     gameProcObj = monitorPath.Length > 0 ?

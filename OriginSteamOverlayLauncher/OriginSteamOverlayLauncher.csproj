@@ -94,6 +94,7 @@
     </Compile>
     <Compile Include="TrayIconUtil.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="TryLockTimer.cs" />
     <Compile Include="WindowUtils.cs" />
   </ItemGroup>
   <ItemGroup>

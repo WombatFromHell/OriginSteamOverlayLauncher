@@ -119,17 +119,6 @@ namespace OriginSteamOverlayLauncher
             return null;
         }
 
-        public static int GetParentProcessByPID(int PID)
-        {
-            int _pid = 0;
-            using (ManagementObject parentProcess = new ManagementObject("win32_process.handle='" + PID.ToString() + "'"))
-            {
-                parentProcess.Get();
-                _pid = Convert.ToInt32(parentProcess["ParentProcessId"]);
-            }
-            return _pid;
-        }
-
         public static bool IsValidProcess(Process targetProc)
         {// rough process validation - must have an hwnd or handle
             if (targetProc == null || targetProc.Id == 0)
@@ -335,11 +324,18 @@ namespace OriginSteamOverlayLauncher
             return false;
         }
 
-        public static void LaunchProcess(Process proc)
+        public static void LaunchProcess(int delayTime, Process proc)
         {// abstract Process.Start() for exception handling purposes...
             try
             {
-                proc.Start();
+                if (delayTime > 0)
+                {
+                    ProcessUtils.Logger("OSOL", $"Waiting {delayTime}s before launching process...");
+                    Thread.Sleep(delayTime * 1000);
+                    proc.Start();
+                }
+                else
+                    proc.Start();
             }
             catch (Exception ex)
             {
