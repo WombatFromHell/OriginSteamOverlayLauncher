@@ -45,7 +45,7 @@
             this.textBox1.Multiline = true;
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(1121, 452);
+            this.textBox1.Size = new System.Drawing.Size(942, 452);
             this.textBox1.TabIndex = 0;
             this.textBox1.TabStop = false;
             this.textBox1.Text = resources.GetString("textBox1.Text");
@@ -59,7 +59,7 @@
             this.button1.Location = new System.Drawing.Point(323, 476);
             this.button1.Margin = new System.Windows.Forms.Padding(4);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(508, 46);
+            this.button1.Size = new System.Drawing.Size(329, 46);
             this.button1.TabIndex = 1;
             this.button1.Text = "Continue";
             this.button1.UseVisualStyleBackColor = true;
@@ -72,7 +72,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(1154, 536);
+            this.ClientSize = new System.Drawing.Size(975, 536);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.textBox1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;

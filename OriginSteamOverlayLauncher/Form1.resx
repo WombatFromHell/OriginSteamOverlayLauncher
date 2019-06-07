@@ -118,34 +118,32 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="textBox1.Text" xml:space="preserve">
-    <value>Here is a listing of all valid INI options with recommended defaults:
-
-[Paths]
-LauncherPath=C:\Your Launcher\Launcher.exe      (optional)
-LauncherArgs=Your Launcher Args Here            (see project Wiki for special cases)
-LauncherURI=launchproto://launchertarget        (see project Wiki for URI strings)
-GamePath=C:\Your Game\Game.exe                  (!!required!!)
-GameArgs=Your Game Args Here
-MonitorPath=C:\Your Game\Game To Target.exe     (OSOL will watch for this process instead of the GamePath, see Wiki)
+    <value>[Paths]
+LauncherPath=C:\Path\To\Your\Launcher.exe
+GamePath=C:\Path\To\Your\Game.exe
+LauncherArgs=args go here
+LauncherURI=uri://uri.goes.here//appid/               (mutually exclusive with LauncherPath)
+GameArgs=args go here
+MonitorPath=C:\Path\To\Alternate\Game\Executable.exe  (executable to monitor instead of GamePath)
+PreLaunchExecPath=C:\Path\To\Exe\BeforeLauncher.exe   (PreLaunchExecPath must return!)
+PreLaunchExecArgs=args go here
+PostGameExecPath=C:\Path\To\Exe\AfterGame.exe         (PostGameExecPath must return!)
+PostGameExecArgs=args go here
 [Options]
-PreLaunchExec=C:\Your PreLauncher\Executable.exe
-PreLaunchExecArgs=Your PreLauncher Executable Args Here
-PostGameExec=C:\Your PostGame\Executable.exe
-PostGameExecArgs=Your PostGame Executable Args Here
-PreGameLauncherWaitTime=10                       (seconds to wait for launcher before launching game)
-PreGameWaitTime=0                               (seconds to wait before game path is launched)
-PostGameWaitTime=10                             (seconds to wait after game exits for cloud syncing)
-LauncherMode=Normal                             (Normal mode launches the LauncherPath and GamePath)
-LauncherMode=URI                                (URI mode launches LauncherPath with the argument in LauncherURI)
-ProcessAcquisitionTimeout=120                   (seconds to wait for process detection)
-InterProcessAcquisitionTimeout=15               (seconds to wait before assuming a monitored process has exited)
-ReLaunch=True                                   (set to False to prevent OSOL from relaunching LauncherPath if detected)
-SkipLauncher=False                              (set to True to disable launching LauncherPath)
-DoNotClose=False                                (set to True to stop OSOL killing the LauncherPath when the game exits)
-MinimizeLauncher=False                          (set to True to forcefully minimize launcher upon detection)
-ElevateExternals=False                          (set to True to run Pre/PostGameExec with elevated privileges)
-TerminateOSOLUponLaunch=False                   (set to True to request OSOL exit upon game/launcher launch)
-GameProcessAffinity=0,1,2,3                     (set to a string of digits delimited by commas representing the target CPUs)
-GameProcessPriority=                            (can be Idle, BelowNormal, AboveNormal, High, or RealTime, Blank = Normal)</value>
+ReLaunch=True                                         (relaunch LauncherPath on startup)
+SkipLauncher=False                                    (skip executing LauncherPath)
+CloseLauncher=True                                    (kill LauncherPath after game exits)
+AutoGameLaunch=True                                   (automatically launch GamePath)
+MinimizeLauncher=False                                (try to force LauncherPath window to minimize)
+ElevateExternals=False                                (prompt to elevate PreLaunchExec/PostGameExec)
+PreGameLauncherWaitTime=12                            (controls wait time after launcher is detected)
+PreGameWaitTime=0                                     (controls wait time before game is launched)
+PostGameWaitTime=0                                    (controls wait time after game exits)
+ProcessAcquisitionTimeout=120                         (how long to wait for processes to initially load)
+InterProcessAcquisitionTimeout=15                     (how long to wait when reacquiring processes)
+GameProcessAffinity=                                  (core affinity in the format of: 0,1,2,3,...)
+GameProcessPriority=Normal                            (Idle, BelowNormal, Normal, AboveNormal, or High)
+[Info]
+ReleaseVersion=x.x.x.x</value>
   </data>
 </root>
