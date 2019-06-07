@@ -29,25 +29,18 @@ namespace OriginSteamOverlayLauncher
         public event EventHandler<ProcessEventArgs> ProcessHardExit;
 
         public bool TimeoutCancelled { get; private set; }
-        public bool IsRunning {
-            get => TimeoutCancelled &&
-                TargetLauncher != null &&
-                TargetLauncher.IsRunning &&
-                TargetLauncher.TargetPID > 0;
-        }
 
         private int GlobalTimeout { get; set; }
         private int InnerTimeout { get; set; }
         private Timer MonitorTimer { get; set; }
         private Timer SearchTimer { get; set; }
         private ProcessLauncher TargetLauncher { get; set; }
-        private Process LastKnownProc { get; set; }
+        private ProcessLauncher LastKnown { get; set; }
 
         private readonly int Interval = 1000; // tick interval
         private SemaphoreSlim MonitorLock { get; }
         private bool Disposed { get; set; }
         private bool HasAcquired { get; set; }
-        private bool IsSearching { get; set; }
 
         /// <summary>
         /// Threaded timer for monitoring and validating a process heuristically
@@ -94,11 +87,16 @@ namespace OriginSteamOverlayLauncher
         }
         #endregion
 
+        public bool IsRunning()
+        {
+            return !TimeoutCancelled && TargetLauncher != null &&
+                TargetLauncher.IsRunning() && TargetLauncher.TargetPID > 0;
+        }
+
         public void Restart()
         {
             TimeoutCancelled = false;
             HasAcquired = false;
-            IsSearching = false;
             MonitorTimer.Change(0, Interval);
             SearchTimer.Change(Timeout.Infinite, Timeout.Infinite);
         }
@@ -113,20 +111,22 @@ namespace OriginSteamOverlayLauncher
 
         private async Task TimeoutWatcher(int timeout)
         {// workhorse for our timer delegates
-            if (HasAcquired && TargetLauncher.IsRunning)
+            if (HasAcquired && IsRunning())
                 return; // bail while process is healthy
 
             Stopwatch sw = Stopwatch.StartNew();
             double lastTime = sw.ElapsedMilliseconds, elapsedTimer = 0;
-            LastKnownProc = TargetLauncher.TargetProcess;
             while (!TimeoutCancelled && elapsedTimer < timeout * 1000)
             {
                 await Task.Delay(Interval);
                 elapsedTimer += sw.ElapsedMilliseconds - lastTime;
                 lastTime = sw.ElapsedMilliseconds;
 
-                TargetLauncher.Refresh();
-                if (!HasAcquired && TargetLauncher.IsRunning)
+                TargetLauncher?.Refresh();
+                if (TargetLauncher != null && IsRunning())
+                    LastKnown = TargetLauncher;
+
+                if (!HasAcquired && IsRunning())
                 {
                     OnProcessAcquired(this, new ProcessEventArgs
                     {
@@ -137,12 +137,12 @@ namespace OriginSteamOverlayLauncher
                     });
                     return;
                 }
-                else if (!IsSearching && !IsRunning)
+                else if (HasAcquired && !IsRunning())
                 {
                     OnProcessSoftExit(this, new ProcessEventArgs
                     {
-                        TargetProcess = LastKnownProc,
-                        ProcessName = TargetLauncher.ProcessName,
+                        TargetProcess = LastKnown?.TargetProcess,
+                        ProcessName = LastKnown?.ProcessName,
                         Timeout = timeout
                     });
                 }
@@ -151,8 +151,8 @@ namespace OriginSteamOverlayLauncher
             if (!TimeoutCancelled)
                 OnProcessHardExit(this, new ProcessEventArgs
                 {
-                    TargetProcess = LastKnownProc,
-                    ProcessName = TargetLauncher.ProcessName,
+                    TargetProcess = LastKnown?.TargetProcess,
+                    ProcessName = LastKnown?.ProcessName ?? "",
                     Elapsed = elapsedTimer,
                     Timeout = timeout
                 });
@@ -205,22 +205,23 @@ namespace OriginSteamOverlayLauncher
                 $"Process acquired in {ProcessUtils.ElapsedToString(e.Elapsed)}: {e.ProcessName}.exe [{e.TargetProcess.Id}]");
 
             HasAcquired = true;
-            IsSearching = false;
             MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
             SearchTimer.Change(0, Interval);
-
             ProcessAcquired?.Invoke(m, e);
         }
 
         private void OnProcessSoftExit(ProcessMonitor m, ProcessEventArgs e)
         {// attempt to gracefully switch modes (monitor -> search)
-            if (!IsSearching)
+            if (HasAcquired && !string.IsNullOrWhiteSpace(e.ProcessName))
                 ProcessUtils.Logger("MONITOR", $"Process exited, attempting to reacquire within {e.Timeout}s: {e.ProcessName}.exe");
+            else if (HasAcquired)  // can't get process details?
+                ProcessUtils.Logger("MONITOR", $"Process exited, attempting to reacquire within {e.Timeout}s");
 
             HasAcquired = false;
-            IsSearching = true;
+            // transition from monitoring -> searching
             MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
             SearchTimer.Change(0, Interval);
+
             ProcessSoftExit?.Invoke(m, e);
         }
 

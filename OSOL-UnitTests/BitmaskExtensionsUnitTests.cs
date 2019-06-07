@@ -2,7 +2,7 @@
 using OriginSteamOverlayLauncher;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace OSOL_UnitTests
+namespace OSOL.UnitTests
 {
     [TestClass]
     public class BitmaskExtensionsUnitTests

@@ -72,10 +72,10 @@ namespace OriginSteamOverlayLauncher
 
             // wait for all running threads to exit
             while (!ExitRequested ||
-                PreLauncherPL != null && PreLauncherPL.IsRunning ||
-                PostGamePL != null && PostGamePL.IsRunning ||
-                LauncherMonitor != null && LauncherMonitor.IsRunning ||
-                GameMonitor != null && GameMonitor.IsRunning)
+                PreLauncherPL != null && PreLauncherPL.IsRunning() ||
+                PostGamePL != null && PostGamePL.IsRunning() ||
+                LauncherMonitor != null && LauncherMonitor.IsRunning() ||
+                GameMonitor != null && GameMonitor.IsRunning())
                 await Task.Delay(1000);
         }
 
@@ -89,18 +89,18 @@ namespace OriginSteamOverlayLauncher
                 await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
             }
 
-            if (LauncherURIMode || LauncherPL.IsRunning && LauncherPL.ProcessType == 4)  // URIs/EGL
+            if (LauncherURIMode || LauncherMonitor.IsRunning() && e.ProcessType == 4)  // URIs/EGL
                 GamePL = new ProcessLauncher(
                     SetHnd.Paths.LauncherURI, "",
                     SetHnd.Options.PreGameWaitTime
                 );
-            else if (LauncherPL.IsRunning && LauncherPL.ProcessType == 1)  // Battle.net Launcher
+            else if (LauncherMonitor.IsRunning() && e.ProcessType == 1)  // Battle.net Launcher
                 GamePL = new ProcessLauncher(
                     SetHnd.Paths.LauncherPath,
                     SetHnd.Paths.LauncherArgs,
                     SetHnd.Options.PreGameWaitTime
                 );
-            else  // normal behavior
+            else if (LauncherPathValid && LauncherMonitor.IsRunning()) // normal behavior
             {
                 GamePL = new ProcessLauncher(
                     MonitorPath.Length > 0 ? MonitorPath : SetHnd.Paths.GamePath,
@@ -108,9 +108,9 @@ namespace OriginSteamOverlayLauncher
                     SetHnd.Options.PreGameWaitTime
                 );
             }
-            if (SetHnd.Options.AutoGameLaunch)
-                await GamePL?.Launch();
-            else
+            if (GamePL != null && (LauncherPathValid && LauncherMonitor.IsRunning() || SetHnd.Options.AutoGameLaunch))
+                await GamePL?.Launch(); // only launch if safe to do so
+            else if (LauncherPathValid && LauncherMonitor.IsRunning())
                 ProcessUtils.Logger("OSOL", "AutoGameLaunch is false, waiting for user to launch game before timing out...");
 
             // watch for the MonitorPath rather than GamePath (if applicable)
@@ -142,7 +142,7 @@ namespace OriginSteamOverlayLauncher
 
         private async void OnGameExited(object sender, ProcessEventArgs e)
         {
-            if (SetHnd.Options.MinimizeLauncher && LauncherPL.IsRunning)
+            if (SetHnd.Options.MinimizeLauncher && LauncherPL.IsRunning())
                 WindowUtils.MinimizeWindow(LauncherPL.HWnd);
 
             // run PostGameExecPath/Args after the game exits
@@ -160,7 +160,7 @@ namespace OriginSteamOverlayLauncher
                 ProcessUtils.Logger("OSOL", $"Game exited, cleaning up...");
             await Task.Delay(SetHnd.Options.PostGameWaitTime * 1000);
 
-            if (SetHnd.Options.CloseLauncher && LauncherPL.IsRunning)
+            if (SetHnd.Options.CloseLauncher && LauncherPL.IsRunning())
             {
                 ProcessUtils.Logger("OSOL", $"Found launcher still running, killing it...");
                 ProcessUtils.KillProcTreeByName(LauncherName);
@@ -171,7 +171,8 @@ namespace OriginSteamOverlayLauncher
 
         private void OnLauncherExited(object sender, ProcessEventArgs e)
         {// edge case if launcher times out (or closes) before game launches
-            ProcessUtils.Logger("OSOL", "Launcher was never acquired, cleaning up...");
+            ProcessUtils.Logger("OSOL",
+                $"Launcher could not be acquired within {ProcessUtils.ElapsedToString(e.Elapsed)}, cleaning up...");
             OnClosing();
         }
         #endregion

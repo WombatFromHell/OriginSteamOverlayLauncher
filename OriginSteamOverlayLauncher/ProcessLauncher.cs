@@ -12,7 +12,6 @@ namespace OriginSteamOverlayLauncher
         public int TargetPID { get { return TargetProcess?.Id ?? 0; } }
         public IntPtr HWnd { get => WindowUtils.HwndFromProc(TargetProcess); }
         public int ProcessType { get => WindowUtils.DetectWindowType(HWnd); }
-        public bool IsRunning { get => ProcessUtils.IsAnyRunningByName(ProcessName); }
 
         private string ExecPath { get; set; }
         private string ExecArgs { get; set; }
@@ -44,6 +43,11 @@ namespace OriginSteamOverlayLauncher
         public void Refresh()
         {// GetProcessByName() runs sanity checks automatically
             TargetProcess = ProcessUtils.GetProcessByName(ProcessName);
+        }
+
+        public bool IsRunning()
+        {
+            return ProcessUtils.IsAnyRunningByName(ProcessName);
         }
 
         /// <summary>

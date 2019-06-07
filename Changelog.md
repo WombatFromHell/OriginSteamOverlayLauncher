@@ -1,5 +1,7 @@
-* f93714b (HEAD -> staging) Normalize line endings in WindowUtils
-* 39a9705 (origin/staging) Implemented PreGameWaitTime option
+* 3145645 (HEAD -> staging, origin/staging) Update Help panel for new config format
+* 8a14908 Major rewrite of OSOL internals
+* f93714b Normalize line endings in WindowUtils
+* 39a9705 Implemented PreGameWaitTime option
 * 92f1195 (tag: v1.08d, origin/master, origin/HEAD, master) Bump the changelog and revision again
 * 68c0ffd Added pretty app icon and project file fixes
 * da67b54 Bump the changelog again
