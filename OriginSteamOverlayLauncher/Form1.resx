@@ -121,37 +121,31 @@
     <value>Here is a listing of all valid INI options with recommended defaults:
 
 [Paths]
-LauncherPath=C:\Your Launcher\Launcher.exe
+LauncherPath=C:\Your Launcher\Launcher.exe      (optional)
 LauncherArgs=Your Launcher Args Here            (see project Wiki for special cases)
 LauncherURI=launchproto://launchertarget        (see project Wiki for URI strings)
-GamePath=C:\Your Game\Game.exe                  (required!)
+GamePath=C:\Your Game\Game.exe                  (!!required!!)
 GameArgs=Your Game Args Here
-MonitorPath=C:\Your Game\Game To Target.exe (OSOL will watch for this exe instead of the GamePath, useful for BattleEye)
-DetectedCommandline=                            (OSOL stores copied arguments from CommandlineProxy here, see wiki)
+MonitorPath=C:\Your Game\Game To Target.exe     (OSOL will watch for this process instead of the GamePath, see Wiki)
 [Options]
 PreLaunchExec=C:\Your PreLauncher\Executable.exe
 PreLaunchExecArgs=Your PreLauncher Executable Args Here
 PostGameExec=C:\Your PostGame\Executable.exe
 PostGameExecArgs=Your PostGame Executable Args Here
-PreGameLauncherWaitTime=5                       (seconds to wait for launcher before launching game)
+PreGameLauncherWaitTime=10                       (seconds to wait for launcher before launching game)
 PreGameWaitTime=0                               (seconds to wait before game path is launched)
-PostGameWaitTime=7                              (seconds to wait after game exits for cloud syncing)
-PostGameCommandWaitTime=5                       (seconds to wait before post-game launch commands run)
-ProxyTimeout=3                                  (seconds to wait before attempts to validate process PIDs)
+PostGameWaitTime=10                             (seconds to wait after game exits for cloud syncing)
 LauncherMode=Normal                             (Normal mode launches the LauncherPath and GamePath)
-LauncherMode=LauncherOnly                       (LauncherOnly mode launches only the LauncherPath)
 LauncherMode=URI                                (URI mode launches LauncherPath with the argument in LauncherURI)
-ProcessAcquisitionTimeout=60                    (seconds to wait for process detection)
+ProcessAcquisitionTimeout=120                   (seconds to wait for process detection)
+InterProcessAcquisitionTimeout=15               (seconds to wait before assuming a monitored process has exited)
 ReLaunch=True                                   (set to False to prevent OSOL from relaunching LauncherPath if detected)
+SkipLauncher=False                              (set to True to disable launching LauncherPath)
 DoNotClose=False                                (set to True to stop OSOL killing the LauncherPath when the game exits)
-ForceLauncher=False                             (set to True to launch LauncherPath separate from GamePath)
 MinimizeLauncher=False                          (set to True to forcefully minimize launcher upon detection)
-CommandlineProxy=False                          (set to True to copy token arguments from child game processes)
 ElevateExternals=False                          (set to True to run Pre/PostGameExec with elevated privileges)
 TerminateOSOLUponLaunch=False                   (set to True to request OSOL exit upon game/launcher launch)
 GameProcessAffinity=0,1,2,3                     (set to a string of digits delimited by commas representing the target CPUs)
-GameProcessPriority=                            (can be Idle, BelowNormal, AboveNormal, High, or RealTime)
-ProcessAcquisitionAttempts=5                    (number of iterations before determining process validity)
-InterProcessAcquisitionTimeout=10               (seconds to wait before assuming a monitored process has exited)</value>
+GameProcessPriority=                            (can be Idle, BelowNormal, AboveNormal, High, or RealTime, Blank = Normal)</value>
   </data>
 </root>

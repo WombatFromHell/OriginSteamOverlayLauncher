@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Management;
@@ -41,15 +40,15 @@ namespace OriginSteamOverlayLauncher
             return false;
         }
 
-        public static String AffinityToCoreString(long inputArray)
+        public static string AffinityToCoreString(long inputArray)
         {// return a string of numbered cores from a ulong affinity mask
             var _saneInput = inputArray;
             var maxResult = 0xFFFFFFFF;
             // apply sanity to input (truncate anything beyond 32 bits)
-            if ((long)_saneInput > (long)maxResult)
-                _saneInput = (long)maxResult;
-            else if (_saneInput < 0)
-                _saneInput = (long)0;
+            if (_saneInput > maxResult)
+                _saneInput = maxResult;
+            else if (_saneInput <= 0)
+                _saneInput = 0;
 
             char[] _chr = Convert.ToString(_saneInput, 2).ToCharArray();
             Array.Reverse(_chr);
@@ -72,17 +71,18 @@ namespace OriginSteamOverlayLauncher
                 return _str.ToString();
             }
 
-            return String.Empty;
+            return "";
         }
 
-        public static bool TryParseCoreString(String inputString, out long result)
+        public static bool TryParseCoreString(string inputString, out long result)
         {// take a string of numbers delimited by commas and return a boolean along with a result
             result = 0;
 
             try
             {
                 // convert our comma delimited string to an array of ints
-                int[] _nums = Array.ConvertAll(inputString.Split(','), int.Parse);
+                int[] _nums = !string.IsNullOrWhiteSpace(inputString) ?
+                    Array.ConvertAll(inputString.Split(','), int.Parse) : new int[] { };
                 long _result = 0;
 
                 if (_nums.Length > 0)
@@ -137,21 +137,21 @@ namespace OriginSteamOverlayLauncher
             var maxResult = 0xFFFFFFFF;
 
             // provide shortcuts for common affinity masks (be smart about HT)
-            if (ProcessUtils.StringEquals(bitmask, "DualCore"))
+            if (ProcessUtils.OrdinalEquals(bitmask, "DualCore"))
             {// avoid CPU0 if threaded
-                result = _isHT ? (long)0xA : (long)0x5;
+                result = _isHT ? 0xA : 0x5;
                 ProcessUtils.Logger("OSOL", $"Parsed core mask to: {AffinityToCoreString(result)}");
                 return true;
             }
-            else if (ProcessUtils.StringEquals(bitmask, "QuadCore"))
+            else if (ProcessUtils.OrdinalEquals(bitmask, "QuadCore"))
             {
-                result = _isHT ? (long)0xAA : (long)0xF;
+                result = _isHT ? 0xAA : 0xF;
                 ProcessUtils.Logger("OSOL", $"Parsed core mask to: {AffinityToCoreString(result)}");
                 return true;
             }
-            else if (_isHT && ProcessUtils.StringEquals(bitmask, "DisableHT"))
+            else if (_isHT && ProcessUtils.OrdinalEquals(bitmask, "DisableHT"))
             {
-                long _aCores = 0;
+                long? _aCores = 0;
 
                 for (int i = 0; i <= _physCores * 2; i++)
                 {// loop through and accumulate bits
@@ -163,9 +163,9 @@ namespace OriginSteamOverlayLauncher
                 ProcessUtils.Logger("OSOL", $"Setting core mask to: {AffinityToCoreString(result)}");
                 return true;
             }
-            else if (!String.IsNullOrEmpty(bitmask) && !ProcessUtils.StringEquals(bitmask, "DisableHT"))
+            else if (!string.IsNullOrEmpty(bitmask) && !ProcessUtils.OrdinalEquals(bitmask, "DisableHT"))
             {// just convert what's there if possible
-                // pass string along to TryParseCoreString first
+                // pass string along to TryParseCorestring first
                 if (bitmask.Length > 1
                     && ProcessUtils.OrdinalContains(",", bitmask) && TryParseCoreString(bitmask, out long _stringResult))
                 {// try parsing as a core string - ints delimited by commas
@@ -173,7 +173,7 @@ namespace OriginSteamOverlayLauncher
                     result = _stringResult; // copy our output externally
                 }
                 else if (bitmask.Length > 0
-                    && !ProcessUtils.OrdinalContains(",", bitmask) && Int64.TryParse(bitmask, out result))
+                    && !ProcessUtils.OrdinalContains(",", bitmask) && long.TryParse(bitmask, out result))
                 {// attempt to parse using ulong conversion
                     ProcessUtils.Logger("OSOL", $"Parsed number mask to cores: {AffinityToCoreString(result)}");
                 }
@@ -190,9 +190,9 @@ namespace OriginSteamOverlayLauncher
 
                 return result >= 0 ? true : false;
             }
-            else if (!String.IsNullOrEmpty(bitmask))
+            else if (!string.IsNullOrEmpty(bitmask))
             {// default to single core if nothing else is a valid parse
-                result = (long)1;
+                result = 1;
                 return true;
             }
 

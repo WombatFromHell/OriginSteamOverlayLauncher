@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -29,30 +30,30 @@ namespace OriginSteamOverlayLauncher
         public readonly static char KEY_ENTER = (char)13;
         #endregion
 
-        public static void BringToFront(IntPtr wHnd)
+        public static void BringToFront(IntPtr hWnd)
         {// force the window handle owner to restore and activate to focus
-            ShowWindowAsync(wHnd, SW_SHOWDEFAULT);
-            ShowWindowAsync(wHnd, SW_SHOW);
-            SetForegroundWindow(wHnd);
+            ShowWindowAsync(hWnd, SW_SHOWDEFAULT);
+            ShowWindowAsync(hWnd, SW_SHOW);
+            SetForegroundWindow(hWnd);
         }
 
-        public static void MinimizeWindow(IntPtr wHnd)
+        public static void MinimizeWindow(IntPtr hWnd)
         {// force the window handle to minimize
-            ShowWindowAsync(wHnd, SW_MINIMIZE);
+            ShowWindowAsync(hWnd, SW_MINIMIZE);
         }
 
-        private static string GetCaptionOfWindow(IntPtr hwnd)
+        private static string GetCaptionOfWindow(IntPtr hWnd)
         {
             string caption = "";
             StringBuilder windowText = null;
 
             try
             {
-                int max_length = GetWindowTextLength(hwnd);
+                int max_length = GetWindowTextLength(hWnd);
                 windowText = new StringBuilder("", max_length + 5);
-                GetWindowText(hwnd, windowText, max_length + 2);
+                GetWindowText(hWnd, windowText, max_length + 2);
 
-                if (!String.IsNullOrEmpty(windowText.ToString()) && !String.IsNullOrWhiteSpace(windowText.ToString()))
+                if (!string.IsNullOrEmpty(windowText.ToString()) && !string.IsNullOrWhiteSpace(windowText.ToString()))
                     caption = windowText.ToString();
             }
             catch (Exception ex)
@@ -67,7 +68,7 @@ namespace OriginSteamOverlayLauncher
             return caption;
         }
 
-        private static string GetClassNameOfWindow(IntPtr hwnd)
+        private static string GetClassNameOfWindow(IntPtr hWnd)
         {
             string className = "";
             StringBuilder classText = null;
@@ -76,9 +77,9 @@ namespace OriginSteamOverlayLauncher
             {
                 int cls_max_length = 1000;
                 classText = new StringBuilder("", cls_max_length + 5);
-                GetClassName(hwnd, classText, cls_max_length + 2);
+                GetClassName(hWnd, classText, cls_max_length + 2);
 
-                if (!String.IsNullOrEmpty(classText.ToString()) && !String.IsNullOrWhiteSpace(classText.ToString()))
+                if (!string.IsNullOrEmpty(classText.ToString()) && !string.IsNullOrWhiteSpace(classText.ToString()))
                     className = classText.ToString();
             }
             catch (Exception ex)
@@ -93,13 +94,13 @@ namespace OriginSteamOverlayLauncher
             return className;
         }
 
-        public static bool MatchWindowDetails(String windowTitle, String windowClass, IntPtr hWnd)
+        public static bool MatchWindowDetails(string windowTitle, string windowClass, IntPtr hWnd)
         {// match exact ordinal title and class using the provided hWnd
             var _windowTitleTrg = GetCaptionOfWindow(hWnd);
             var _windowClassTrg = GetClassNameOfWindow(hWnd);
 
             if (ProcessUtils.OrdinalContains(windowTitle, _windowTitleTrg)
-                    && ProcessUtils.StringEquals(windowClass, _windowClassTrg))
+                    && ProcessUtils.OrdinalEquals(windowClass, _windowClassTrg))
                 return true;
 
             return false;
@@ -118,31 +119,35 @@ namespace OriginSteamOverlayLauncher
 
         public static IntPtr HwndFromProc(Process procHandle)
         {// just a helper to return an hWnd from a given Process (if it has a window handle)
-            return procHandle.MainWindowHandle != null ? procHandle.MainWindowHandle : IntPtr.Zero;
+            return procHandle?.MainWindowHandle != null ? procHandle.MainWindowHandle : IntPtr.Zero;
         }
 
-        public static int DetectWindowType(Process procHnd)
-        {// case testing for window class and title matching
-            var processType = -1;
-            var _hWnd = HwndFromProc(procHnd);
+        public static int GetWindowType(Process proc)
+        {
+            var _hwnd = HwndFromProc(proc);
+            return DetectWindowType(_hwnd);
+        }
 
-            if (_hWnd != IntPtr.Zero)
+        public static int DetectWindowType(IntPtr hWnd)
+        {// case testing for window class and title matching
+            int processType = -1;
+            if (hWnd != IntPtr.Zero)
             {// since we've got a window handle let's pass on what we find
                 // Epic Games Launcher [Type 4]
-                if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", _hWnd))
+                if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", hWnd))
                     processType = 4;
 
                 // Uplay [Type 3] (splash & normal)
-                if (processType == -1 && MatchWindowDetails("Uplay", "uplay_main", _hWnd) ||
-                    MatchWindowDetails("Uplay", "uplay_start", _hWnd))
+                if (processType == -1 && MatchWindowDetails("Uplay", "uplay_main", hWnd) ||
+                    MatchWindowDetails("Uplay", "uplay_start", hWnd))
                     processType = 3;
 
                 // Origin [Type 2]
-                if (processType == -1 && MatchWindowDetails("Origin", "Qt5QWindowIcon", _hWnd))
+                if (processType == -1 && MatchWindowDetails("Origin", "Qt5QWindowIcon", hWnd))
                     processType = 2;
 
                 // Blizzard Battle.net [Type 1]
-                if (processType == -1 && MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", _hWnd))
+                if (processType == -1 && MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", hWnd))
                     processType = 1;
 
                 //
@@ -150,22 +155,19 @@ namespace OriginSteamOverlayLauncher
                 //
 
                 // just check if we've got a window class and title
-                if (processType == -1 && (WindowHasDetails(_hWnd) || procHnd.Handle != IntPtr.Zero))
+                if (processType == -1 && WindowHasDetails(hWnd))
                     processType = 0;
             }
-#if DEBUG
-            ProcessUtils.Logger("DETECT", $"Process ({procHnd.ProcessName}.exe [{procHnd.Id}]) is of type {processType}");
-#endif
             return processType;
         }
 
-        public static bool MessageSendKey(Process proc, char key)
+        public static bool MessageSendKey(IntPtr hWnd, char key)
         {// some windows don't take SendKeys so use the Window Message API instead
             try
             {
                 // we need to send two messages per key, KEYDOWN and KEYUP respectively
-                SendMessage(WindowUtils.HwndFromProc(proc), WM_KEYDOWN, (IntPtr)key, IntPtr.Zero);
-                SendMessage(WindowUtils.HwndFromProc(proc), WM_KEYUP, (IntPtr)key, IntPtr.Zero);
+                SendMessage(hWnd, WM_KEYDOWN, (IntPtr)key, IntPtr.Zero);
+                SendMessage(hWnd, WM_KEYUP, (IntPtr)key, IntPtr.Zero);
 
                 return true;
             }

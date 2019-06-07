@@ -10,8 +10,16 @@ namespace OriginSteamOverlayLauncher
 {
     public class Program
     {
-        public static string codeBase = Assembly.GetExecutingAssembly().CodeBase;
-        public static string appName = Path.GetFileNameWithoutExtension(codeBase);
+        // make our config file location local to our assembly
+        public static string ConfigFile { get; } = new FileInfo($"{AppName}.ini").FullName.ToString();
+        public static string LogFile { get; } = new FileInfo($"{AppName}_Log.txt").FullName.ToString();
+
+        public static Settings CurSettings { get; private set; }
+        public static string GetCodeBase { get => Assembly.GetExecutingAssembly().CodeBase; }
+        public static string AppName { get => Path.GetFileNameWithoutExtension(GetCodeBase); }
+        public static string AsmProdVer {
+            get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion.ToString();
+        }
 
         [STAThread]
         private static void Main(string[] args)
@@ -19,6 +27,11 @@ namespace OriginSteamOverlayLauncher
             // get our current mutex id based off our AssemblyInfo.cs
             string appGuid = ((GuidAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value.ToString();
             string mutexId = $"Global\\{{{appGuid}}}";
+
+            // overwrite log file on startup
+            File.WriteAllText(LogFile, "");
+            ProcessUtils.Logger("NOTE", $"OSOL is running as: {AppName}");
+            CurSettings = new Settings();
 
             // simple global mutex, courtesy of: https://stackoverflow.com/a/1213517
             using (var mutex = new Mutex(false, mutexId))
@@ -36,9 +49,7 @@ namespace OriginSteamOverlayLauncher
                         Environment.Exit(0);
                     }
 
-                    /*
-                     * Run our actual entry point here...
-                     */
+                    /// begin real entry point
                     Application.EnableVisualStyles(); // enable DPI awareness
                     Application.SetCompatibleTextRenderingDefault(false);
 
@@ -48,38 +59,20 @@ namespace OriginSteamOverlayLauncher
                     }
                     else
                     {
-                        ProcessTracking procTrack = new ProcessTracking();
-                        Settings curSet = new Settings();
-                        // path to our local config
-                        IniFile iniFile = new IniFile(appName + ".ini");
-
-                        // overwrite/create log upon startup
-                        File.WriteAllText(appName + "_Log.txt", String.Empty);
-                        ProcessUtils.Logger("NOTE", "OSOL is running as: " + appName);
-
-                        if (Settings.CheckINI(iniFile)
-                            && Settings.ValidateINI(curSet, iniFile, iniFile.Path))
+                        try
                         {
-                            try
-                            {
-                                procTrack.ProcessLauncher(curSet, iniFile).Wait();
-                            }
-                            catch (AggregateException ae)
-                            {
-                                foreach (var ex in ae.InnerExceptions)
-                                {
-                                    ProcessUtils.Logger("EXCEPTION", $"{ex.ToString()}: {ex.Message}");
-                                }
-                            }
+                            LaunchLogic procTrack = new LaunchLogic();
+                            procTrack.ProcessLauncher().Wait();
                         }
-                        else
-                        {// ini doesn't match our comparison, recreate from stubs
-                            ProcessUtils.Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
-                            Settings.CreateINI(curSet, iniFile);
-                            Settings.ValidateINI(curSet, iniFile, iniFile.Path);
-                            Settings.PathChooser(curSet, iniFile);
+                        catch (AggregateException ae)
+                        {
+                            foreach (var ex in ae.InnerExceptions)
+                            {
+                                ProcessUtils.Logger("EXCEPTION", $"{ex.ToString()}: {ex.Message}");
+                            }
                         }
                     }
+                    /// end entry point
                 }
                 finally
                 {

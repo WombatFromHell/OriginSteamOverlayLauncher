@@ -73,6 +73,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ProcessLauncher.cs" />
     <Compile Include="BitmaskExtensions.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -80,10 +81,8 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="IniFile.cs" />
     <Compile Include="ProcessMonitor.cs" />
-    <Compile Include="ProcessObj.cs" />
-    <Compile Include="ProcessTracking.cs" />
+    <Compile Include="LaunchLogic.cs" />
     <Compile Include="ProcessUtils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -92,9 +91,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="SettingsData.cs" />
     <Compile Include="TrayIconUtil.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="TryLockTimer.cs" />
     <Compile Include="WindowUtils.cs" />
   </ItemGroup>
   <ItemGroup>

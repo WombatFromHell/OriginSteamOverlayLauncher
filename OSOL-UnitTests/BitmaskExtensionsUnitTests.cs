@@ -17,7 +17,7 @@ namespace OSOL_UnitTests
             var result = BitmaskExtensions.AffinityToCoreString((long)_inputArr);
 
             // use an exact string equality comparison
-            Assert.IsTrue(String.Equals(result, match));
+            Assert.IsTrue(string.Equals(result, match));
         }
 
         [TestMethod]
@@ -28,7 +28,7 @@ namespace OSOL_UnitTests
 
             var result = BitmaskExtensions.AffinityToCoreString((long)_inputArr);
 
-            Assert.IsTrue(String.Equals(result, match));
+            Assert.IsTrue(string.Equals(result, match));
         }
 
         [TestMethod]
@@ -41,7 +41,7 @@ namespace OSOL_UnitTests
             var result = BitmaskExtensions.AffinityToCoreString((long)inputVal);
 
             // test for sane output (should truncate to first 32 cores [0-31])
-            Assert.IsTrue(String.Equals(result, match));
+            Assert.IsTrue(string.Equals(result, match));
         }
 
         [TestMethod]

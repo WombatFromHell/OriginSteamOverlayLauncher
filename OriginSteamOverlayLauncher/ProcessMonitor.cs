@@ -1,113 +1,241 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace OriginSteamOverlayLauncher
 {
-    public class ProcessMonitor
+    public class ProcessEventArgs : EventArgs
     {
-        private bool IsRunning { get; set; }
-        private int GlobalElapsedTimer { get; set; } = 0;
-        private ProcessObj Process { get; set; } = null;
-        private int Timeout { get; set; } = 10;
+        public Process TargetProcess { get; set; } = null;
+        public int ProcessType { get; set; } = -1;
+        public string ProcessName { get; set; } = "";
+        public double Elapsed { get; set; } = 0;
+        public int Timeout { get; set; } = 0;
+    }
+
+    /// <summary>
+    /// Provides asynchronous monitoring and synchronization of Process objects
+    /// Depends on: ProcessLauncher class
+    /// </summary>
+    public class ProcessMonitor : IDisposable
+    {
+        #region Initialization
+        public delegate void ProcessAcquiredHandler(ProcessMonitor m, ProcessEventArgs e);
+        public delegate void ProcessSoftExitHandler(ProcessMonitor m, ProcessEventArgs e);
+        public delegate void ProcessHardExitHandler(ProcessMonitor m, ProcessEventArgs e);
+        public event EventHandler<ProcessEventArgs> ProcessAcquired;
+        public event EventHandler<ProcessEventArgs> ProcessSoftExit;
+        public event EventHandler<ProcessEventArgs> ProcessHardExit;
+
+        public bool TimeoutCancelled { get; private set; }
+        public bool IsRunning {
+            get => TimeoutCancelled &&
+                TargetLauncher != null &&
+                TargetLauncher.IsRunning &&
+                TargetLauncher.TargetPID > 0;
+        }
+
+        private int GlobalTimeout { get; set; }
+        private int InnerTimeout { get; set; }
+        private Timer MonitorTimer { get; set; }
+        private Timer SearchTimer { get; set; }
+        private ProcessLauncher TargetLauncher { get; set; }
+        private Process LastKnownProc { get; set; }
+
+        private readonly int Interval = 1000; // tick interval
+        private SemaphoreSlim MonitorLock { get; }
+        private bool Disposed { get; set; }
+        private bool HasAcquired { get; set; }
+        private bool IsSearching { get; set; }
 
         /// <summary>
-        /// Takes a ProcessObj and a Timeout (in seconds, 10s by default)
+        /// Threaded timer for monitoring and validating a process heuristically
         /// </summary>
-        /// <param name="procObj"></param>
-        /// <param name="timeout"></param>
-        public ProcessMonitor(ProcessObj procObj, int timeout)
+        public ProcessMonitor(ProcessLauncher procLauncher, int globalTimeout, int innerTimeout)
+        {// constructor for GamePath + MonitorPath instances
+            TargetLauncher = procLauncher;
+            GlobalTimeout = globalTimeout;
+            InnerTimeout = innerTimeout;
+
+            MonitorLock = new SemaphoreSlim(1, 1);
+            MonitorTimer = new Timer(MonitorProcess);
+            SearchTimer = new Timer(SearchProcess);
+            MonitorTimer.Change(0, Interval);
+        }
+        #endregion
+
+        #region Dispose
+        public void Dispose()
         {
-            if (procObj != null && procObj.ProcessRef != null)
-            {
-                this.GlobalElapsedTimer = 0;
-                this.Process = procObj;
-                this.Timeout = timeout;
-            }
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        public async Task<ProcessObj> InterruptibleMonitorAsync()
-        {// always returns a ProcessObj after a monitoring timeout (could be old if unsuccessful)
-            ProcessUtils.Logger("MONITOR", $"Monitoring process {this.Process.ProcessName}.exe for {this.Timeout}s");
-            while (this.GlobalElapsedTimer < this.Timeout * 1000)
-            {// reacquire within a timeout (non-blocking)
-                await this.IncrementTimerAsync();
-                if (this.Process.ProcessRef.HasExited)
-                {// try to reacquire process by name
-                    var _proc = new ProcessObj(this.Process.ProcessName);
-                    if (_proc != null && _proc.IsValid)
+        protected virtual void Dispose(bool disposing)
+        {
+            if (Disposed)
+                return;
+
+            if (disposing)
+            {
+                MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                SearchTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                MonitorTimer.Dispose();
+                SearchTimer.Dispose();
+                MonitorLock.Dispose();
+            }
+            Disposed = true;
+        }
+
+        ~ProcessMonitor()
+        {
+            Dispose(false);
+        }
+        #endregion
+
+        public void Restart()
+        {
+            TimeoutCancelled = false;
+            HasAcquired = false;
+            IsSearching = false;
+            MonitorTimer.Change(0, Interval);
+            SearchTimer.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+
+        public void Stop()
+        {// attempt to gracefully exit threads
+            TimeoutCancelled = true;
+            HasAcquired = false;
+            MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            SearchTimer.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+
+        private async Task TimeoutWatcher(int timeout)
+        {// workhorse for our timer delegates
+            if (HasAcquired && TargetLauncher.IsRunning)
+                return; // bail while process is healthy
+
+            Stopwatch sw = Stopwatch.StartNew();
+            double lastTime = sw.ElapsedMilliseconds, elapsedTimer = 0;
+            LastKnownProc = TargetLauncher.TargetProcess;
+            while (!TimeoutCancelled && elapsedTimer < timeout * 1000)
+            {
+                await Task.Delay(Interval);
+                elapsedTimer += sw.ElapsedMilliseconds - lastTime;
+                lastTime = sw.ElapsedMilliseconds;
+
+                TargetLauncher.Refresh();
+                if (!HasAcquired && TargetLauncher.IsRunning)
+                {
+                    OnProcessAcquired(this, new ProcessEventArgs
                     {
-                        this.GlobalElapsedTimer = 0;
-                        ProcessUtils.Logger("MONITOR", $"Reacquired a matching target process ({_proc.ProcessName}.exe [{_proc.ProcessId}])");
-                        this.Process = _proc; // don't assign a dead process
-                        this.IsRunning = true;
-                    }
-                    else
-                        this.IsRunning = false;
+                        TargetProcess = TargetLauncher.TargetProcess,
+                        ProcessName = TargetLauncher.ProcessName,
+                        ProcessType = TargetLauncher.ProcessType,
+                        Elapsed = elapsedTimer
+                    });
+                    return;
                 }
+                else if (!IsSearching && !IsRunning)
+                {
+                    OnProcessSoftExit(this, new ProcessEventArgs
+                    {
+                        TargetProcess = LastKnownProc,
+                        ProcessName = TargetLauncher.ProcessName,
+                        Timeout = timeout
+                    });
+                }
+            }
+            // timed out
+            if (!TimeoutCancelled)
+                OnProcessHardExit(this, new ProcessEventArgs
+                {
+                    TargetProcess = LastKnownProc,
+                    ProcessName = TargetLauncher.ProcessName,
+                    Elapsed = elapsedTimer,
+                    Timeout = timeout
+                });
+        }
+
+        #region Delegates
+        /// <summary>
+        /// TimerCallback delegate for threaded timer to monitor a named process
+        /// </summary>
+        private async void MonitorProcess(object stateInfo)
+        {// only used when initially acquiring a process
+            await MonitorLock.WaitAsync();
+            try
+            {// monitor with a long initial timeout (for loading/updates)
+                if (!TimeoutCancelled)
+                    await TimeoutWatcher(GlobalTimeout);
                 else
-                    this.IsRunning = true;
+                    MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
             }
-            // report our results once the timer expires
-            if (this.IsRunning)
-                ProcessUtils.Logger("MONITOR", $"Target process ({this.Process.ProcessName}.exe [{this.Process.ProcessId}]) is still running after {this.Timeout}s");
+            finally
+            {
+                MonitorLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// TimerCallback delegate for threaded timer to reacquire a valid process by name
+        /// </summary>
+        private async void SearchProcess(object stateInfo)
+        {// used when searching for a valid process within a timeout
+            await MonitorLock.WaitAsync();
+            try
+            {// monitor with a shorter timeout for the search
+                if (!TimeoutCancelled)
+                    await TimeoutWatcher(InnerTimeout);
+                else
+                    SearchTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            }
+            finally
+            {
+                MonitorLock.Release();
+            }
+        }
+        #endregion
+
+        #region Event Handlers
+        private void OnProcessAcquired(ProcessMonitor m, ProcessEventArgs e)
+        {
+            ProcessUtils.Logger("MONITOR",
+                $"Process acquired in {ProcessUtils.ElapsedToString(e.Elapsed)}: {e.ProcessName}.exe [{e.TargetProcess.Id}]");
+
+            HasAcquired = true;
+            IsSearching = false;
+            MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            SearchTimer.Change(0, Interval);
+
+            ProcessAcquired?.Invoke(m, e);
+        }
+
+        private void OnProcessSoftExit(ProcessMonitor m, ProcessEventArgs e)
+        {// attempt to gracefully switch modes (monitor -> search)
+            if (!IsSearching)
+                ProcessUtils.Logger("MONITOR", $"Process exited, attempting to reacquire within {e.Timeout}s: {e.ProcessName}.exe");
+
+            HasAcquired = false;
+            IsSearching = true;
+            MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            SearchTimer.Change(0, Interval);
+            ProcessSoftExit?.Invoke(m, e);
+        }
+
+        private void OnProcessHardExit(ProcessMonitor m, ProcessEventArgs e)
+        {
+            if (e.TargetProcess != null)
+                ProcessUtils.Logger("MONITOR",
+                    $"Timed out after {ProcessUtils.ElapsedToString(e.Elapsed)} searching for a matching process: {e.ProcessName}.exe");
             else
-                ProcessUtils.Logger("MONITOR", $"Timed out after {this.Timeout}s while monitoring the target process: {this.Process.ProcessName}.exe");
-            return this.Process;
-        }
+                ProcessUtils.Logger("MONITOR",
+                    $"Could not detect a running process after waiting {ProcessUtils.ElapsedToString(e.Elapsed)}...");
 
-        public async Task MonitorAsync()
-        {
-            await this.SpinnerAsync();
-            // use InterruptibleMonitorAsync() for process reacquisition
-            while (this.GlobalElapsedTimer < this.Timeout * 1000)
-            {
-                // reacquire if process exits within the timeout
-                var _proc = await InterruptibleMonitorAsync();
-                if (this.IsRunning) {
-                    this.GlobalElapsedTimer = 0;
-                    await this.SpinnerAsync();
-                }
-            }
-            // timeout if our timer expires
+            Stop();
+            ProcessHardExit?.Invoke(m, e);
         }
-
-        private async Task<bool> SpinnerAsync()
-        {
-            Stopwatch _isw = new Stopwatch();
-            _isw.Start();
-            if (this.Process == null || this.Process.ProcessRef != null && this.Process.ProcessRef.HasExited)
-            {// sanity check
-                ProcessUtils.Logger("MONITOR", $"The target process {this.Process.ProcessName}.exe could not be found!");
-                this.IsRunning = false;
-                return true;
-            }
-
-            while (!this.Process.ProcessRef.HasExited)
-            {
-                this.IsRunning = true;
-                await Task.Delay(1000);
-            }
-            _isw.Stop();
-            this.IsRunning = false;
-            ProcessUtils.Logger("MONITOR", $"Process exited after {ConvertElapsedToString(_isw.ElapsedMilliseconds)} attempting to reaquire {this.Process.ProcessName}.exe");
-            return false;
-        }
-
-        private async Task IncrementTimerAsync()
-        {
-            await Task.Delay(1000);
-            this.GlobalElapsedTimer += 1000;
-        }
-
-        private static string ConvertElapsedToString(long stopwatchElapsed)
-        {
-            double tempSecs = Convert.ToDouble(stopwatchElapsed / 1000);
-            double tempMins = Convert.ToDouble(tempSecs / 60);
-            // return minutes or seconds (if applicable)
-            return tempSecs > 60 ? $"{tempMins:0.##}m" : $"{tempSecs:0.##}s";
-        }
+        #endregion
     }
 }

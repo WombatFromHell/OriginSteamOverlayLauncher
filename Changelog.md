@@ -1,4 +1,7 @@
-* 68c0ffd (HEAD -> master) Added pretty app icon and project file fixes
+* f93714b (HEAD -> staging) Normalize line endings in WindowUtils
+* 39a9705 (origin/staging) Implemented PreGameWaitTime option
+* 92f1195 (tag: v1.08d, origin/master, origin/HEAD, master) Bump the changelog and revision again
+* 68c0ffd Added pretty app icon and project file fixes
 * da67b54 Bump the changelog again
 * 54425b7 Fixed an exception in process handling during reacquisition
 * 67b985d Bump the changelog

@@ -6,12 +6,17 @@ using System.IO;
 using System.Linq;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace OriginSteamOverlayLauncher
 {
     public class ProcessUtils
     {
+        private static readonly object writerLock = new object();
+        private static readonly object wmiLock = new object();
+
         #region Imports
         // for custom modal support
         [DllImport("User32.dll", CharSet = CharSet.Unicode)]
@@ -25,323 +30,158 @@ namespace OriginSteamOverlayLauncher
 
             // we accept -arg and /arg formats
             var singleFound = args.Where(
-                    w => ProcessUtils.StringEquals(w.ToLower(), _argType1)
-                    || ProcessUtils.StringEquals(w.ToLower(), _argType2)
+                    w => OrdinalEquals(w.ToLower(), _argType1)
+                    || OrdinalEquals(w.ToLower(), _argType2)
                 ).FirstOrDefault();
 
             if (singleFound != null)
             {// ugly equality check here (compare using ordinality)
-                return StringEquals(singleFound, _argType1)
-                || StringEquals(singleFound, _argType2) ? true : false;
+                return OrdinalEquals(singleFound, _argType1)
+                || OrdinalEquals(singleFound, _argType2) ? true : false;
             }
 
             return false;
         }
 
-        public static void Logger(String cause, String message)
+        public static void Logger(string cause, string message)
         {
-            string _msg = $"[{DateTime.Now.ToLocalTime()}] [{cause}] {message}";
-            using (StreamWriter stream = File.AppendText(Program.appName + "_Log.txt"))
+            lock (writerLock)
             {
-                stream.Write($"{_msg}\r\n");
-            }
+                string _msg = $"[{DateTime.Now.ToLocalTime()}] [{cause}] {message}";
+                byte[] _encMsg = Encoding.Unicode.GetBytes(_msg + "\r\n");
+                using (FileStream stream = File.Open(Program.LogFile, FileMode.Open))
+                {
+                    stream.Seek(0, SeekOrigin.End);
+                    stream.WriteAsync(_encMsg, 0, _encMsg.Length).Wait();
+                }
 #if DEBUG
-            Debug.WriteLine(_msg);
+                Debug.WriteLine(_msg);
 #endif
+            }
         }
 
-        public static bool IsRunningPID(int PID)
+        public static bool IsAnyRunningByName(string exeName)
         {
-            var _proc = Process.GetProcessById(PID);
-            if (_proc != null && !_proc.HasExited)
-                return true;
+            var _procs = GetProcessesByName(exeName);
+            if (_procs != null)
+            {
+                for (int i = 0; _procs.Count > 0 && i < _procs.Count; i++)
+                {
+                    if (WindowUtils.DetectWindowType(_procs[i].MainWindowHandle) > -1 || IsValidProcess(_procs[i]))
+                        return true;
+                }
+            }
             return false;
         }
 
-        public static bool IsRunningByName(String exeName)
+        public static Process GetProcessByName(string exeName)
         {
-            var _procs = GetProcessesByName(exeName);
-            if (_procs == null) return false;
+            List<Process> _procs = GetProcessesByName(exeName);
+            if (_procs != null && _procs.Count > 0)
+            {
+                for (int i = 0; i < _procs.Count; i++)
+                {
+                    if (!_procs[i].HasExited)
+                    {
+                        int _type = WindowUtils.DetectWindowType(_procs[i].MainWindowHandle);
+                        bool _valid = IsValidProcess(_procs[i]);
+                        if (_type > -1 || _valid)
+                            return _procs[i];
+                    }
+                }
+            }
+            return null;
+        }
 
-            var _lastChild = GetLastProcessChild(_procs);
-            if (_procs != null && _lastChild != null && !_lastChild.HasExited)
-                return true;
-
+        public static bool IsValidProcess(Process proc)
+        {
+            if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero)
+            {
+                var _hwnd = WindowUtils.HwndFromProc(proc);
+                if (WindowUtils.WindowHasDetails(_hwnd) && WindowUtils.DetectWindowType(_hwnd) > -1 || proc.Id > 0)
+                    return true;
+            }
             return false;
         }
 
-        public static Process GetLastProcessChild(List<Process> procList)
+        public static int GetPIDByName(string exeName)
         {
-            if (procList != null)
-                return procList.LastOrDefault();
-            return null;
+            return GetProcessByName(exeName)?.Id ?? 0;
         }
 
-        public static Process GetLastProcessChildByName(String exeName)
-        {
-            var _procs = GetProcessesByName(exeName);
-            var _lastChild = GetLastProcessChild(_procs);
-            if (_procs != null && _lastChild != null && !_lastChild.HasExited)
-                return _lastChild;
-            return null;
-        }
-
-        public static List<Process> GetProcessesByName(String exeName)
+        public static List<Process> GetProcessesByName(string exeName)
         {// returns a List() of Process refs from an executable name search via WMI
+            List<Process> output = new List<Process>();
             var _query = new SelectQuery($"SELECT * FROM Win32_Process where Name LIKE '{exeName}.exe'");
             try
             {
-                using (ManagementObjectSearcher search = new ManagementObjectSearcher(_query))
+                lock (wmiLock)
                 {
-                    var _procs = search.Get();
-                    if (_procs.Count > 0)
+                    using (ManagementObjectSearcher search = new ManagementObjectSearcher(_query))
+                    using (var _procs = search.Get())
                     {
-                        List<Process> output = new List<Process>();
                         foreach (ManagementObject proc in _procs)
                         {
                             proc.Get();
                             var procProps = proc.Properties;
                             int _pid = Convert.ToInt32(procProps["ProcessID"].Value);
+                            Process outputProc = Process.GetProcessById(_pid);
                             // add Process refs to our list that match this executable name
-                            output.Add(Process.GetProcessById(_pid));
+                            if (!outputProc.HasExited)
+                                output.Add(outputProc);
                         }
-                        return output;
                     }
                 }
             }
             catch (Exception ex)
             {
                 if (ex is ManagementException)
-                    return null; // throw away "Not Found" exceptions
+                    return output; // throw away "Not Found" exceptions
+                else if (ex is Win32Exception)
+                    return output; // throw away "Access Denied"
                 else
                     Logger("FATAL EXCEPTION", ex.Message);
             }
-            return null;
+            return output;
         }
 
-        public static bool IsValidProcess(Process targetProc)
-        {// rough process validation - must have an hwnd or handle
-            if (targetProc == null || targetProc.Id == 0)
-                return false; // sanity check
-
-            var _hwnd = WindowUtils.HwndFromProc(targetProc);
-            // true if !exited + pid>0 + hWnd>0x0 + has a title/class
-            // ... or !exited + pid>0 + hnd>0
-            if (!targetProc.HasExited && targetProc.Id > 0 &&
-                _hwnd != IntPtr.Zero && WindowUtils.WindowHasDetails(_hwnd) ||
-                !targetProc.HasExited && targetProc.Id > 0 && targetProc.Handle != IntPtr.Zero)
-                return true;
-
-            return false;
-        }
-
-        public static void KillProcTreeByName(String procName)
+        public static void KillProcTreeByName(string procName)
         {
             Process[] foundProcs = Process.GetProcessesByName(procName);
-            foreach (Process proc in foundProcs)
+            for (int i = 0; i < foundProcs.Length; i++)
             {
-                proc.Kill();
-                proc.Dispose();
+                foundProcs[i].Kill();
+                foundProcs[i].Dispose();
             }
         }
 
-        public static String ConvertUnixToDosPath(String path)
-        {
-            string output = "";
-
-            if (OrdinalContains(":/", path))
-            {// look for a unix style full-path
-                // strip escape chars from the beginning and end of path
-                string _path = path.Replace("\\\"", "");
-                // format to dos style
-                output = _path.Replace("/", "\\");
-            }
-
-            // pass back unchanged if no work performed
-            return !String.IsNullOrEmpty(output) ? output : path;
-        }
-
-        public static bool PathIsURI(String path)
-        {// take a string and check if it's similar to a URI
-            if (!String.IsNullOrEmpty(path) && !String.IsNullOrWhiteSpace(path)
-                && ProcessUtils.OrdinalContains(@"://", path))
-                return true;
-
-            return false;
-        }
-
-        public static String GetCmdlineFromProcByName(String procName)
-        {// try using Process() to get CommandLine from ...StartInfo.Arguments
-            var _proc = GetLastProcessChildByName(procName);
-            var _cmdLine = "";
-
-            if (_proc != null)
-                _cmdLine = _proc.StartInfo.Arguments.ToString();
-
-            if (_cmdLine.Contains(@":/"))
-                _cmdLine = ConvertUnixToDosPath(_cmdLine);
-
-            return !String.IsNullOrEmpty(_cmdLine) ? _cmdLine : String.Empty;
-        }
-
-        public static string GetCommandLineToString(Process process, String startPath)
-        { // credit to: https://stackoverflow.com/a/40501117
-            String cmdLine = String.Empty;
-            String _parsedPath = String.Empty;
-
-            try
-            {
-                using (var searcher = new ManagementObjectSearcher($"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {process.Id}"))
-                {// use WMI to grab the CommandLine string by looking up the PID
-                    var matchEnum = searcher.Get().GetEnumerator();
-
-                    // include a space to clean up the output parsed args
-                    if (startPath.Contains(" "))
-                        _parsedPath = $"\"{startPath}\" ";
-                    else
-                        _parsedPath = $"{startPath} ";
-
-
-                    if (matchEnum.MoveNext())
-                    {// this will always return at most 1 result
-                        string _cmdLine = matchEnum.Current["CommandLine"]?.ToString();
-
-                        // unix-style path in target - we need to convert it
-                        if (!String.IsNullOrEmpty(_cmdLine) && _cmdLine.Contains(@":/"))
-                            cmdLine = ConvertUnixToDosPath(_cmdLine);
-                        else
-                            cmdLine = !String.IsNullOrEmpty(_cmdLine) ? _cmdLine : String.Empty;
-                    }
-                }
-
-                if (cmdLine == null)
-                {
-                    // Not having found a command line implies 1 of 2 exceptions, which the
-                    // WMI query masked:
-                    // An "Access denied" exception due to lack of privileges.
-                    // A "Cannot process request because the process (<pid>) has exited."
-                    // exception due to the process having terminated.
-                    // We provoke the same exception again simply by accessing process.MainModule.
-                    var dummy = process.MainModule; // Provoke exception.
-                }
-            }
-            // Catch and ignore "access denied" exceptions.
-            catch (Win32Exception ex) when (ex.HResult == -2147467259) { }
-            // Catch and ignore "Cannot process request because the process (<pid>) has
-            // exited." exceptions.
-            // These can happen if a process was initially included in 
-            // Process.GetProcesses(), but has terminated before it can be
-            // examined below.
-            catch (InvalidOperationException ex) when (ex.HResult == -2146233079) { }
-
-            // remove the full path from our parsed arguments
-            return RemoveInPlace(cmdLine, _parsedPath);
-        }
-
-        public static void ExecuteExternalElevated(Settings setHnd, String filePath, String fileArgs, int standoffTimer)
-        {// generic process delegate for executing pre-launcher/post-game
-            try
-            {
-                Process execProc = new Process();
-
-                // sanity check our future process path first
-                if (Settings.ValidatePath(filePath))
-                {
-                    execProc.StartInfo.UseShellExecute = true;
-                    execProc.StartInfo.FileName = filePath;
-                    execProc.StartInfo.Arguments = fileArgs;
-
-                    // ask the user for contextual UAC privs in case they need elevation
-                    if (setHnd.ElevateExternals)
-                        execProc.StartInfo.Verb = "runas";
-
-                    if (standoffTimer > 0)
-                    {
-                        Thread.Sleep(standoffTimer * 1000);
-                        Logger("OSOL", $"Attempting to run external process after {standoffTimer}s: {filePath} {fileArgs}");
-                    }
-                    else
-                        Logger("OSOL", $"Attempting to run external process: {filePath} {fileArgs}");
-
-                    execProc.Start();
-                    execProc.WaitForExit(); // idle waiting for outside process to return (blocking!)
-                    Logger("OSOL", "External process delegate returned, continuing...");
-                }
-                else if (filePath != null && filePath.Length > 0)
-                {
-                    Logger("WARNING", $"External process path is invalid: {filePath} {fileArgs}");
-                }
-            }
-            catch (Exception e)
-            {
-                Logger("EXCEPTION", $"Process delegate failed on [{filePath} {fileArgs}], due to: {e.Message}");
-            }
-        }
-
-        public static bool OrdinalContains(String match, String container)
+        public static bool OrdinalContains(string match, string container)
         {// if container string contains match string, via valid index, then true
             if (container.IndexOf(match, StringComparison.InvariantCultureIgnoreCase) >= 0)
                 return true;
-
             return false;
         }
 
-        public static bool StringEquals(String input, String comparator)
+        public static bool OrdinalEquals(string input, string comparator)
         {// support function for checking string equality using Ordinal comparison
-            if (!String.IsNullOrEmpty(input) && String.Equals(input, comparator, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(input, comparator, StringComparison.OrdinalIgnoreCase))
                 return true;
-            else
-                return false;
-        }
-
-        public static string RemoveInPlace(String input, String match)
-        {// remove matched substring from input string
-            if (OrdinalContains(match, input))
-            {
-                string _result = input.Replace(match, String.Empty);
-                return _result;
-            }
-
-            return String.Empty;
-        }
-
-        public static void StoreCommandline(Settings setHnd, IniFile iniHnd, String cmdLine)
-        {// save the passed commandline string to our ini for later
-            if (cmdLine.Length > 0)
-            {
-                setHnd.DetectedCommandline = cmdLine;
-                iniHnd.Write("DetectedCommandline", cmdLine, "Paths");
-            }
-        }
-
-        public static bool CompareCommandlines(String storedCmdline, String comparatorCmdline)
-        {// compared stored against active to prevent unnecessary relaunching
-            if (storedCmdline.Length > 0 && comparatorCmdline.Length > 0 && StringEquals(comparatorCmdline, storedCmdline))
-            {
-                return true;
-            }
-
             return false;
         }
 
-        public static void LaunchProcess(int delayTime, Process proc)
-        {// abstract Process.Start() for exception handling purposes...
-            try
-            {
-                if (delayTime > 0)
-                {
-                    ProcessUtils.Logger("OSOL", $"Waiting {delayTime}s before launching process...");
-                    Thread.Sleep(delayTime * 1000);
-                    proc.Start();
-                }
-                else
-                    proc.Start();
-            }
-            catch (Exception ex)
-            {
-                ProcessUtils.Logger("FATAL EXCEPTION", ex.Message);
-                Environment.Exit(0);
-            }
+        public static bool StringFuzzyEquals(string input, string comparator)
+        {// case insensitive equality
+            return input != null && comparator != null &&
+                input.Length == comparator.Length &&
+                OrdinalContains(input, comparator);
+        }
+
+        public static string ElapsedToString(double stopwatchElapsed)
+        {
+            double tempSecs = Convert.ToDouble(stopwatchElapsed * 1.0f / 1000.0f);
+            double tempMins = Convert.ToDouble(tempSecs / 60.0f);
+            // return minutes or seconds (if applicable)
+            return tempSecs > 60 ? $"{tempMins:0.##}m" : $"{tempSecs:0.##}s";
         }
     }
 }
