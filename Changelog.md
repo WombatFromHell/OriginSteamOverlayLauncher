@@ -1,4 +1,5 @@
-* 3145645 (HEAD -> staging, origin/staging) Update Help panel for new config format
+* 3b087fd (HEAD -> staging, origin/staging) Bug fixes for threaded timer behavior
+* 3145645 Update Help panel for new config format
 * 8a14908 Major rewrite of OSOL internals
 * f93714b Normalize line endings in WindowUtils
 * 39a9705 Implemented PreGameWaitTime option

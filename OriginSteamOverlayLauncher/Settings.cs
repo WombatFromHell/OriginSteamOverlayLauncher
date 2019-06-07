@@ -109,8 +109,8 @@ namespace OriginSteamOverlayLauncher
 
         private bool CheckINI()
         {// return false if INI doesn't match our accessor list
-            if (CompareKeysToProps() && CheckVersion() &&
-                SettingsData.ValidatePath(ReadKey("GamePath", "Paths").Value ?? ""))
+            SettingsData.ValidatePath(ReadKey("GamePath", "Paths").Value ?? "", out string _sanitized);
+            if (CompareKeysToProps() && CheckVersion() && File.Exists(_sanitized))
                 return true;
             return false;
         }
@@ -179,6 +179,9 @@ namespace OriginSteamOverlayLauncher
 
         public bool WriteKey(string keyName, string value, string sectionName)
         {
+            if (string.IsNullOrWhiteSpace(value) && KeyExists(keyName))
+                return false; // do not overwrite data with nothing!
+
             var input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
             var matchedKey = ReadKey(keyName, sectionName);
             if (matchedKey.Index > -1)
