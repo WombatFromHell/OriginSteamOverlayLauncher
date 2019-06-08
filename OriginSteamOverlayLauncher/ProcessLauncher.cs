@@ -10,8 +10,6 @@ namespace OriginSteamOverlayLauncher
         public Process TargetProcess { get; private set; }
         public string ProcessName { get; private set; }
         public int TargetPID { get { return TargetProcess?.Id ?? 0; } }
-        public IntPtr HWnd { get => WindowUtils.HwndFromProc(TargetProcess); }
-        public int ProcessType { get => WindowUtils.DetectWindowType(HWnd); }
 
         private string ExecPath { get; set; }
         private string ExecArgs { get; set; }
@@ -45,9 +43,25 @@ namespace OriginSteamOverlayLauncher
             TargetProcess = ProcessUtils.GetProcessByName(ProcessName);
         }
 
+        public void Refresh(string altProcName)
+        {// refresh against a different executable name
+            if (!string.IsNullOrEmpty(altProcName))
+                TargetProcess = ProcessUtils.GetProcessByName(altProcName);
+        }
+
         public bool IsRunning()
         {
             return ProcessUtils.IsAnyRunningByName(ProcessName);
+        }
+
+        public IntPtr GetHWnd()
+        {
+            return WindowUtils.HwndFromProc(TargetProcess);
+        }
+
+        public int GetProcessType()
+        {
+            return WindowUtils.GetWindowType(TargetProcess);
         }
 
         /// <summary>
@@ -62,11 +76,9 @@ namespace OriginSteamOverlayLauncher
                 Process newProc = new Process();
                 newProc.StartInfo.UseShellExecute = true;
                 newProc.StartInfo.FileName = ExecPath;
+                newProc.StartInfo.Arguments = ExecArgs;
                 if (!SettingsData.ValidateURI(ExecPath))
-                {
-                    newProc.StartInfo.Arguments = ExecArgs;
                     newProc.StartInfo.WorkingDirectory = Directory.GetParent(ExecPath).ToString();
-                }
                 if (Elevated)
                     newProc.StartInfo.Verb = "runas";
 
@@ -81,12 +93,9 @@ namespace OriginSteamOverlayLauncher
                     ProcessUtils.Logger("LAUNCHER", $"Launching process: {ExecPath} {ExecArgs}");
                     newProc.Start();
                 }
-                await Task.Delay(1000); // wait for process to spin up
-                if (ProcessUtils.IsValidProcess(newProc))
-                {
-                    TargetProcess = newProc;
-                    return newProc;
-                }
+                await Task.Delay(100); // spin up
+                TargetProcess = newProc;
+                return newProc;
             }
             return null;
         }

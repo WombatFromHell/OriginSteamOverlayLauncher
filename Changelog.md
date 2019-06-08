@@ -1,4 +1,5 @@
-* 3b087fd (HEAD -> staging, origin/staging) Bug fixes for threaded timer behavior
+* 9adc0cc (HEAD -> staging) Sanitize path inputs and prevent false validation
+* 3b087fd (origin/staging) Bug fixes for threaded timer behavior
 * 3145645 Update Help panel for new config format
 * 8a14908 Major rewrite of OSOL internals
 * f93714b Normalize line endings in WindowUtils

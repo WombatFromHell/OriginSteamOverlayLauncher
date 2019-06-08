@@ -46,25 +46,19 @@ namespace OriginSteamOverlayLauncher
         {
             string caption = "";
             StringBuilder windowText = null;
-
             try
             {
                 int max_length = GetWindowTextLength(hWnd);
                 windowText = new StringBuilder("", max_length + 5);
                 GetWindowText(hWnd, windowText, max_length + 2);
 
-                if (!string.IsNullOrEmpty(windowText.ToString()) && !string.IsNullOrWhiteSpace(windowText.ToString()))
+                if (!string.IsNullOrWhiteSpace(windowText.ToString()))
                     caption = windowText.ToString();
             }
             catch (Exception ex)
             {
                 ProcessUtils.Logger("EXCEPTION", ex.Message);
             }
-            finally
-            {
-                windowText = null;
-            }
-
             return caption;
         }
 
@@ -72,25 +66,19 @@ namespace OriginSteamOverlayLauncher
         {
             string className = "";
             StringBuilder classText = null;
-
             try
             {
                 int cls_max_length = 1000;
                 classText = new StringBuilder("", cls_max_length + 5);
                 GetClassName(hWnd, classText, cls_max_length + 2);
 
-                if (!string.IsNullOrEmpty(classText.ToString()) && !string.IsNullOrWhiteSpace(classText.ToString()))
+                if (!string.IsNullOrWhiteSpace(classText.ToString()))
                     className = classText.ToString();
             }
             catch (Exception ex)
             {
                 ProcessUtils.Logger("EXCEPTION", ex.Message);
             }
-            finally
-            {
-                classText = null;
-            }
-
             return className;
         }
 
@@ -124,8 +112,13 @@ namespace OriginSteamOverlayLauncher
 
         public static int GetWindowType(Process proc)
         {
-            var _hwnd = HwndFromProc(proc);
-            return DetectWindowType(_hwnd);
+            if (proc != null)
+            {
+                var _hwnd = HwndFromProc(proc);
+                var _result = DetectWindowType(_hwnd);
+                return _result;
+            }
+            return -1;
         }
 
         public static int DetectWindowType(IntPtr hWnd)

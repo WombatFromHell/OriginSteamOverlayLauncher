@@ -89,36 +89,55 @@ namespace OriginSteamOverlayLauncher
                 await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
             }
 
-            if (LauncherURIMode || LauncherMonitor.IsRunning() && e.ProcessType == 4)  // URIs/EGL
+            int _type = LauncherMonitor?.WindowType ?? -1;
+            bool _running = (bool)LauncherMonitor?.IsRunning();
+            if (LauncherURIMode || _running && _type == 4)  // URIs/EGL
                 GamePL = new ProcessLauncher(
                     SetHnd.Paths.LauncherURI, "",
                     SetHnd.Options.PreGameWaitTime
                 );
-            else if (LauncherMonitor.IsRunning() && e.ProcessType == 1)  // Battle.net Launcher
+            else if (LauncherPathValid && _running && _type == 1) // Battle.net
+            {
                 GamePL = new ProcessLauncher(
                     SetHnd.Paths.LauncherPath,
                     SetHnd.Paths.LauncherArgs,
                     SetHnd.Options.PreGameWaitTime
                 );
-            else if (LauncherPathValid && LauncherMonitor.IsRunning()) // normal behavior
+            }
+            else if (LauncherPathValid && _running) // normal behavior
             {
                 GamePL = new ProcessLauncher(
-                    MonitorPath.Length > 0 ? MonitorPath : SetHnd.Paths.GamePath,
+                    SetHnd.Paths.GamePath,
                     SetHnd.Paths.GameArgs,
                     SetHnd.Options.PreGameWaitTime
                 );
             }
-            if (GamePL != null && (LauncherPathValid && LauncherMonitor.IsRunning() || SetHnd.Options.AutoGameLaunch))
+            if (GamePL != null && (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch))
                 await GamePL?.Launch(); // only launch if safe to do so
             else if (LauncherPathValid && LauncherMonitor.IsRunning())
                 ProcessUtils.Logger("OSOL", "AutoGameLaunch is false, waiting for user to launch game before timing out...");
 
             // watch for the MonitorPath rather than GamePath (if applicable)
-            GameMonitor = new ProcessMonitor(
-                GamePL,
-                SetHnd.Options.ProcessAcquisitionTimeout,
-                SetHnd.Options.InterProcessAcquisitionTimeout
-            );
+            if (MonitorPath.Length > 0)
+                GameMonitor = new ProcessMonitor(
+                    GamePL,
+                    SetHnd.Options.ProcessAcquisitionTimeout,
+                    SetHnd.Options.InterProcessAcquisitionTimeout,
+                    Path.GetFileNameWithoutExtension(MonitorPath)
+                );
+            else if (_type == 1)  // special behavior for Battle.net
+                GameMonitor = new ProcessMonitor(
+                    GamePL,
+                    SetHnd.Options.ProcessAcquisitionTimeout,
+                    SetHnd.Options.InterProcessAcquisitionTimeout,
+                    Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath)
+                );
+            else
+                GameMonitor = new ProcessMonitor(
+                    GamePL,
+                    SetHnd.Options.ProcessAcquisitionTimeout,
+                    SetHnd.Options.InterProcessAcquisitionTimeout
+                );
             GameMonitor.ProcessAcquired += OnGameAcquired;
             GameMonitor.ProcessHardExit += OnGameExited;
         }
@@ -143,7 +162,7 @@ namespace OriginSteamOverlayLauncher
         private async void OnGameExited(object sender, ProcessEventArgs e)
         {
             if (SetHnd.Options.MinimizeLauncher && LauncherPL.IsRunning())
-                WindowUtils.MinimizeWindow(LauncherPL.HWnd);
+                WindowUtils.MinimizeWindow(LauncherPL.GetHWnd());
 
             // run PostGameExecPath/Args after the game exits
             PostGamePL = new ProcessLauncher(

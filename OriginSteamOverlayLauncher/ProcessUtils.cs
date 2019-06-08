@@ -81,13 +81,8 @@ namespace OriginSteamOverlayLauncher
             {
                 for (int i = 0; i < _procs.Count; i++)
                 {
-                    if (!_procs[i].HasExited)
-                    {
-                        int _type = WindowUtils.DetectWindowType(_procs[i].MainWindowHandle);
-                        bool _valid = IsValidProcess(_procs[i]);
-                        if (_type > -1 || _valid)
-                            return _procs[i];
-                    }
+                    if (IsValidProcess(_procs[i]))
+                        return _procs[i];
                 }
             }
             return null;
@@ -98,7 +93,7 @@ namespace OriginSteamOverlayLauncher
             if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero)
             {
                 var _hwnd = WindowUtils.HwndFromProc(proc);
-                if (WindowUtils.WindowHasDetails(_hwnd) && WindowUtils.DetectWindowType(_hwnd) > -1 || proc.Id > 0)
+                if (WindowUtils.DetectWindowType(_hwnd) > -1 || WindowUtils.WindowHasDetails(_hwnd) || proc.Id > 0)
                     return true;
             }
             return false;

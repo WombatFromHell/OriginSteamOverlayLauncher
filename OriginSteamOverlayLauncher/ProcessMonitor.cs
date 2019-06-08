@@ -29,6 +29,7 @@ namespace OriginSteamOverlayLauncher
         public event EventHandler<ProcessEventArgs> ProcessHardExit;
 
         public bool TimeoutCancelled { get; private set; }
+        public int WindowType { get => TargetLauncher?.GetProcessType() ?? -1; }
 
         private int GlobalTimeout { get; set; }
         private int InnerTimeout { get; set; }
@@ -36,6 +37,7 @@ namespace OriginSteamOverlayLauncher
         private Timer SearchTimer { get; set; }
         private ProcessLauncher TargetLauncher { get; set; }
         private ProcessLauncher LastKnown { get; set; }
+        private string MonitorName { get; set; }
 
         private readonly int Interval = 1000; // tick interval
         private SemaphoreSlim MonitorLock { get; }
@@ -45,11 +47,12 @@ namespace OriginSteamOverlayLauncher
         /// <summary>
         /// Threaded timer for monitoring and validating a process heuristically
         /// </summary>
-        public ProcessMonitor(ProcessLauncher procLauncher, int globalTimeout, int innerTimeout)
+        public ProcessMonitor(ProcessLauncher procLauncher, int globalTimeout, int innerTimeout, string altProcName = "")
         {// constructor for GamePath + MonitorPath instances
             TargetLauncher = procLauncher;
             GlobalTimeout = globalTimeout;
             InnerTimeout = innerTimeout;
+            MonitorName = !string.IsNullOrWhiteSpace(altProcName) ? altProcName : "";
 
             MonitorLock = new SemaphoreSlim(1, 1);
             MonitorTimer = new Timer(MonitorProcess);
@@ -87,10 +90,18 @@ namespace OriginSteamOverlayLauncher
         }
         #endregion
 
+        private void UpdateRef()
+        {// tell ProcessLauncher to target the Monitor if applicable
+            if (MonitorName.Length > 0)
+                TargetLauncher?.Refresh(MonitorName);
+            else
+                TargetLauncher?.Refresh();
+        }
+
         public bool IsRunning()
         {
             return !TimeoutCancelled && TargetLauncher != null &&
-                TargetLauncher.IsRunning() && TargetLauncher.TargetPID > 0;
+                TargetLauncher.TargetProcess != null && TargetLauncher.IsRunning() && TargetLauncher.TargetPID > 0;
         }
 
         public void Restart()
@@ -111,6 +122,7 @@ namespace OriginSteamOverlayLauncher
 
         private async Task TimeoutWatcher(int timeout)
         {// workhorse for our timer delegates
+            UpdateRef(); // make sure to update before and during our loop
             if (HasAcquired && IsRunning())
                 return; // bail while process is healthy
 
@@ -122,7 +134,7 @@ namespace OriginSteamOverlayLauncher
                 elapsedTimer += sw.ElapsedMilliseconds - lastTime;
                 lastTime = sw.ElapsedMilliseconds;
 
-                TargetLauncher?.Refresh();
+                UpdateRef();
                 if (TargetLauncher != null && IsRunning())
                     LastKnown = TargetLauncher;
 
@@ -131,8 +143,8 @@ namespace OriginSteamOverlayLauncher
                     OnProcessAcquired(this, new ProcessEventArgs
                     {
                         TargetProcess = TargetLauncher.TargetProcess,
-                        ProcessName = TargetLauncher.ProcessName,
-                        ProcessType = TargetLauncher.ProcessType,
+                        ProcessName = MonitorName.Length > 0 ? MonitorName : TargetLauncher.ProcessName,
+                        ProcessType = TargetLauncher.GetProcessType(),
                         Elapsed = elapsedTimer
                     });
                     return;
@@ -142,7 +154,7 @@ namespace OriginSteamOverlayLauncher
                     OnProcessSoftExit(this, new ProcessEventArgs
                     {
                         TargetProcess = LastKnown?.TargetProcess,
-                        ProcessName = LastKnown?.ProcessName,
+                        ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcessName,
                         Timeout = timeout
                     });
                 }
@@ -152,7 +164,7 @@ namespace OriginSteamOverlayLauncher
                 OnProcessHardExit(this, new ProcessEventArgs
                 {
                     TargetProcess = LastKnown?.TargetProcess,
-                    ProcessName = LastKnown?.ProcessName ?? "",
+                    ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcessName ?? "",
                     Elapsed = elapsedTimer,
                     Timeout = timeout
                 });
