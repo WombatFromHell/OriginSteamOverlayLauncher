@@ -1,5 +1,6 @@
-* 9adc0cc (HEAD -> staging) Sanitize path inputs and prevent false validation
-* 3b087fd (origin/staging) Bug fixes for threaded timer behavior
+* b330afd (HEAD -> staging, origin/staging) Bug fixes for Battle.net and MonitorPath behavior
+* 9adc0cc Sanitize path inputs and prevent false validation
+* 3b087fd Bug fixes for threaded timer behavior
 * 3145645 Update Help panel for new config format
 * 8a14908 Major rewrite of OSOL internals
 * f93714b Normalize line endings in WindowUtils

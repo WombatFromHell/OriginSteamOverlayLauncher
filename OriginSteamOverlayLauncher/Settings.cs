@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using System.Text;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -20,16 +22,16 @@ namespace OriginSteamOverlayLauncher
     {
         public SettingsData Data { get; private set; }
 
-        public Settings()
+        public Settings(bool testable = false)
         {
             Data = new SettingsData();
-            if (!CheckINI())
+            if (!testable && !CheckINI())
             {
                 ProcessUtils.Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
                 CreateINIFromInstance();
                 PathChooser();
             }
-            else
+            else if (!testable)
                 ParseToInstance();
         }
 
@@ -38,21 +40,21 @@ namespace OriginSteamOverlayLauncher
         /// Serialize our current Settings instance to a StringBuilder object
         /// </summary>
         /// <returns>A StringBuilder object that contains the serialized data</returns>
-        public StringBuilder InstanceToStringBuilder()
+        public List<string> InstanceToList()
         {
-            var output = new StringBuilder();
+            List<string> output = new List<string>();
             var sections = Data.GetType().GetProperties().Select(p => p.Name).ToArray();
             foreach (var sectionKey in sections)
             {// recreate each section from our safe internal defaults
                 var members = Data.GetType().GetProperty(sectionKey).GetValue(Data, null);
-                output.AppendLine($"[{sectionKey}]");
+                output.Add($"[{sectionKey}]");
                 foreach (var member in members.GetType().GetProperties())
                 {
                     var prop = member.GetValue(members);
                     if (member.Name == "GameProcessAffinity")
-                        output.AppendLine($"{member.Name}={BitmaskExtensions.AffinityToCoreString((long)prop)}");
+                        output.Add($"{member.Name}={BitmaskExtensions.AffinityToCoreString((long)prop)}");
                     else
-                        output.AppendLine($"{member.Name}={prop.ToString()}");
+                        output.Add($"{member.Name}={prop.ToString()}");
                 }
             }
             return output;
@@ -61,17 +63,25 @@ namespace OriginSteamOverlayLauncher
         /// <summary>
         /// Deserialize the current config file into our Settings instance
         /// </summary>
-        private void ParseToInstance()
+        public List<string> ParseToInstance(bool testable = false)
         {
-            var input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8);
+            List<string> input = new List<string>();
+            SettingsData _local = testable ? new SettingsData() : Data;
+            if (!testable)
+                input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            else
+                input = InstanceToList();
+
             string lastSection = "";
             object lastSectionObj;
-            for (int i = 0; i < input.Length; i++)
+            for (int i = 0; i < input.Count; i++)
             {// iterate through the .ini by parsing lines
-                string line = input[i];
-                string[] parsedSection = line.Split(new char[] { '[', ']' }, 3);
+                string[] parsedSection = input[i].Split(new char[] { '[', ']' }, 3);
                 lastSection = parsedSection.Length > 1 ? parsedSection[1] : lastSection;
-                lastSectionObj = Data.GetType().GetProperty(lastSection).GetValue(Data, null);
+                if (!testable)
+                    lastSectionObj = Data.GetType().GetProperty(lastSection).GetValue(Data, null);
+                else
+                    lastSectionObj = _local.GetType().GetProperty(lastSection).GetValue(_local, null);
                 string[] item = input[i].Split(new char[] { '=' }, 2);
 
                 if (item.Length == 2)
@@ -97,75 +107,88 @@ namespace OriginSteamOverlayLauncher
                     }
                 }
             }
+            return input;
         }
 
         private void CreateINIFromInstance()
-        {
+        {// convert data struct to list of keyval pairs
+            List<string> serialized = InstanceToList();
             File.WriteAllText(Program.ConfigFile, ""); // overwrite ini
-            // convert data struct to list of keyval pairs
-            var serialized = InstanceToStringBuilder().ToString();
-            File.WriteAllText(Program.ConfigFile, serialized);
+            File.WriteAllLines(Program.ConfigFile, serialized, Encoding.UTF8);
         }
 
         private bool CheckINI()
         {// return false if INI doesn't match our accessor list
-            SettingsData.ValidatePath(ReadKey("GamePath", "Paths").Value ?? "", out string _sanitized);
-            if (CompareKeysToProps() && CheckVersion() && File.Exists(_sanitized))
+            if (CompareKeysToProps() && CheckVersion() &&
+                SettingsData.ValidatePath(ReadKey("GamePath", "Paths").Value ?? "", out string _sanitized) &&
+                File.Exists(_sanitized))
                 return true;
             return false;
         }
 
-        private bool CheckVersion()
+        public bool CheckVersion(bool testable = false, string testableVer = "")
         {
-            if (KeyExists("ReleaseVersion"))
+            if (!testable && KeyExists("ReleaseVersion"))
                 return ProcessUtils.OrdinalEquals(ReadKey("ReleaseVersion", "Info").Value, Program.AsmProdVer);
+            else if (testable && KeyExists("ReleaseVersion"))
+                return ProcessUtils.OrdinalEquals(testableVer, Program.AsmProdVer);
             return false;
         }
 
-        public bool CompareKeysToProps()
+        public bool CompareKeysToProps(bool testable = false, Settings instance = null)
         {// validate if existing keynames are equal to our data structure
-            if (SettingsData.ValidatePath(Program.ConfigFile))
+            var sections = !testable ?
+                Data.GetType().GetProperties().ToArray() :
+                instance?.GetType().GetProperties().ToArray();
+            if (SettingsData.ValidatePath(Program.ConfigFile) || testable)
+                return ParsedComparison();
+            return false;
+
+            bool ParsedComparison()
             {
-                var sections = Data.GetType().GetProperties().ToArray();
+                var _local = InstanceToList();
                 foreach (var props in sections)
                 {
-                    var subProps = Data.GetType().GetProperty(props.Name).GetValue(Data, null);
+                    var subProps = !testable ?
+                        Data.GetType().GetProperty(props.Name).GetValue(Data, null) :
+                        instance?.GetType().GetProperty(props.Name).GetValue(instance, null);
                     var members = subProps.GetType().GetProperties();
                     foreach (var p in members)
                     {
-                        if (!KeyExists(p.Name))
+                        if (testable && _local.FirstOrDefault(i => i.Contains(p.Name)) == string.Empty)
+                            return false;
+                        else if (!testable && !KeyExists(p.Name))
                             return false;
                     }
                 }
                 return true;
             }
-            return false;
         }
 
-        public bool KeyExists(string keyName)
-        {// section agnostic key check
-            var element = ReadKey(keyName);
+        public bool KeyExists(string keyName, bool testable = false)
+        {// section agnostic key check (return first match)
+            var element = ReadKey(keyName, "", testable);
             if (element != null && element.Index > -1)
                 return true;
             return false;
         }
 
-        public INIRecord ReadKey(string keyName, string sectionName = null)
+        public INIRecord ReadKey(string keyName, string sectionName = null, bool testable = false)
         {
             INIRecord output = new INIRecord();
-            var input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            var input = !testable ?
+                File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList() :
+                InstanceToList();
             string lastSection = "";
 
             for (int i = 0; i < input.Count; i++)
             {// iterate through the .ini by parsing lines
-                string line = input[i];
-                string[] parsedSection = line.Split(new char[] { '[', ']' }, 3);
+                string[] parsedSection = input[i].Split(new char[] { '[', ']' }, 3);
                 lastSection = parsedSection.Length > 1 ? parsedSection[1] : lastSection;
                 output.SectionIndex = string.IsNullOrWhiteSpace(lastSection) ? i : -1; // mark our section index
                 string[] item = input[i].Split(new char[] { '=' }, 2);
-                if (!string.IsNullOrWhiteSpace(lastSection) && ProcessUtils.StringFuzzyEquals(lastSection, sectionName) &&
-                    ProcessUtils.StringFuzzyEquals(item[0], keyName) || item.Length == 2 &&
-                    ProcessUtils.StringFuzzyEquals(item[0], keyName))
+                bool keyMatch = ProcessUtils.StringFuzzyEquals(item[0], keyName) && item.Length == 2;
+                if (ProcessUtils.StringFuzzyEquals(lastSection, sectionName) && keyMatch || keyMatch)
                 {// return first matched section + key or first key (section optional)
                     output.Section = lastSection;
                     output.KeyName = item[0];
@@ -177,16 +200,21 @@ namespace OriginSteamOverlayLauncher
             return output;
         }
 
-        public bool WriteKey(string keyName, string value, string sectionName)
+        public bool WriteKey(string keyName, string value, string sectionName, bool testable = false)
         {
             if (string.IsNullOrWhiteSpace(value) && KeyExists(keyName))
                 return false; // do not overwrite data with nothing!
 
-            var input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
-            var matchedKey = ReadKey(keyName, sectionName);
+            List<string> input = new List<string>();
+            if (!testable)
+                input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            else
+                input = InstanceToList();
+
+            var matchedKey = ReadKey(keyName, sectionName, testable);
             if (matchedKey.Index > -1)
             {// overwrite the existing key
-                InsertKey(keyName, value, matchedKey.Index);
+                InsertKey(keyName, value, matchedKey.Index, testable);
                 return true;
             }
             else
@@ -198,45 +226,63 @@ namespace OriginSteamOverlayLauncher
                     lastSection = parsedSection.Length > 1 ? parsedSection[1] : lastSection;
                     if (lastSection == sectionName)
                     {// insert key after the matching section
-                        InsertKey(keyName, value, i + 1);
+                        InsertKey(keyName, value, i + 1, testable);
                         return true;
                     }
                 }
                 // no matching section?
                 input.Add($"{keyName}={value}");
-                File.WriteAllLines(Program.ConfigFile, input, Encoding.UTF8);
+                if (!testable)
+                    File.WriteAllLines(Program.ConfigFile, input, Encoding.UTF8);
                 return false;
             }
         }
 
-        public bool InsertKey(string keyName, string value, int index)
+        public bool InsertKey(string keyName, string value, int index, bool testable = false)
         {// insert a key at a given index
-            var input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            List<string> input = new List<string>();
+            if (!testable)
+                input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            else
+                input = InstanceToList();
+
             if (input.Count > 0 && index < input.Count)
             {
                 input.Insert(index, $"{keyName}={value}");
-                File.WriteAllLines(Program.ConfigFile, input, Encoding.UTF8);
+                if (!testable)
+                    File.WriteAllLines(Program.ConfigFile, input, Encoding.UTF8);
                 return true;
             }
             return false;
         }
 
-        public bool RemoveKey(string keyName, string sectionName)
+        public bool RemoveKey(string keyName, string sectionName, bool testable = false)
         {// remove the first match of the key in the config file
-            var input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            List<string> input = new List<string>();
+            if (!testable)
+                input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            else
+                input = InstanceToList();
+
             var matchedKey = ReadKey(keyName, sectionName);
             if (input.Count > 0 && input[matchedKey.Index].Contains(keyName))
             {
                 input.RemoveAt(matchedKey.Index);
-                File.WriteAllLines(Program.ConfigFile, input, Encoding.UTF8);
+                if (!testable)
+                    File.WriteAllLines(Program.ConfigFile, input, Encoding.UTF8);
                 return true;
             }
             return false;
         }
 
-        public bool RemoveKeys(string keyName)
+        public bool RemoveKeys(string keyName, bool testable = false)
         {// remove all matches of the key in the config file
-            var input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            List<string> input = new List<string>();
+            if (!testable)
+                input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+            else
+                input = InstanceToList();
+
             var output = input.ToList();
             for (int i = 0; i < output.Count; i++)
             {
@@ -245,16 +291,17 @@ namespace OriginSteamOverlayLauncher
             }
             if (output.Count != input.Count)
             {
-                File.WriteAllLines(Program.ConfigFile, output, Encoding.UTF8);
+                if (!testable)
+                    File.WriteAllLines(Program.ConfigFile, output, Encoding.UTF8);
                 return true;
             }
             return false;
         }
 
-        public void ReplaceKey(string keyName, string value, string sectionName)
+        public void ReplaceKey(string keyName, string value, string sectionName, bool testable = false)
         {// replaces n matches of fuzzy key with single key in a specified section
-            RemoveKeys(keyName);
-            WriteKey(keyName, value, sectionName);
+            RemoveKeys(keyName, testable);
+            WriteKey(keyName, value, sectionName, testable);
         }
         #endregion
 
