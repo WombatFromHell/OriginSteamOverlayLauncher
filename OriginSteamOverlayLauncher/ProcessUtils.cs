@@ -61,16 +61,10 @@ namespace OriginSteamOverlayLauncher
         }
 
         public static bool IsAnyRunningByName(string exeName)
-        {
-            var _procs = GetProcessesByName(exeName);
-            if (_procs != null)
-            {
-                for (int i = 0; _procs.Count > 0 && i < _procs.Count; i++)
-                {
-                    if (WindowUtils.DetectWindowType(_procs[i].MainWindowHandle) > -1 || IsValidProcess(_procs[i]))
-                        return true;
-                }
-            }
+        {// check for parent or descendent
+            var match = GetFirstDescendentByName(exeName);
+            if (match != null && !match.HasExited)
+                return true;
             return false;
         }
 
@@ -88,9 +82,25 @@ namespace OriginSteamOverlayLauncher
             return null;
         }
 
+        public static Process GetFirstDescendentByName(string exeName)
+        {
+            var parent = GetProcessByName(exeName);
+            // search by parent PID rather than process name
+            // children could be named anything but only have valid PPIDs
+            // NOTE: PPIDs may include processes not currently running!
+            var children = GetChildProcesses(parent);
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (children[i] != null && IsValidProcess(children[i]))
+                    return children[i]; // return the first valid match
+            }
+            return parent; // no valid children found
+        }
+
         public static bool IsValidProcess(Process proc)
         {
-            if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero)
+            if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero &&
+                proc.MainModule.ModuleName.Contains(".exe"))
             {
                 var _hwnd = WindowUtils.HwndFromProc(proc);
                 if (WindowUtils.DetectWindowType(_hwnd) > -1 || WindowUtils.WindowHasDetails(_hwnd) || proc.Id > 0)
@@ -102,6 +112,11 @@ namespace OriginSteamOverlayLauncher
         public static int GetPIDByName(string exeName)
         {
             return GetProcessByName(exeName)?.Id ?? 0;
+        }
+
+        public static int GetDescendentPIDByName(string exeName)
+        {
+            return GetFirstDescendentByName(exeName)?.Id ?? 0;
         }
 
         public static List<Process> GetProcessesByName(string exeName)
@@ -124,6 +139,42 @@ namespace OriginSteamOverlayLauncher
                             // add Process refs to our list that match this executable name
                             if (!outputProc.HasExited)
                                 output.Add(outputProc);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex is ManagementException)
+                    return output; // throw away "Not Found" exceptions
+                else if (ex is Win32Exception)
+                    return output; // throw away "Access Denied"
+                else
+                    Logger("FATAL EXCEPTION", ex.Message);
+            }
+            return output;
+        }
+
+        public static List<Process> GetChildProcesses(Process proc)
+        {
+            var output = new List<Process>();
+            try
+            {
+                lock (wmiLock)
+                {
+                    if (proc != null && !proc.HasExited && proc.Id > 0)
+                    {
+                        using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
+                            $"SELECT * FROM Win32_Process WHERE ParentProcessId={proc?.Id}"))
+                        using (ManagementObjectCollection processes = searcher.Get())
+                        {
+                            foreach (var process in processes)
+                            {
+                                var curPID = Convert.ToInt32(process.Properties["ProcessID"].Value);
+                                var curProcess = Process.GetProcessById(curPID);
+                                if (curProcess != null && IsValidProcess(curProcess))
+                                    output.Add(curProcess);
+                            }
                         }
                     }
                 }

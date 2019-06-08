@@ -113,6 +113,10 @@ namespace OriginSteamOverlayLauncher
         private void CreateINIFromInstance()
         {// convert data struct to list of keyval pairs
             List<string> serialized = InstanceToList();
+            if (File.Exists(Program.ConfigFile)) {
+                List<string> prevConfig = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
+
+            }
             File.WriteAllText(Program.ConfigFile, ""); // overwrite ini
             File.WriteAllLines(Program.ConfigFile, serialized, Encoding.UTF8);
         }

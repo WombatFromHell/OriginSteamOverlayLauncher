@@ -101,7 +101,9 @@ namespace OriginSteamOverlayLauncher
         public bool IsRunning()
         {
             return !TimeoutCancelled && TargetLauncher != null &&
-                TargetLauncher.TargetProcess != null && TargetLauncher.IsRunning() && TargetLauncher.TargetPID > 0;
+                TargetLauncher.TargetProcess != null &&
+                TargetLauncher.IsRunning() &&
+                TargetLauncher.TargetPID > 0;
         }
 
         public void Restart()
@@ -143,7 +145,7 @@ namespace OriginSteamOverlayLauncher
                     OnProcessAcquired(this, new ProcessEventArgs
                     {
                         TargetProcess = TargetLauncher.TargetProcess,
-                        ProcessName = MonitorName.Length > 0 ? MonitorName : TargetLauncher.ProcessName,
+                        ProcessName = TargetLauncher.ProcessName,
                         ProcessType = TargetLauncher.GetProcessType(),
                         Elapsed = elapsedTimer
                     });

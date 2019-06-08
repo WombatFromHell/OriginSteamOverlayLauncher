@@ -125,7 +125,7 @@ namespace OriginSteamOverlayLauncher
                     SetHnd.Options.InterProcessAcquisitionTimeout,
                     Path.GetFileNameWithoutExtension(MonitorPath)
                 );
-            else if (_type == 1)  // special behavior for Battle.net
+            else if (LauncherURIMode || _type == 1)  // special behavior for Battle.net/URIs/EGL
                 GameMonitor = new ProcessMonitor(
                     GamePL,
                     SetHnd.Options.ProcessAcquisitionTimeout,

@@ -37,16 +37,16 @@ namespace OriginSteamOverlayLauncher
         /// <summary>
         /// Returns a Process if a running process of the same name can be found
         /// </summary>
-        /// <returns></returns>
-        public void Refresh()
-        {// GetProcessByName() runs sanity checks automatically
-            TargetProcess = ProcessUtils.GetProcessByName(ProcessName);
-        }
-
-        public void Refresh(string altProcName)
+        public void Refresh(string altProcName = "")
         {// refresh against a different executable name
             if (!string.IsNullOrEmpty(altProcName))
-                TargetProcess = ProcessUtils.GetProcessByName(altProcName);
+            {
+                var result = ProcessUtils.GetFirstDescendentByName(altProcName);
+                TargetProcess = result;
+                ProcessName = result?.ProcessName.Length > 0 ? result.ProcessName : ProcessName;
+            }
+            else
+                TargetProcess = ProcessUtils.GetFirstDescendentByName(ProcessName);
         }
 
         public bool IsRunning()
