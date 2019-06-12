@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +13,7 @@ namespace OriginSteamOverlayLauncher
         public string ProcessName { get; set; } = "";
         public double Elapsed { get; set; } = 0;
         public int Timeout { get; set; } = 0;
+        public int AvoidPID { get; set; } = 0;
     }
 
     /// <summary>
@@ -36,7 +38,6 @@ namespace OriginSteamOverlayLauncher
         private Timer SearchTimer { get; set; }
         private ProcessLauncher TargetLauncher { get; set; }
         private ProcessLauncher LastKnown { get; set; }
-        private string MonitorName { get; set; }
 
         private readonly int Interval = 1000; // tick interval
         private SemaphoreSlim MonitorLock { get; }
@@ -46,12 +47,11 @@ namespace OriginSteamOverlayLauncher
         /// <summary>
         /// Threaded timer for monitoring and validating a process heuristically
         /// </summary>
-        public ProcessMonitor(ProcessLauncher procLauncher, int globalTimeout, int innerTimeout, string altProcName = "")
+        public ProcessMonitor(ProcessLauncher procLauncher, int globalTimeout, int innerTimeout)
         {// constructor for GamePath + MonitorPath instances
             TargetLauncher = procLauncher;
             GlobalTimeout = globalTimeout;
             InnerTimeout = innerTimeout;
-            MonitorName = !string.IsNullOrWhiteSpace(altProcName) ? altProcName : "";
 
             MonitorLock = new SemaphoreSlim(1, 1);
             MonitorTimer = new Timer(MonitorProcess);
@@ -113,9 +113,6 @@ namespace OriginSteamOverlayLauncher
 
         private async Task TimeoutWatcher(int timeout)
         {// workhorse for our timer delegates
-            if (HasAcquired && IsRunning())
-                return; // bail while process is healthy
-
             Stopwatch sw = Stopwatch.StartNew();
             double lastTime = sw.ElapsedMilliseconds, elapsedTimer = 0;
             while (!TimeoutCancelled && elapsedTimer < timeout * 1000)
@@ -125,21 +122,21 @@ namespace OriginSteamOverlayLauncher
                 lastTime = sw.ElapsedMilliseconds;
                 bool _isRunning = IsRunning();
 
-                if (TargetLauncher != null && _isRunning)
+                if (HasAcquired && _isRunning)
                 {
-                    Debug.WriteLine($"PPID={TargetLauncher.ProcWrapper.ParentPID},PID={TargetLauncher.ProcWrapper.PID}:\r\n" +
-                        $"Name={TargetLauncher.ProcWrapper.ProcessName},Type={TargetLauncher.ProcWrapper.ProcessType},Valid={TargetLauncher.ProcWrapper.IsValid}");
+                    sw.Restart();
                     LastKnown = TargetLauncher;
+                    return; // bail while process is healthy
                 }
-
-                if (!HasAcquired && _isRunning)
+                else if (!HasAcquired && _isRunning)
                 {
                     OnProcessAcquired(this, new ProcessEventArgs
                     {
                         TargetProcess = TargetLauncher.ProcWrapper.Proc,
-                        ProcessName = TargetLauncher.ProcWrapper.ProcessName,
+                        ProcessName = Path.GetFileNameWithoutExtension(TargetLauncher.ProcWrapper.Proc.MainModule.ModuleName),
                         ProcessType = TargetLauncher.ProcWrapper.ProcessType,
-                        Elapsed = elapsedTimer
+                        Elapsed = elapsedTimer,
+                        AvoidPID = TargetLauncher.ProcWrapper.Proc.Id
                     });
                     return;
                 }
@@ -148,7 +145,8 @@ namespace OriginSteamOverlayLauncher
                     OnProcessSoftExit(this, new ProcessEventArgs
                     {
                         TargetProcess = LastKnown?.ProcWrapper.Proc,
-                        ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcWrapper.ProcessName,
+                        ProcessName = !string.IsNullOrWhiteSpace(LastKnown?.MonitorName) ?
+                            LastKnown?.MonitorName : LastKnown?.ProcWrapper.ProcessName,
                         Timeout = timeout
                     });
                 }
@@ -158,7 +156,8 @@ namespace OriginSteamOverlayLauncher
                 OnProcessHardExit(this, new ProcessEventArgs
                 {
                     TargetProcess = LastKnown?.ProcWrapper.Proc,
-                    ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcWrapper.ProcessName,
+                    ProcessName = !string.IsNullOrWhiteSpace(LastKnown?.MonitorName) ?
+                            LastKnown?.MonitorName : LastKnown?.ProcWrapper.ProcessName,
                     Elapsed = elapsedTimer,
                     Timeout = timeout
                 });

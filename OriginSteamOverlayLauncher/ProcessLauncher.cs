@@ -12,24 +12,45 @@ namespace OriginSteamOverlayLauncher
         private string ExecArgs { get; set; }
         private int Delay { get; set; }
         private bool Elevated { get; set; }
+        private int AvoidPID { get; set; }
+        public string MonitorName { get; private set; }
         public int LaunchPID { get; private set; }
 
-        public ProcessLauncher(string procPath, string procArgs, int delayTime, bool elevate)
+        public ProcessLauncher(string procPath, string procArgs, int delayTime, bool elevate, int avoidPID = 0, string altName = "")
         {
             ProcWrapper = new ProcessWrapper();
             ExecPath = procPath;
             ExecArgs = procArgs;
             Delay = delayTime;
             Elevated = elevate;
+            MonitorName = !string.IsNullOrWhiteSpace(altName) ? altName : "";
+            AvoidPID = avoidPID > 0 ? avoidPID : 0;
         }
 
-        // expose some alternate constructor helpers
+        // expose some alternate constructors
         public ProcessLauncher(string procPath, string procArgs, int delayTime) :
-            this(procPath, procArgs, delayTime, false) {}
+            this(procPath, procArgs, delayTime, false)
+        { }
 
-        public ProcessLauncher(string procPath, string procArgs, bool elevate) : this(procPath, procArgs, 0, elevate) {}
+        public ProcessLauncher(string procPath, string procArgs, bool elevate) :
+            this(procPath, procArgs, 0, elevate)
+        { }
 
-        public ProcessLauncher(string procPath, string procArgs) : this(procPath, procArgs, 0, false) {}
+        public ProcessLauncher(string procPath, string procArgs) :
+            this(procPath, procArgs, 0, false)
+        { }
+
+        public ProcessLauncher(string procPath, string procArgs, int delayTime, int avoidPID = 0, string altName = "") :
+            this(procPath, procArgs, delayTime, false, avoidPID, altName)
+        { }
+
+        public ProcessLauncher(string procPath, string procArgs, bool elevate, int avoidPID = 0, string altName = "") :
+            this(procPath, procArgs, 0, elevate, avoidPID, altName)
+        { }
+
+        public ProcessLauncher(string procPath, string procArgs, int avoidPID = 0, string altName = "") :
+            this(procPath, procArgs, 0, false, avoidPID, altName)
+        { }
 
         /// <summary>
         /// Returns the running Process if launching was successful
@@ -58,7 +79,7 @@ namespace OriginSteamOverlayLauncher
                     ProcessUtils.Logger("LAUNCHER", $"Launching process: {ExecPath} {ExecArgs}");
 
                 // bind our process wrapper
-                ProcWrapper = new ProcessWrapper(_procObj);
+                ProcWrapper = new ProcessWrapper(_procObj, avoidPID: AvoidPID, altName: MonitorName);
                 ProcWrapper.Proc.Start();
                 await Task.Delay(10); // spin up
                 if (ProcWrapper.IsRunning)

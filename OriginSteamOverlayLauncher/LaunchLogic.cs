@@ -91,19 +91,14 @@ namespace OriginSteamOverlayLauncher
 
             int _type = LauncherPL?.ProcWrapper?.ProcessType ?? -1;
             bool _running = (bool)LauncherMonitor?.IsRunning();
-            if (LauncherURIMode || _running && _type == 4)  // URIs/EGL
+            int _aPID = e.AvoidPID > 0 ? e.AvoidPID : 0;
+            if (_running && (_type == 4 || _type == 1 || LauncherURIMode))  // URIs/EGL
                 GamePL = new ProcessLauncher(
                     SetHnd.Paths.LauncherURI, "",
-                    SetHnd.Options.PreGameWaitTime
+                    SetHnd.Options.PreGameWaitTime,
+                    avoidPID: _aPID,
+                    altName: Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath)
                 );
-            else if (LauncherPathValid && _running && _type == 1) // Battle.net
-            {
-                GamePL = new ProcessLauncher(
-                    SetHnd.Paths.LauncherPath,
-                    SetHnd.Paths.LauncherArgs,
-                    SetHnd.Options.PreGameWaitTime
-                );
-            }
             else if (LauncherPathValid && _running) // normal behavior
             {
                 GamePL = new ProcessLauncher(
@@ -117,27 +112,11 @@ namespace OriginSteamOverlayLauncher
             else if (LauncherPathValid && LauncherMonitor.IsRunning())
                 ProcessUtils.Logger("OSOL", "AutoGameLaunch is false, waiting for user to launch game before timing out...");
 
-            // watch for the MonitorPath rather than GamePath (if applicable)
-            if (MonitorPath.Length > 0)
-                GameMonitor = new ProcessMonitor(
-                    GamePL,
-                    SetHnd.Options.ProcessAcquisitionTimeout,
-                    SetHnd.Options.InterProcessAcquisitionTimeout,
-                    Path.GetFileNameWithoutExtension(MonitorPath)
-                );
-            else if (LauncherURIMode || _type == 1)  // special behavior for Battle.net/URIs/EGL
-                GameMonitor = new ProcessMonitor(
-                    GamePL,
-                    SetHnd.Options.ProcessAcquisitionTimeout,
-                    SetHnd.Options.InterProcessAcquisitionTimeout,
-                    Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath)
-                );
-            else
-                GameMonitor = new ProcessMonitor(
-                    GamePL,
-                    SetHnd.Options.ProcessAcquisitionTimeout,
-                    SetHnd.Options.InterProcessAcquisitionTimeout
-                );
+            GameMonitor = new ProcessMonitor(
+                GamePL,
+                SetHnd.Options.ProcessAcquisitionTimeout,
+                SetHnd.Options.InterProcessAcquisitionTimeout
+            );
             GameMonitor.ProcessAcquired += OnGameAcquired;
             GameMonitor.ProcessHardExit += OnGameExited;
         }

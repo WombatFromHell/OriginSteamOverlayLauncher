@@ -133,7 +133,7 @@ namespace OriginSteamOverlayLauncher
                     output = ProcessPriorityClass.RealTime;
                 return true;
             }
-            catch (InvalidCastException iex) { /* eat the harmless invalid cast exception */ }
+            catch (InvalidCastException) { }
             return false;
         }
 

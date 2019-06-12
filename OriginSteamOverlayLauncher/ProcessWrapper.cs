@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Management;
 using System.Runtime.InteropServices;
 
 namespace OriginSteamOverlayLauncher
@@ -17,14 +18,6 @@ namespace OriginSteamOverlayLauncher
             {
                 this.GetIsRunning();
                 return GetHWND(Proc);
-            }
-        }
-        public bool IsValid
-        {
-            get
-            {
-                this.GetIsRunning();
-                return IsValidProcess(Proc);
             }
         }
         public int PID
@@ -54,55 +47,139 @@ namespace OriginSteamOverlayLauncher
         public bool IsChild { get { return GetIsChild(); } }
         public bool IsRunning { get { return GetIsRunning(); } }
 
+        private int AvoidPID { get; set; }
+        private string MonitorName { get; set; }
+
         /// <summary>
         /// Wrapper for Process objects that collects additional runtime information
         /// </summary>
         /// <param name="srcProc">Optional Process object to instantiate with</param>
-        public ProcessWrapper(Process srcProc = null)
+        public ProcessWrapper(Process srcProc = null, int avoidPID = 0, string altName = "")
         {// avoid returning null refs
             Proc = srcProc != null ? srcProc : new Process();
             ProcessName = Path.GetFileNameWithoutExtension(Proc.StartInfo.FileName);
+            MonitorName = !string.IsNullOrWhiteSpace(altName) ? altName : "";
+            AvoidPID = avoidPID > 0 ? avoidPID : 0;
         }
 
         private bool GetIsChild()
         {// compare current PPID against assembly PID to determine parentage
             int _ppid = ParentProcessUtils.GetParentPID(Proc.Handle);
-            return _ppid > 0 && _ppid != Process.GetCurrentProcess().Id;
+            return _ppid > 0 && _ppid != Program.AssemblyPID;
         }
 
-        /// <summary>
-        /// Provides an enumerator of all processes associated with this Process
-        /// </summary>
-        public List<Process> GetProcesses()
+        public List<Tuple<int, int, Process>> GetChildProcesses(int PID = 0)
         {
-            var output = new List<Process>();
+            var output = new List<Tuple<int, int, Process>>();
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
+                $"SELECT * FROM Win32_Process WHERE ParentProcessId={(PID > 0 ? PID : Program.AssemblyPID)}"))
+            using (ManagementObjectCollection processes = searcher.Get())
+            {
+                foreach (var process in processes)
+                {
+                    try
+                    {
+                        var curPID = Convert.ToInt32(process.Properties["ProcessID"].Value);
+                        var curProcess = Process.GetProcessById(curPID);
+                        int _ppid = ParentProcessUtils.GetParentPID(curProcess.Handle);
+                        // use AvoidPID to avoid selecting an already filtered process
+                        if (ValidateProc(curProcess) && PID > 0 && curProcess.Id != AvoidPID)
+                            output.Add(new Tuple<int, int, Process>(_ppid, curPID, curProcess));
+                    }
+                    catch (Win32Exception) { continue; }
+                    catch (InvalidOperationException) { continue; }
+                }
+            }
+            return output;
+        }
+
+        private bool ValidateProc(Process procItem)
+        {// abstract process validator
             try
             {
-                var result = Process.GetProcesses(Environment.MachineName);
-                for (int i = 0; i < result.Length; i++)
-                    // avoid Win32Exception by checking ProcessName first
-                    if (result[i] != null && result[i].ProcessName.Contains(this.ProcessName) && !result[i].HasExited)
-                        output.Add(result[i]);
+                return IsValidProcess(procItem) &&
+                    ProcessUtils.OrdinalContains(MonitorName, procItem.MainModule.ModuleName) ||
+                    ProcessUtils.OrdinalContains(ProcessName, procItem.MainModule.ModuleName) ||
+                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName) || procItem.Id > 0;
             }
-            catch (Win32Exception)
-            {// eat "Access is denied"
-                return output;
+            catch { return false; }
+        }
+
+        public List<Process> GetProcessesByName(string exeName)
+        {
+            var output = new List<Process>();
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
+                $"SELECT * FROM Win32_Process where Name LIKE '{exeName}.exe'"))
+            using (ManagementObjectCollection processes = searcher.Get())
+            {
+                foreach (var process in processes)
+                {
+                    try
+                    {
+                        var curPID = Convert.ToInt32(process.Properties["ProcessID"].Value);
+                        var curProcess = Process.GetProcessById(curPID);
+                        if (ValidateProc(curProcess))
+                            output.Add(curProcess);
+                    }
+                    catch (Win32Exception) { continue; }
+                    catch (InvalidOperationException) { continue; }
+                }
+            }
+            return output;
+        }
+
+        private List<Tuple<int, int, Process>> EnumerateDescendents()
+        {// abstraction of GetChildProcesses() for grandchild enumeration
+            // a List of Tuples in the form of: { PPID, PID, Process }
+            var output = new List<Tuple<int, int, Process>>();
+            // retrieve all children of this assembly
+            var procs = GetChildProcesses();
+            output.AddRange(procs);
+            foreach (var item in procs)
+            {// if children have children process those (by PID)
+                var _gcProcs = GetChildProcesses(item.Item2);
+                if (_gcProcs.Count > 0)
+                    output.AddRange(_gcProcs);
             }
             return output;
         }
 
         public bool GetIsRunning()
         {// also doubles as a refresh method
-            var _procs = GetProcesses();
-            for (int i = 0; i < _procs.Count; i++)
-            {
-                if (!_procs[i].HasExited && IsValidProcess(_procs[i]))
-                {// bail on the first valid match we find
-                    Proc = _procs[i];
-                    return true;
+            var enumResults = EnumerateDescendents();
+            if (enumResults.Count == 0)
+            {// switch to searching by name if assembly child enumeration fails
+                var byNameResults = GetProcessesByName(MonitorName.Length > 0 ? MonitorName : ProcessName);
+                for (int j = 0; j < byNameResults.Count; j++)
+                {
+                    if (!byNameResults[j].HasExited)
+                    {// update our target if it's changed
+                        if (Proc != null && Proc.Id != byNameResults[j].Id)
+                        {
+                            Proc = byNameResults[j];
+                            ProcessName = Path.GetFileNameWithoutExtension(byNameResults[j].MainModule.ModuleName);
+                        }
+                        return true; // bail early on success
+                    }
                 }
             }
-            return _procs.Count > 0 && PID != 0;
+            else
+            {// enumerate children and grandchildren of our assembly
+                for (int i = 0; i < enumResults.Count; i++)
+                {
+                    var curProc = enumResults[i].Item3;
+                    if (!curProc.HasExited)
+                    {// update our target if it's changed
+                        if (Proc != null && Proc.Id != curProc.Id)
+                        {
+                            Proc = curProc;
+                            ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public static bool IsRunningByName(string name)
@@ -123,8 +200,13 @@ namespace OriginSteamOverlayLauncher
 
         public static IntPtr GetHWND(Process procHandle)
         {// just a helper to return an hWnd from a given Process (if it has a window handle)
-            if (procHandle != null && !procHandle.HasExited && procHandle.MainWindowHandle != IntPtr.Zero)
-                return procHandle.MainWindowHandle;
+            try
+            {
+                if (procHandle != null && !procHandle.HasExited &&
+                    procHandle.MainWindowHandle != IntPtr.Zero)
+                    return procHandle.MainWindowHandle;
+            }
+            catch (Exception) { }
             return IntPtr.Zero;
         }
 

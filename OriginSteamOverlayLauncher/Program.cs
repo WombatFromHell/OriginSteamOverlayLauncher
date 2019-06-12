@@ -17,9 +17,8 @@ namespace OriginSteamOverlayLauncher
         public static Settings CurSettings { get; private set; }
         public static string GetCodeBase { get => Assembly.GetExecutingAssembly().CodeBase; }
         public static string AppName { get => Path.GetFileNameWithoutExtension(GetCodeBase); }
-        public static string AsmProdVer {
-            get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion.ToString();
-        }
+        public static string AsmProdVer { get => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion.ToString(); }
+        public static int AssemblyPID { get => Process.GetCurrentProcess().Id; }
 
         [STAThread]
         private static void Main(string[] args)
