@@ -73,6 +73,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ProcessWrapper.cs" />
     <Compile Include="ProcessLauncher.cs" />
     <Compile Include="BitmaskExtensions.cs" />
     <Compile Include="Form1.cs">

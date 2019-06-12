@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -105,16 +104,11 @@ namespace OriginSteamOverlayLauncher
             return false;
         }
 
-        public static IntPtr HwndFromProc(Process procHandle)
-        {// just a helper to return an hWnd from a given Process (if it has a window handle)
-            return procHandle?.MainWindowHandle != null ? procHandle.MainWindowHandle : IntPtr.Zero;
-        }
-
         public static int GetWindowType(Process proc)
         {
             if (proc != null)
             {
-                var _hwnd = HwndFromProc(proc);
+                var _hwnd = ProcessWrapper.GetHWND(proc);
                 var _result = DetectWindowType(_hwnd);
                 return _result;
             }

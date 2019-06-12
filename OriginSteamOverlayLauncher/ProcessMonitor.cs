@@ -29,7 +29,6 @@ namespace OriginSteamOverlayLauncher
         public event EventHandler<ProcessEventArgs> ProcessHardExit;
 
         public bool TimeoutCancelled { get; private set; }
-        public int WindowType { get => TargetLauncher?.GetProcessType() ?? -1; }
 
         private int GlobalTimeout { get; set; }
         private int InnerTimeout { get; set; }
@@ -90,20 +89,10 @@ namespace OriginSteamOverlayLauncher
         }
         #endregion
 
-        private void UpdateRef()
-        {// tell ProcessLauncher to target the Monitor if applicable
-            if (MonitorName.Length > 0)
-                TargetLauncher?.Refresh(MonitorName);
-            else
-                TargetLauncher?.Refresh();
-        }
-
         public bool IsRunning()
         {
             return !TimeoutCancelled && TargetLauncher != null &&
-                TargetLauncher.TargetProcess != null &&
-                TargetLauncher.IsRunning() &&
-                TargetLauncher.TargetPID > 0;
+                TargetLauncher.ProcWrapper.IsRunning;
         }
 
         public void Restart()
@@ -124,7 +113,6 @@ namespace OriginSteamOverlayLauncher
 
         private async Task TimeoutWatcher(int timeout)
         {// workhorse for our timer delegates
-            UpdateRef(); // make sure to update before and during our loop
             if (HasAcquired && IsRunning())
                 return; // bail while process is healthy
 
@@ -135,38 +123,42 @@ namespace OriginSteamOverlayLauncher
                 await Task.Delay(Interval);
                 elapsedTimer += sw.ElapsedMilliseconds - lastTime;
                 lastTime = sw.ElapsedMilliseconds;
+                bool _isRunning = IsRunning();
 
-                UpdateRef();
-                if (TargetLauncher != null && IsRunning())
+                if (TargetLauncher != null && _isRunning)
+                {
+                    Debug.WriteLine($"PPID={TargetLauncher.ProcWrapper.ParentPID},PID={TargetLauncher.ProcWrapper.PID}:\r\n" +
+                        $"Name={TargetLauncher.ProcWrapper.ProcessName},Type={TargetLauncher.ProcWrapper.ProcessType},Valid={TargetLauncher.ProcWrapper.IsValid}");
                     LastKnown = TargetLauncher;
+                }
 
-                if (!HasAcquired && IsRunning())
+                if (!HasAcquired && _isRunning)
                 {
                     OnProcessAcquired(this, new ProcessEventArgs
                     {
-                        TargetProcess = TargetLauncher.TargetProcess,
-                        ProcessName = TargetLauncher.ProcessName,
-                        ProcessType = TargetLauncher.GetProcessType(),
+                        TargetProcess = TargetLauncher.ProcWrapper.Proc,
+                        ProcessName = TargetLauncher.ProcWrapper.ProcessName,
+                        ProcessType = TargetLauncher.ProcWrapper.ProcessType,
                         Elapsed = elapsedTimer
                     });
                     return;
                 }
-                else if (HasAcquired && !IsRunning())
+                else if (HasAcquired && !_isRunning)
                 {
                     OnProcessSoftExit(this, new ProcessEventArgs
                     {
-                        TargetProcess = LastKnown?.TargetProcess,
-                        ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcessName,
+                        TargetProcess = LastKnown?.ProcWrapper.Proc,
+                        ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcWrapper.ProcessName,
                         Timeout = timeout
                     });
                 }
             }
-            // timed out
-            if (!TimeoutCancelled)
+            // timed out (check for fresh running - wait till next iteration)
+            if (!TimeoutCancelled && !IsRunning())
                 OnProcessHardExit(this, new ProcessEventArgs
                 {
-                    TargetProcess = LastKnown?.TargetProcess,
-                    ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcessName ?? "",
+                    TargetProcess = LastKnown?.ProcWrapper.Proc,
+                    ProcessName = MonitorName.Length > 0 ? MonitorName : LastKnown?.ProcWrapper.ProcessName,
                     Elapsed = elapsedTimer,
                     Timeout = timeout
                 });

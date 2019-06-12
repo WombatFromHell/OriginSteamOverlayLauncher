@@ -191,8 +191,8 @@ namespace OriginSteamOverlayLauncher
                 lastSection = parsedSection.Length > 1 ? parsedSection[1] : lastSection;
                 output.SectionIndex = string.IsNullOrWhiteSpace(lastSection) ? i : -1; // mark our section index
                 string[] item = input[i].Split(new char[] { '=' }, 2);
-                bool keyMatch = ProcessUtils.StringFuzzyEquals(item[0], keyName) && item.Length == 2;
-                if (ProcessUtils.StringFuzzyEquals(lastSection, sectionName) && keyMatch || keyMatch)
+                bool keyMatch = ProcessUtils.FuzzyEquals(item[0], keyName) && item.Length == 2;
+                if (ProcessUtils.FuzzyEquals(lastSection, sectionName) && keyMatch || keyMatch)
                 {// return first matched section + key or first key (section optional)
                     output.Section = lastSection;
                     output.KeyName = item[0];

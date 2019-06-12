@@ -121,15 +121,15 @@ namespace OriginSteamOverlayLauncher
             output = ProcessPriorityClass.Normal; // default to Normal
             try
             {// override our output with a parse if necessary
-                if (ProcessUtils.StringFuzzyEquals("Idle", val))
+                if (ProcessUtils.FuzzyEquals("Idle", val))
                     output = ProcessPriorityClass.Idle;
-                else if (ProcessUtils.StringFuzzyEquals("BelowNormal", val))
+                else if (ProcessUtils.FuzzyEquals("BelowNormal", val))
                     output = ProcessPriorityClass.BelowNormal;
-                else if (ProcessUtils.StringFuzzyEquals("AboveNormal", val))
+                else if (ProcessUtils.FuzzyEquals("AboveNormal", val))
                     output = ProcessPriorityClass.AboveNormal;
-                else if (ProcessUtils.StringFuzzyEquals("High", val))
+                else if (ProcessUtils.FuzzyEquals("High", val))
                     output = ProcessPriorityClass.High;
-                else if (ProcessUtils.StringFuzzyEquals("RealTime", val))
+                else if (ProcessUtils.FuzzyEquals("RealTime", val))
                     output = ProcessPriorityClass.RealTime;
                 return true;
             }

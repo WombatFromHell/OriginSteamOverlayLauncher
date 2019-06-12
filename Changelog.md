@@ -1,4 +1,5 @@
-* 0338dae (HEAD -> staging, origin/staging) Bump the changelog
+* 4b0224a (HEAD -> staging, origin/staging) Implemented child process detection and validation
+* 0338dae Bump the changelog
 * 10ef027 Unit tests for config validation and refactoring
 * b330afd Bug fixes for Battle.net and MonitorPath behavior
 * 9adc0cc Sanitize path inputs and prevent false validation

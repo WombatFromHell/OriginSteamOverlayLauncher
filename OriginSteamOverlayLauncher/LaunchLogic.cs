@@ -35,10 +35,10 @@ namespace OriginSteamOverlayLauncher
         public async Task ProcessLauncher()
         {
             // check for running instance of launcher (relaunch if required)
-            if (SetHnd.Options.ReLaunch && LauncherPathValid && ProcessUtils.IsAnyRunningByName(LauncherName))
+            if (SetHnd.Options.ReLaunch && LauncherPathValid && ProcessWrapper.IsRunningByName(LauncherName))
             {// if the launcher is running before the game kill it so we can run it through Steam
                 ProcessUtils.Logger("OSOL", $"Found previous instance of launcher [{LauncherName}.exe], relaunching...");
-                ProcessUtils.KillProcTreeByName(LauncherName);
+                ProcessWrapper.KillProcTreeByName(LauncherName);
             }
 
             // run PreLaunchExecPath/Args before the launcher
@@ -56,7 +56,7 @@ namespace OriginSteamOverlayLauncher
                     SetHnd.Paths.LauncherArgs
                 );
                 await LauncherPL.Launch();
-                if (LauncherPL.TargetProcess != null)
+                if (LauncherPL.ProcWrapper.Proc != null)
                 {
                     LauncherMonitor = new ProcessMonitor(
                         LauncherPL,
@@ -72,8 +72,8 @@ namespace OriginSteamOverlayLauncher
 
             // wait for all running threads to exit
             while (!ExitRequested ||
-                PreLauncherPL != null && PreLauncherPL.IsRunning() ||
-                PostGamePL != null && PostGamePL.IsRunning() ||
+                PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning ||
+                PostGamePL != null && PostGamePL.ProcWrapper.IsRunning ||
                 LauncherMonitor != null && LauncherMonitor.IsRunning() ||
                 GameMonitor != null && GameMonitor.IsRunning())
                 await Task.Delay(1000);
@@ -89,7 +89,7 @@ namespace OriginSteamOverlayLauncher
                 await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
             }
 
-            int _type = LauncherMonitor?.WindowType ?? -1;
+            int _type = LauncherPL?.ProcWrapper?.ProcessType ?? -1;
             bool _running = (bool)LauncherMonitor?.IsRunning();
             if (LauncherURIMode || _running && _type == 4)  // URIs/EGL
                 GamePL = new ProcessLauncher(
@@ -146,14 +146,14 @@ namespace OriginSteamOverlayLauncher
         {
             if (SetHnd.Options.GameProcessAffinity > 0)
             {
-                GamePL.TargetProcess.ProcessorAffinity = (IntPtr)SetHnd.Options.GameProcessAffinity;
+                GamePL.ProcWrapper.Proc.ProcessorAffinity = (IntPtr)SetHnd.Options.GameProcessAffinity;
                 ProcessUtils.Logger("OSOL",
                     $"Setting game process CPU affinity to: {BitmaskExtensions.AffinityToCoreString(SetHnd.Options.GameProcessAffinity)}");
             }
 
             if (SetHnd.Options.GameProcessPriority.ToString() != "Normal")
             {
-                GamePL.TargetProcess.PriorityClass = SetHnd.Options.GameProcessPriority;
+                GamePL.ProcWrapper.Proc.PriorityClass = SetHnd.Options.GameProcessPriority;
                 ProcessUtils.Logger("OSOL",
                     $"Setting game process priority to: {SetHnd.Options.GameProcessPriority.ToString()}");
             }
@@ -161,8 +161,8 @@ namespace OriginSteamOverlayLauncher
 
         private async void OnGameExited(object sender, ProcessEventArgs e)
         {
-            if (SetHnd.Options.MinimizeLauncher && LauncherPL.IsRunning())
-                WindowUtils.MinimizeWindow(LauncherPL.GetHWnd());
+            if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning)
+                WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
 
             // run PostGameExecPath/Args after the game exits
             PostGamePL = new ProcessLauncher(
@@ -179,10 +179,10 @@ namespace OriginSteamOverlayLauncher
                 ProcessUtils.Logger("OSOL", $"Game exited, cleaning up...");
             await Task.Delay(SetHnd.Options.PostGameWaitTime * 1000);
 
-            if (SetHnd.Options.CloseLauncher && LauncherPL.IsRunning())
+            if (SetHnd.Options.CloseLauncher && LauncherPL.ProcWrapper.IsRunning)
             {
                 ProcessUtils.Logger("OSOL", $"Found launcher still running, killing it...");
-                ProcessUtils.KillProcTreeByName(LauncherName);
+                ProcessWrapper.KillProcTreeByName(LauncherName);
             }
 
             OnClosing();
