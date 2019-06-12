@@ -82,6 +82,10 @@ namespace OriginSteamOverlayLauncher
         #region Event Delegates
         private async void OnLauncherAcquired(object sender, ProcessEventArgs e)
         {
+            // MinimizeWindow after acquisition to prevent issues with ProcessType() fetch
+            if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning)
+                WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
+
             if (SetHnd.Options.ReLaunch && LauncherPathValid)
             {// pause to let the launcher process stabilize after being hooked
                 ProcessUtils.Logger("OSOL",
@@ -112,7 +116,8 @@ namespace OriginSteamOverlayLauncher
                 GamePL = new ProcessLauncher(
                     SetHnd.Paths.GamePath,
                     SetHnd.Paths.GameArgs,
-                    SetHnd.Options.PreGameWaitTime
+                    SetHnd.Options.PreGameWaitTime,
+                    avoidPID: _aPID
                 );
             }
             if (GamePL != null && (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch))
