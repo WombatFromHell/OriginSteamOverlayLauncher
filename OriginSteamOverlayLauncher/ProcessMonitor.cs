@@ -125,7 +125,8 @@ namespace OriginSteamOverlayLauncher
                 if (HasAcquired && _isRunning)
                 {
                     sw.Restart();
-                    LastKnown = TargetLauncher;
+                    if (LastKnown == null || LastKnown.ProcWrapper.Proc.Id != TargetLauncher.ProcWrapper.Proc.Id)
+                        LastKnown = TargetLauncher;
                     return; // bail while process is healthy
                 }
                 else if (!HasAcquired && _isRunning)
@@ -145,8 +146,7 @@ namespace OriginSteamOverlayLauncher
                     OnProcessSoftExit(this, new ProcessEventArgs
                     {
                         TargetProcess = LastKnown?.ProcWrapper.Proc,
-                        ProcessName = !string.IsNullOrWhiteSpace(LastKnown?.MonitorName) ?
-                            LastKnown?.MonitorName : LastKnown?.ProcWrapper.ProcessName,
+                        ProcessName = LastKnown?.ProcWrapper?.ProcessName ?? TargetLauncher?.MonitorName,
                         Timeout = timeout
                     });
                 }
@@ -156,8 +156,7 @@ namespace OriginSteamOverlayLauncher
                 OnProcessHardExit(this, new ProcessEventArgs
                 {
                     TargetProcess = LastKnown?.ProcWrapper.Proc,
-                    ProcessName = !string.IsNullOrWhiteSpace(LastKnown?.MonitorName) ?
-                            LastKnown?.MonitorName : LastKnown?.ProcWrapper.ProcessName,
+                    ProcessName = LastKnown?.ProcWrapper?.ProcessName ?? TargetLauncher?.MonitorName,
                     Elapsed = elapsedTimer,
                     Timeout = timeout
                 });

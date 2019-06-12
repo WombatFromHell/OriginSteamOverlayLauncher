@@ -92,9 +92,17 @@ namespace OriginSteamOverlayLauncher
             int _type = LauncherPL?.ProcWrapper?.ProcessType ?? -1;
             bool _running = (bool)LauncherMonitor?.IsRunning();
             int _aPID = e.AvoidPID > 0 ? e.AvoidPID : 0;
-            if (_running && (_type == 4 || _type == 1 || LauncherURIMode))  // URIs/EGL
+            if (_running && LauncherURIMode)  // URIs/EGL
                 GamePL = new ProcessLauncher(
                     SetHnd.Paths.LauncherURI, "",
+                    SetHnd.Options.PreGameWaitTime,
+                    avoidPID: _aPID,
+                    altName: Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath)
+                );
+            else if (_running && _type == 1) // Battle.net (relaunch LauncherArgs)
+                GamePL = new ProcessLauncher(
+                    SetHnd.Paths.LauncherPath,
+                    SetHnd.Paths.LauncherArgs,
                     SetHnd.Options.PreGameWaitTime,
                     avoidPID: _aPID,
                     altName: Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath)

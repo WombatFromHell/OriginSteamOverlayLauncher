@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -33,7 +34,7 @@ namespace OriginSteamOverlayLauncher
             get
             {
                 this.GetIsRunning();
-                return ParentProcessUtils.GetParentPID(Proc.Handle);
+                return NativeProcessUtils.GetParentPID(Proc.Handle);
             }
         }
         public int ProcessType
@@ -64,7 +65,7 @@ namespace OriginSteamOverlayLauncher
 
         private bool GetIsChild()
         {// compare current PPID against assembly PID to determine parentage
-            int _ppid = ParentProcessUtils.GetParentPID(Proc.Handle);
+            int _ppid = NativeProcessUtils.GetParentPID(Proc.Handle);
             return _ppid > 0 && _ppid != Program.AssemblyPID;
         }
 
@@ -80,11 +81,16 @@ namespace OriginSteamOverlayLauncher
                     try
                     {
                         var curPID = Convert.ToInt32(process.Properties["ProcessID"].Value);
-                        var curProcess = Process.GetProcessById(curPID);
-                        int _ppid = ParentProcessUtils.GetParentPID(curProcess.Handle);
-                        // use AvoidPID to avoid selecting an already filtered process
-                        if (ValidateProc(curProcess) && PID > 0 && curProcess.Id != AvoidPID)
-                            output.Add(new Tuple<int, int, Process>(_ppid, curPID, curProcess));
+                        var _pidIsRunning = NativeProcessUtils.IsProcessAlive(curPID);
+                        // avoid ArgumentException with IsProcessAlive()
+                        if (_pidIsRunning)
+                        {
+                            var curProcess = Process.GetProcessById(curPID);
+                            int _ppid = NativeProcessUtils.GetParentPID(curProcess.Handle);
+                            // use AvoidPID to avoid selecting an already filtered process
+                            if (ValidateProc(curProcess) && (PID > 0 && curProcess.Id != AvoidPID || PID == 0))
+                                output.Add(new Tuple<int, int, Process>(_ppid, curPID, curProcess));
+                        }
                     }
                     catch (Win32Exception) { continue; }
                     catch (InvalidOperationException) { continue; }
@@ -117,9 +123,13 @@ namespace OriginSteamOverlayLauncher
                     try
                     {
                         var curPID = Convert.ToInt32(process.Properties["ProcessID"].Value);
-                        var curProcess = Process.GetProcessById(curPID);
-                        if (ValidateProc(curProcess))
-                            output.Add(curProcess);
+                        var _pidIsRunning = NativeProcessUtils.IsProcessAlive(curPID);
+                        if (_pidIsRunning)
+                        {
+                            var curProcess = Process.GetProcessById(curPID);
+                            if (ValidateProc(curProcess))
+                                output.Add(curProcess);
+                        }
                     }
                     catch (Win32Exception) { continue; }
                     catch (InvalidOperationException) { continue; }
@@ -150,14 +160,15 @@ namespace OriginSteamOverlayLauncher
             if (enumResults.Count == 0)
             {// switch to searching by name if assembly child enumeration fails
                 var byNameResults = GetProcessesByName(MonitorName.Length > 0 ? MonitorName : ProcessName);
-                for (int j = 0; j < byNameResults.Count; j++)
-                {
-                    if (!byNameResults[j].HasExited)
+                for (int i = byNameResults.Count-1; i >= 0; i--)
+                {// check in reverse order (newest to oldest)
+                    var curProc = byNameResults[i];
+                    if (IsValidProcess(curProc) && curProc.Id != AvoidPID)
                     {// update our target if it's changed
-                        if (Proc != null && Proc.Id != byNameResults[j].Id)
+                        if (Proc?.Id != curProc.Id)
                         {
-                            Proc = byNameResults[j];
-                            ProcessName = Path.GetFileNameWithoutExtension(byNameResults[j].MainModule.ModuleName);
+                            Proc = curProc;
+                            ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
                         }
                         return true; // bail early on success
                     }
@@ -165,12 +176,13 @@ namespace OriginSteamOverlayLauncher
             }
             else
             {// enumerate children and grandchildren of our assembly
-                for (int i = 0; i < enumResults.Count; i++)
+                for (int i = enumResults.Count-1; i >= 0; i--)
                 {
                     var curProc = enumResults[i].Item3;
-                    if (!curProc.HasExited)
-                    {// update our target if it's changed
-                        if (Proc != null && Proc.Id != curProc.Id)
+                    var curPID = enumResults[i].Item2;
+                    if (IsValidProcess(curProc) && curPID != AvoidPID)
+                    {
+                        if (Proc?.Id != curPID)
                         {
                             Proc = curProc;
                             ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
@@ -222,11 +234,10 @@ namespace OriginSteamOverlayLauncher
     }
 
     /// <summary>
-    /// A utility class to determine a process parent.
-    /// https://stackoverflow.com/a/3346055
+    /// A utility class to determine a process parent and check if a process is alive
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct ParentProcessUtils
+    public struct NativeProcessUtils
     {
         // These members must match PROCESS_BASIC_INFORMATION
         internal IntPtr Reserved1;
@@ -236,14 +247,43 @@ namespace OriginSteamOverlayLauncher
         internal IntPtr UniqueProcessId;
         internal IntPtr InheritedFromUniqueProcessId;
 
+        #region IMPORTS
         [DllImport("ntdll.dll")]
         private static extern int NtQueryInformationProcess(
             IntPtr processHandle,
             int processInformationClass,
-            ref ParentProcessUtils processInformation,
+            ref NativeProcessUtils processInformation,
             int processInformationLength,
             out int returnLength
         );
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(ProcessAccessFlags access, bool inheritHandle, int procId);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CloseHandle(IntPtr hObject);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
+
+        [Flags]
+        public enum ProcessAccessFlags : uint
+        {
+            All = 0x001F0FFF,
+            Terminate = 0x00000001,
+            CreateThread = 0x00000002,
+            VirtualMemoryOperation = 0x00000008,
+            VirtualMemoryRead = 0x00000010,
+            VirtualMemoryWrite = 0x00000020,
+            DuplicateHandle = 0x00000040,
+            CreateProcess = 0x000000080,
+            SetQuota = 0x00000100,
+            SetInformation = 0x00000200,
+            QueryInformation = 0x00000400,
+            QueryLimitedInformation = 0x00001000,
+            Synchronize = 0x00100000
+        }
+        #endregion
 
         /// <summary>
         /// Gets the parent process of specified process.
@@ -262,12 +302,26 @@ namespace OriginSteamOverlayLauncher
         /// <returns>An instance of the Process class.</returns>
         public static int GetParentPID(IntPtr handle)
         {
-            ParentProcessUtils pbi = new ParentProcessUtils();
+            NativeProcessUtils pbi = new NativeProcessUtils();
             int returnLength;
             int status = NtQueryInformationProcess(handle, 0, ref pbi, Marshal.SizeOf(pbi), out returnLength);
             if (status != 0)
                 return -1;
             return pbi.InheritedFromUniqueProcessId.ToInt32();
+        }
+
+        static public bool IsProcessAlive(int processId)
+        {// https://stackoverflow.com/a/54727764
+            IntPtr h = OpenProcess(ProcessAccessFlags.QueryInformation, true, processId);
+            if (h == IntPtr.Zero)
+                return false;
+
+            uint code = 0;
+            bool b = GetExitCodeProcess(h, out code);
+            CloseHandle(h);
+            if (b)
+                b = (code == 259) /* STILL_ACTIVE  */;
+            return b;
         }
     }
 }
