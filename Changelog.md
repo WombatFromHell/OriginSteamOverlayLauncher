@@ -1,4 +1,6 @@
-* 935c385 (HEAD -> staging, origin/staging) Bug fixes for launcher window detection
+* 3f9e66b (HEAD -> staging, origin/staging) Bump version number
+* cea4efe Bump changelog
+* 935c385 Bug fixes for launcher window detection
 * bbd3066 Preserve path data when updating new configs
 * e49de1f More bug fixes for EGL and URI launching
 * 8b28fc0 Implemented legacy config file migration

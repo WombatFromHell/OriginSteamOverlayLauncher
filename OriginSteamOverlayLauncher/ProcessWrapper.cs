@@ -200,7 +200,7 @@ namespace OriginSteamOverlayLauncher
                 return IsValidProcess(procItem) &&
                     ProcessUtils.OrdinalContains(MonitorName, procItem.MainModule.ModuleName) ||
                     ProcessUtils.OrdinalContains(ProcessName, procItem.MainModule.ModuleName) ||
-                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName);
+                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName) || procItem.Id > 0;
             }
             catch { return false; }
         }
