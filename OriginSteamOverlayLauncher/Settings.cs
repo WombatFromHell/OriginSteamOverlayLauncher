@@ -314,7 +314,7 @@ namespace OriginSteamOverlayLauncher
         #endregion
 
         private bool MigrateLegacyConfig()
-        {
+        {// supports pre 1.09 and post 1.09 configs
             if (File.Exists(Program.ConfigFile))
             {
                 var configLines = File.ReadAllLines(Program.ConfigFile).ToList();
@@ -335,7 +335,8 @@ namespace OriginSteamOverlayLauncher
 
                 foreach (var item in convKeys)
                 {// migrate each old variable to the new config variable in memory
-                    var lineMatch = configLines.FindIndex(l => l.StartsWith(item.Key));
+                    // preserve path data for old and new config types
+                    var lineMatch = configLines.FindIndex(l => l.StartsWith(item.Key) || l.StartsWith(item.Value));
                     var dataMatch = lineMatch > -1 ?
                         configLines[lineMatch].Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries) :
                         new string[] { };
