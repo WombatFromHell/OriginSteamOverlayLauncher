@@ -86,14 +86,14 @@ namespace OriginSteamOverlayLauncher
             if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning)
                 WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
 
+            int _type = LauncherPL.ProcWrapper.ProcessType;
             if (SetHnd.Options.ReLaunch && LauncherPathValid)
             {// pause to let the launcher process stabilize after being hooked
                 ProcessUtils.Logger("OSOL",
-                    $"Launcher detected, preparing to launch game in {SetHnd.Options.PreGameLauncherWaitTime}s...");
+                    $"Launcher detected (type {_type}), preparing to launch game in {SetHnd.Options.PreGameLauncherWaitTime}s...");
                 await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
             }
-
-            int _type = LauncherPL?.ProcWrapper?.ProcessType ?? -1;
+            
             bool _running = (bool)LauncherMonitor?.IsRunning();
             int _aPID = e.AvoidPID > 0 ? e.AvoidPID : 0;
             if (_running && LauncherURIMode)  // URIs/EGL

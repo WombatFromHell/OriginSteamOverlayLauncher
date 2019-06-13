@@ -86,8 +86,8 @@ namespace OriginSteamOverlayLauncher
             var _windowTitleTrg = GetCaptionOfWindow(hWnd);
             var _windowClassTrg = GetClassNameOfWindow(hWnd);
 
-            if (ProcessUtils.OrdinalContains(windowTitle, _windowTitleTrg)
-                    && ProcessUtils.OrdinalEquals(windowClass, _windowClassTrg))
+            if (ProcessUtils.FuzzyEquals(windowTitle, _windowTitleTrg) &&
+                ProcessUtils.FuzzyEquals(windowClass, _windowClassTrg))
                 return true;
 
             return false;
@@ -117,35 +117,26 @@ namespace OriginSteamOverlayLauncher
 
         public static int DetectWindowType(IntPtr hWnd)
         {// case testing for window class and title matching
-            int processType = -1;
             if (hWnd != IntPtr.Zero)
-            {// since we've got a window handle let's pass on what we find
-                // Epic Games Launcher [Type 4]
+            {
+                // excluded windows
+                if (MatchWindowDetails("Blizzard Battle.net Login", "Qt5QWindowIcon", hWnd))
+                    return -1; // Battle.net Login Window
+                if (MatchWindowDetails("Uplay", "uplay_start", hWnd))
+                    return -1; // Uplay Startup/Login Window
+
                 if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", hWnd))
-                    processType = 4;
-
-                // Uplay [Type 3] (splash & normal)
-                if (processType == -1 && MatchWindowDetails("Uplay", "uplay_main", hWnd) ||
-                    MatchWindowDetails("Uplay", "uplay_start", hWnd))
-                    processType = 3;
-
-                // Origin [Type 2]
-                if (processType == -1 && MatchWindowDetails("Origin", "Qt5QWindowIcon", hWnd))
-                    processType = 2;
-
-                // Blizzard Battle.net [Type 1]
-                if (processType == -1 && MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", hWnd))
-                    processType = 1;
-
-                //
-                // catch-all for everything else [Type 0]
-                //
-
-                // just check if we've got a window class and title
-                if (processType == -1 && WindowHasDetails(hWnd))
-                    processType = 0;
+                    return 4; // Epic Games Launcher [Type 4]
+                else if (MatchWindowDetails("Uplay", "uplay_main", hWnd))
+                    return 3; // Uplay [Type 3]
+                else if (MatchWindowDetails("Origin", "Qt5QWindowIcon", hWnd))
+                    return 2; // Origin [Type 2]
+                else if (MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", hWnd))
+                    return 1; // Blizzard Battle.net [Type 1]
+                else if (WindowHasDetails(hWnd))
+                    return 0; // all other valid foreground windows
             }
-            return processType;
+            return -1;
         }
 
         public static bool MessageSendKey(IntPtr hWnd, char key)

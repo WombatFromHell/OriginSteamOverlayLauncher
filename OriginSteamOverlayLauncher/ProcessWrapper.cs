@@ -14,10 +14,10 @@ namespace OriginSteamOverlayLauncher
         public Process Proc { get; set; }
         public string ProcessName { get; private set; }
         public int PID { get; private set; }
+        public int ProcessType { get; private set; }
 
         public IntPtr Hwnd { get => GetHWND(Proc); }
         public int ParentPID { get => NativeProcessUtils.GetParentPID(Proc.Handle); }
-        public int ProcessType { get => WindowUtils.DetectWindowType(GetHWND(Proc)); }
         public bool IsRunning { get => GetIsRunning(); }
 
         private int AvoidPID { get; set; }
@@ -35,9 +35,9 @@ namespace OriginSteamOverlayLauncher
             AvoidPID = avoidPID;
         }
 
-        public List<Tuple<int, int, Process>> GetChildProcesses(int PID = 0)
-        {
-            var output = new List<Tuple<int, int, Process>>();
+        public List<Tuple<int, int, Process, int>> GetChildProcesses(int PID = 0)
+        {// a List of Tuples in the form of: { PPID, PID, Process, ProcessType }
+            var output = new List<Tuple<int, int, Process, int>>();
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
                 $"SELECT * FROM Win32_Process WHERE ParentProcessId={(PID > 0 ? PID : Program.AssemblyPID)}"))
             using (ManagementObjectCollection processes = searcher.Get())
@@ -53,21 +53,23 @@ namespace OriginSteamOverlayLauncher
                         {
                             var curProcess = Process.GetProcessById(curPID);
                             int _ppid = NativeProcessUtils.GetParentPID(curProcess.Handle);
+                            int _type = WindowUtils.DetectWindowType(GetHWND(curProcess));
                             // use AvoidPID to avoid selecting an already filtered process
-                            if (ValidateProc(curProcess) && (PID > 0 && curProcess.Id != AvoidPID || PID == 0))
-                                output.Add(new Tuple<int, int, Process>(_ppid, curPID, curProcess));
+                            if (ValidateWMIProc(curProcess) && (PID > 0 && curProcess.Id != AvoidPID || PID == 0))
+                                output.Add(new Tuple<int, int, Process, int>(_ppid, curPID, curProcess, _type));
                         }
                     }
                     catch (Win32Exception) { continue; }
                     catch (InvalidOperationException) { continue; }
                 }
             }
+            output.OrderBy(i => i.Item4); // order by detected window type
             return output;
         }
 
-        public List<Process> GetProcessesByName(string exeName)
-        {
-            var output = new List<Process>();
+        public List<KeyValuePair<Process, int>> GetProcessesByName(string exeName)
+        {// KVP in the form of: { Process, ProcessType }
+            var output = new List<KeyValuePair<Process, int>>();
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
                 $"SELECT * FROM Win32_Process where Name LIKE '{exeName}.exe'"))
             using (ManagementObjectCollection processes = searcher.Get())
@@ -81,8 +83,9 @@ namespace OriginSteamOverlayLauncher
                         if (_pidIsRunning)
                         {
                             var curProcess = Process.GetProcessById(curPID);
-                            if (ValidateProc(curProcess) && curPID != AvoidPID)
-                                output.Add(curProcess);
+                            int _type = WindowUtils.DetectWindowType(GetHWND(curProcess));
+                            if (ValidateWMIProc(curProcess) && curPID != AvoidPID)
+                                output.Add(new KeyValuePair<Process, int>(curProcess, _type));
                         }
                     }
                     catch (Win32Exception) { continue; }
@@ -92,10 +95,9 @@ namespace OriginSteamOverlayLauncher
             return output;
         }
 
-        private List<Tuple<int, int, Process>> EnumerateDescendents()
+        private List<Tuple<int, int, Process, int>> EnumerateDescendents()
         {// abstraction of GetChildProcesses() for grandchild enumeration
-            // a List of Tuples in the form of: { PPID, PID, Process }
-            var output = new List<Tuple<int, int, Process>>();
+            var output = new List<Tuple<int, int, Process, int>>();
             // retrieve all children of this assembly
             var procs = GetChildProcesses();
             output.AddRange(procs);
@@ -122,41 +124,32 @@ namespace OriginSteamOverlayLauncher
                 if (enumResults.Count == 0)
                 {// switch to searching by name if assembly child enumeration fails
                     var byNameResults = GetProcessesByName(MonitorName.Length > 0 ? MonitorName : ProcessName);
-                    for (int i = byNameResults.Count - 1; i >= 0; i--)
-                    {// check in reverse order (newest to oldest)
-                        var curProc = byNameResults[i];
-                        if (IsValidProcess(curProc) && curProc.Id != AvoidPID)
+                    for (int i = 0; i < byNameResults.Count; i++)
+                    {
+                        var curProc = byNameResults[i].Key;
+                        var curType = byNameResults[i].Value;
+                        if (curType > -1 && curProc.Id != AvoidPID)
                         {// update our target if it's changed
                             try
                             {
-                                if (PID != curProc.Id)
-                                {
-                                    Proc = curProc;
-                                    PID = curProc.Id;
-                                    ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
-                                }
+                                UpdateRefs(curProc, curType);
                             }
                             catch (InvalidOperationException) { continue; }
-                            return true; // report success
+                            return true;
                         }
                     }
                 }
                 else
                 {// enumerate children and grandchildren of our assembly
-                    for (int i = enumResults.Count - 1; i >= 0; i--)
+                    for (int i = 0; i < enumResults.Count; i++)
                     {
                         var curProc = enumResults[i].Item3;
-                        var curPID = enumResults[i].Item2;
-                        if (IsValidProcess(curProc) && curPID != AvoidPID)
+                        var curType = enumResults[i].Item4;
+                        if (curType > -1 && enumResults[i].Item2 != AvoidPID)
                         {
                             try
                             {
-                                if (PID != curPID)
-                                {
-                                    Proc = curProc;
-                                    PID = curPID;
-                                    ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
-                                }
+                                UpdateRefs(curProc, curType);
                             }
                             catch (InvalidOperationException) { continue; }
                             return true;
@@ -166,7 +159,18 @@ namespace OriginSteamOverlayLauncher
                 return false; // both methods failed!
             }
             else
-                return true; // don't need to re-run validation
+                return true; // return cached result
+
+            void UpdateRefs(Process proc, int windowType)
+            {// only update if proc data has changed
+                if (PID != proc.Id)
+                {
+                    Proc = proc;
+                    PID = proc.Id;
+                    ProcessType = windowType;
+                    ProcessName = Path.GetFileNameWithoutExtension(proc.MainModule.ModuleName);
+                }
+            }
         }
 
         public static bool IsRunningByName(string name)
@@ -178,21 +182,25 @@ namespace OriginSteamOverlayLauncher
 
         public static bool IsValidProcess(Process proc)
         {// rough approximation of a working Launcher/Game window
-            if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero &&
-                proc.MainModule.ModuleName.Contains(".exe") &&
-                WindowUtils.DetectWindowType(GetHWND(proc)) > -1)
-                return true;
-            return false;
+            try
+            {
+                if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero &&
+                    proc.MainModule.ModuleName.Contains(".exe") &&
+                    WindowUtils.DetectWindowType(GetHWND(proc)) > -1)
+                    return true;
+                return false;
+            }
+            catch (Exception) { return false; }
         }
 
-        private bool ValidateProc(Process procItem)
-        {// abstract process validator (for use with WMI)
+        private bool ValidateWMIProc(Process procItem)
+        {
             try
             {
                 return IsValidProcess(procItem) &&
                     ProcessUtils.OrdinalContains(MonitorName, procItem.MainModule.ModuleName) ||
                     ProcessUtils.OrdinalContains(ProcessName, procItem.MainModule.ModuleName) ||
-                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName) || procItem.Id > 0;
+                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName);
             }
             catch { return false; }
         }
