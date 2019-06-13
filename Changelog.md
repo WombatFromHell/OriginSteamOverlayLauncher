@@ -1,5 +1,7 @@
-* 566a873 (HEAD -> staging) Improvements to process enumeration
-* 39e42d1 (origin/staging) Reimplementation of basic process handling
+* ef29503 (HEAD -> staging, origin/staging) Small bug fix for process avoidance when launching game
+* 87dfb18 Bug fixes for Battle.net child process detection
+* 566a873 Improvements to process enumeration
+* 39e42d1 Reimplementation of basic process handling
 * 4b0224a Implemented child process detection and validation
 * 0338dae Bump the changelog
 * 10ef027 Unit tests for config validation and refactoring

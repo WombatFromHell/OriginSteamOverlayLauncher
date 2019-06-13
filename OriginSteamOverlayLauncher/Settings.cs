@@ -5,7 +5,6 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Text;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -28,8 +27,11 @@ namespace OriginSteamOverlayLauncher
             if (!testable && !CheckINI())
             {
                 ProcessUtils.Logger("WARNING", "Config file partially invalid or doesn't exist, re-stubbing...");
-                CreateINIFromInstance();
-                PathChooser();
+                if (!MigrateLegacyConfig())
+                {// rebuild from scratch if migrate fails
+                    CreateINIFromInstance();
+                    PathChooser();
+                }
             }
             else if (!testable)
                 ParseToInstance();
@@ -63,11 +65,13 @@ namespace OriginSteamOverlayLauncher
         /// <summary>
         /// Deserialize the current config file into our Settings instance
         /// </summary>
-        public List<string> ParseToInstance(bool testable = false)
+        public List<string> ParseToInstance(bool testable = false, List<string> sourceConfig = null)
         {
             List<string> input = new List<string>();
             SettingsData _local = testable ? new SettingsData() : Data;
-            if (!testable)
+            if (!testable && sourceConfig != null && sourceConfig.Count > 0)
+                input = sourceConfig;
+            else if (!testable)
                 input = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
             else
                 input = InstanceToList();
@@ -308,6 +312,49 @@ namespace OriginSteamOverlayLauncher
             WriteKey(keyName, value, sectionName, testable);
         }
         #endregion
+
+        private bool MigrateLegacyConfig()
+        {
+            if (File.Exists(Program.ConfigFile))
+            {
+                var configLines = File.ReadAllLines(Program.ConfigFile).ToList();
+                // use a dictionary for easy conversion of key names
+                var convKeys = new Dictionary<string, string>();
+                convKeys.Add("LauncherPath", "LauncherPath");
+                convKeys.Add("LauncherArgs", "LauncherArgs");
+                convKeys.Add("LauncherURI", "LauncherURI");
+                convKeys.Add("GamePath", "GamePath");
+                convKeys.Add("GameArgs", "GameArgs");
+                convKeys.Add("MonitorPath", "MonitorPath");
+                convKeys.Add("PreLaunchExec", "PreLaunchExecPath");
+                convKeys.Add("PreLaunchExecArgs", "PreLaunchExecArgs");
+                convKeys.Add("PostGameExec", "PostGameExecPath");
+                convKeys.Add("PostGameExecArgs", "PostGameExecArgs");
+                // build a fresh config
+                var freshConfig = InstanceToList();
+
+                foreach (var item in convKeys)
+                {// migrate each old variable to the new config variable in memory
+                    var lineMatch = configLines.FindIndex(l => l.StartsWith(item.Key));
+                    var dataMatch = lineMatch > -1 ?
+                        configLines[lineMatch].Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries) :
+                        new string[] { };
+                    var configMatchIdx = freshConfig.FindIndex(l => l.StartsWith(item.Value));
+                    if (dataMatch.Length == 2 && configMatchIdx > -1)
+                    {
+                        if (!string.IsNullOrWhiteSpace(dataMatch[1]))
+                            freshConfig[configMatchIdx] = $"{item.Value}={dataMatch[1]}";
+                    }
+                }
+                ParseToInstance(sourceConfig: freshConfig);
+                ProcessUtils.Logger("OSOL", "Old config file path data migrated to new version...");
+                File.WriteAllLines(Program.ConfigFile, freshConfig);
+                // use PathChooser() to validate our parsed Path variables and alert the user
+                PathChooser();
+                return true;
+            }
+            return false;
+        }
 
         private void PathChooser()
         {
