@@ -23,8 +23,8 @@ namespace OriginSteamOverlayLauncher
             ExecArgs = procArgs;
             Delay = delayTime;
             Elevated = elevate;
-            MonitorName = !string.IsNullOrWhiteSpace(altName) ? altName : "";
-            AvoidPID = avoidPID > 0 ? avoidPID : 0;
+            MonitorName = altName;
+            AvoidPID = avoidPID;
         }
 
         // expose some alternate constructors

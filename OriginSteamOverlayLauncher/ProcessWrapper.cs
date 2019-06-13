@@ -13,40 +13,12 @@ namespace OriginSteamOverlayLauncher
     {
         public Process Proc { get; set; }
         public string ProcessName { get; private set; }
-        public IntPtr Hwnd
-        {
-            get
-            {
-                this.GetIsRunning();
-                return GetHWND(Proc);
-            }
-        }
-        public int PID
-        {
-            get
-            {
-                this.GetIsRunning();
-                return Proc?.Id ?? 0;
-            }
-        }
-        public int ParentPID
-        {
-            get
-            {
-                this.GetIsRunning();
-                return NativeProcessUtils.GetParentPID(Proc.Handle);
-            }
-        }
-        public int ProcessType
-        {
-            get
-            {
-                this.GetIsRunning();
-                return WindowUtils.DetectWindowType(GetHWND(Proc));
-            }
-        }
-        public bool IsChild { get { return GetIsChild(); } }
-        public bool IsRunning { get { return GetIsRunning(); } }
+        public int PID { get; private set; }
+
+        public IntPtr Hwnd { get => GetHWND(Proc); }
+        public int ParentPID { get => NativeProcessUtils.GetParentPID(Proc.Handle); }
+        public int ProcessType { get => WindowUtils.DetectWindowType(GetHWND(Proc)); }
+        public bool IsRunning { get => GetIsRunning(); }
 
         private int AvoidPID { get; set; }
         private string MonitorName { get; set; }
@@ -59,14 +31,8 @@ namespace OriginSteamOverlayLauncher
         {// avoid returning null refs
             Proc = srcProc != null ? srcProc : new Process();
             ProcessName = Path.GetFileNameWithoutExtension(Proc.StartInfo.FileName);
-            MonitorName = !string.IsNullOrWhiteSpace(altName) ? altName : "";
-            AvoidPID = avoidPID > 0 ? avoidPID : 0;
-        }
-
-        private bool GetIsChild()
-        {// compare current PPID against assembly PID to determine parentage
-            int _ppid = NativeProcessUtils.GetParentPID(Proc.Handle);
-            return _ppid > 0 && _ppid != Program.AssemblyPID;
+            MonitorName = altName;
+            AvoidPID = avoidPID;
         }
 
         public List<Tuple<int, int, Process>> GetChildProcesses(int PID = 0)
@@ -99,18 +65,6 @@ namespace OriginSteamOverlayLauncher
             return output;
         }
 
-        private bool ValidateProc(Process procItem)
-        {// abstract process validator
-            try
-            {
-                return IsValidProcess(procItem) &&
-                    ProcessUtils.OrdinalContains(MonitorName, procItem.MainModule.ModuleName) ||
-                    ProcessUtils.OrdinalContains(ProcessName, procItem.MainModule.ModuleName) ||
-                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName) || procItem.Id > 0;
-            }
-            catch { return false; }
-        }
-
         public List<Process> GetProcessesByName(string exeName)
         {
             var output = new List<Process>();
@@ -127,7 +81,7 @@ namespace OriginSteamOverlayLauncher
                         if (_pidIsRunning)
                         {
                             var curProcess = Process.GetProcessById(curPID);
-                            if (ValidateProc(curProcess))
+                            if (ValidateProc(curProcess) && curPID != AvoidPID)
                                 output.Add(curProcess);
                         }
                     }
@@ -146,52 +100,73 @@ namespace OriginSteamOverlayLauncher
             var procs = GetChildProcesses();
             output.AddRange(procs);
             foreach (var item in procs)
-            {// if children have children process those (by PID)
-                var _gcProcs = GetChildProcesses(item.Item2);
-                if (_gcProcs.Count > 0)
-                    output.AddRange(_gcProcs);
+            {// if children have children process those (avoidance by PID)
+                var _cProcs = GetChildProcesses(item.Item2);
+                output.AddRange(_cProcs);
+                foreach (var gcitem in _cProcs)
+                {// if our children have grandchildren process those as well
+                    var _gcProcs = GetChildProcesses(gcitem.Item2);
+                    if (_gcProcs.Count > 0)
+                        output.AddRange(_gcProcs);
+                }
             }
             return output;
         }
 
         public bool GetIsRunning()
-        {// also doubles as a refresh method
-            var enumResults = EnumerateDescendents();
-            if (enumResults.Count == 0)
-            {// switch to searching by name if assembly child enumeration fails
-                var byNameResults = GetProcessesByName(MonitorName.Length > 0 ? MonitorName : ProcessName);
-                for (int i = byNameResults.Count-1; i >= 0; i--)
-                {// check in reverse order (newest to oldest)
-                    var curProc = byNameResults[i];
-                    if (IsValidProcess(curProc) && curProc.Id != AvoidPID)
-                    {// update our target if it's changed
-                        if (Proc?.Id != curProc.Id)
-                        {
-                            Proc = curProc;
-                            ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
+        {
+            // don't rely on Process() class' HasExited when cleaning up
+            if (Proc == null || !NativeProcessUtils.IsProcessAlive(PID))
+            {
+                var enumResults = EnumerateDescendents();
+                if (enumResults.Count == 0)
+                {// switch to searching by name if assembly child enumeration fails
+                    var byNameResults = GetProcessesByName(MonitorName.Length > 0 ? MonitorName : ProcessName);
+                    for (int i = byNameResults.Count - 1; i >= 0; i--)
+                    {// check in reverse order (newest to oldest)
+                        var curProc = byNameResults[i];
+                        if (IsValidProcess(curProc) && curProc.Id != AvoidPID)
+                        {// update our target if it's changed
+                            try
+                            {
+                                if (PID != curProc.Id)
+                                {
+                                    Proc = curProc;
+                                    PID = curProc.Id;
+                                    ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
+                                }
+                            }
+                            catch (InvalidOperationException) { continue; }
+                            return true; // report success
                         }
-                        return true; // bail early on success
                     }
                 }
+                else
+                {// enumerate children and grandchildren of our assembly
+                    for (int i = enumResults.Count - 1; i >= 0; i--)
+                    {
+                        var curProc = enumResults[i].Item3;
+                        var curPID = enumResults[i].Item2;
+                        if (IsValidProcess(curProc) && curPID != AvoidPID)
+                        {
+                            try
+                            {
+                                if (PID != curPID)
+                                {
+                                    Proc = curProc;
+                                    PID = curPID;
+                                    ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
+                                }
+                            }
+                            catch (InvalidOperationException) { continue; }
+                            return true;
+                        }
+                    }
+                }
+                return false; // both methods failed!
             }
             else
-            {// enumerate children and grandchildren of our assembly
-                for (int i = enumResults.Count-1; i >= 0; i--)
-                {
-                    var curProc = enumResults[i].Item3;
-                    var curPID = enumResults[i].Item2;
-                    if (IsValidProcess(curProc) && curPID != AvoidPID)
-                    {
-                        if (Proc?.Id != curPID)
-                        {
-                            Proc = curProc;
-                            ProcessName = Path.GetFileNameWithoutExtension(curProc.MainModule.ModuleName);
-                        }
-                        return true;
-                    }
-                }
-            }
-            return false;
+                return true; // don't need to re-run validation
         }
 
         public static bool IsRunningByName(string name)
@@ -202,12 +177,24 @@ namespace OriginSteamOverlayLauncher
         }
 
         public static bool IsValidProcess(Process proc)
-        {
+        {// rough approximation of a working Launcher/Game window
             if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero &&
                 proc.MainModule.ModuleName.Contains(".exe") &&
                 WindowUtils.DetectWindowType(GetHWND(proc)) > -1)
                 return true;
             return false;
+        }
+
+        private bool ValidateProc(Process procItem)
+        {// abstract process validator (for use with WMI)
+            try
+            {
+                return IsValidProcess(procItem) &&
+                    ProcessUtils.OrdinalContains(MonitorName, procItem.MainModule.ModuleName) ||
+                    ProcessUtils.OrdinalContains(ProcessName, procItem.MainModule.ModuleName) ||
+                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName) || procItem.Id > 0;
+            }
+            catch { return false; }
         }
 
         public static IntPtr GetHWND(Process procHandle)

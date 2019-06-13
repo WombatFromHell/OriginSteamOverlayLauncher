@@ -1,4 +1,5 @@
-* ef29503 (HEAD -> staging, origin/staging) Small bug fix for process avoidance when launching game
+* 8b28fc0 (HEAD -> staging, origin/staging) Implemented legacy config file migration
+* ef29503 Small bug fix for process avoidance when launching game
 * 87dfb18 Bug fixes for Battle.net child process detection
 * 566a873 Improvements to process enumeration
 * 39e42d1 Reimplementation of basic process handling

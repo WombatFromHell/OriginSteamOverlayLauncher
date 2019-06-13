@@ -37,7 +37,6 @@ namespace OriginSteamOverlayLauncher
         private Timer MonitorTimer { get; set; }
         private Timer SearchTimer { get; set; }
         private ProcessLauncher TargetLauncher { get; set; }
-        private ProcessLauncher LastKnown { get; set; }
 
         private readonly int Interval = 1000; // tick interval
         private SemaphoreSlim MonitorLock { get; }
@@ -125,8 +124,6 @@ namespace OriginSteamOverlayLauncher
                 if (HasAcquired && _isRunning)
                 {
                     sw.Restart();
-                    if (LastKnown == null || LastKnown.ProcWrapper.Proc.Id != TargetLauncher.ProcWrapper.Proc.Id)
-                        LastKnown = TargetLauncher;
                     return; // bail while process is healthy
                 }
                 else if (!HasAcquired && _isRunning)
@@ -145,8 +142,8 @@ namespace OriginSteamOverlayLauncher
                 {
                     OnProcessSoftExit(this, new ProcessEventArgs
                     {
-                        TargetProcess = LastKnown?.ProcWrapper.Proc,
-                        ProcessName = LastKnown?.ProcWrapper?.ProcessName ?? TargetLauncher?.MonitorName,
+                        TargetProcess = TargetLauncher.ProcWrapper.Proc,
+                        ProcessName = TargetLauncher.ProcWrapper.ProcessName ?? TargetLauncher.MonitorName,
                         Timeout = timeout
                     });
                 }
@@ -155,8 +152,8 @@ namespace OriginSteamOverlayLauncher
             if (!TimeoutCancelled && !IsRunning())
                 OnProcessHardExit(this, new ProcessEventArgs
                 {
-                    TargetProcess = LastKnown?.ProcWrapper.Proc,
-                    ProcessName = LastKnown?.ProcWrapper?.ProcessName ?? TargetLauncher?.MonitorName,
+                    TargetProcess = TargetLauncher.ProcWrapper.Proc,
+                    ProcessName = TargetLauncher.ProcWrapper.ProcessName ?? TargetLauncher.MonitorName,
                     Elapsed = elapsedTimer,
                     Timeout = timeout
                 });
