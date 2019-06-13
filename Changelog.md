@@ -1,5 +1,6 @@
-* bbd3066 (HEAD -> staging) Preserve path data when updating new configs
-* e49de1f (origin/staging) More bug fixes for EGL and URI launching
+* 935c385 (HEAD -> staging, origin/staging) Bug fixes for launcher window detection
+* bbd3066 Preserve path data when updating new configs
+* e49de1f More bug fixes for EGL and URI launching
 * 8b28fc0 Implemented legacy config file migration
 * ef29503 Small bug fix for process avoidance when launching game
 * 87dfb18 Bug fixes for Battle.net child process detection
