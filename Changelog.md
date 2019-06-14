@@ -1,4 +1,5 @@
-* 969dc68 (HEAD -> staging) Minor build tweaks in the project file
+* 95693db (HEAD -> staging) Bump the version number
+* 969dc68 Minor build tweaks in the project file
 * ca87983 Another attempt at fixing broken EGL behavior
 * 19ef8a0 (origin/staging) Bump changelog for posterity
 * 692120f Implemented an alternate fix for EGL behavior
