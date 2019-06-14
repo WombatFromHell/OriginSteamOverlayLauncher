@@ -1,4 +1,5 @@
-* 56bfbda (HEAD -> staging, origin/staging) Bump the changelog
+* 58c1f75 (HEAD -> staging, origin/staging) Use EGL specific behavior to fix URI timeout bug
+* 56bfbda Bump the changelog
 * e3d9770 Just some INI defaults tweaks
 * b9dda86 Relaxed process validation before enumerating
 * 7fde8e0 Fixed various bugs with process detection
