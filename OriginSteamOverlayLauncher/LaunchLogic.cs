@@ -58,23 +58,46 @@ namespace OriginSteamOverlayLauncher
                 SetHnd.Paths.LauncherArgs,
                 avoidProcName: GameName
             );
-            if (!SetHnd.Options.SkipLauncher && SetHnd.Options.ReLaunch && LauncherPathValid)
-                await LauncherPL.Launch(); // launching the launcher is optional
 
             if (LauncherPathValid)
             {// if given a launcher path search for the process
-                LauncherMonitor = new ProcessMonitor(
-                    LauncherPL,
-                    SetHnd.Options.ProcessAcquisitionTimeout,
-                    SetHnd.Options.InterProcessAcquisitionTimeout
-                );
-                LauncherMonitor.ProcessHardExit += OnLauncherExited;
-
-                // signal for manual game launch
-                if (SetHnd.Options.SkipLauncher)
-                    OnLauncherAcquired(this, null);
+                if (ProcessUtils.OrdinalContains("EpicGamesLauncher", SetHnd.Paths.LauncherPath))
+                {// EGL specific workaround for launching through Steam (complete override)
+                    LauncherPL = new ProcessLauncher(
+                        SetHnd.Paths.LauncherPath,
+                        SetHnd.Paths.LauncherURI,
+                        delayTime: SetHnd.Options.PreGameWaitTime,
+                        avoidProcName: LauncherName,
+                        monitorName: MonitorName
+                    );
+                    await LauncherPL.Launch();
+                    GameMonitor = new ProcessMonitor(
+                        LauncherPL,
+                        SetHnd.Options.ProcessAcquisitionTimeout,
+                        SetHnd.Options.InterProcessAcquisitionTimeout
+                    );
+                    GameMonitor.ProcessAcquired += OnGameAcquired;
+                    GameMonitor.ProcessHardExit += OnGameExited;
+                    // ^ rely on OnGameExited delegate to clean up our launcher here
+                }
                 else
-                    LauncherMonitor.ProcessAcquired += OnLauncherAcquired;
+                {// normal behavior
+                    if (!SetHnd.Options.SkipLauncher && SetHnd.Options.ReLaunch)
+                        await LauncherPL.Launch(); // launching the launcher is optional
+
+                    LauncherMonitor = new ProcessMonitor(
+                        LauncherPL,
+                        SetHnd.Options.ProcessAcquisitionTimeout,
+                        SetHnd.Options.InterProcessAcquisitionTimeout
+                    );
+                    LauncherMonitor.ProcessHardExit += OnLauncherExited;
+
+                    // signal for manual game launch
+                    if (SetHnd.Options.SkipLauncher)
+                        OnLauncherAcquired(this, null);
+                    else
+                        LauncherMonitor.ProcessAcquired += OnLauncherAcquired;
+                }
             }
 
             // wait for all running threads to exit
@@ -126,16 +149,7 @@ namespace OriginSteamOverlayLauncher
             }
             else
             {
-                if (_running && _type == 4) // EGL (relaunch with LauncherURI as args)
-                    GamePL = new ProcessLauncher(
-                        SetHnd.Paths.LauncherPath,
-                        SetHnd.Paths.LauncherURI,
-                        avoidProcName: LauncherName,
-                        delayTime: SetHnd.Options.PreGameWaitTime,
-                        avoidPID: _aPID,
-                        monitorName: GameName
-                    );
-                else if (_running && LauncherURIMode) // URIs
+                if (_running && LauncherURIMode) // URIs
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.LauncherURI, "",
                         avoidProcName: LauncherName,
