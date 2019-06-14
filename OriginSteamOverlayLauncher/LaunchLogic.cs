@@ -126,7 +126,16 @@ namespace OriginSteamOverlayLauncher
             }
             else
             {
-                if (_running && LauncherURIMode) // URIs
+                if (_running && _type == 4) // EGL (relaunch with LauncherURI as args)
+                    GamePL = new ProcessLauncher(
+                        SetHnd.Paths.LauncherPath,
+                        SetHnd.Paths.LauncherURI,
+                        avoidProcName: LauncherName,
+                        delayTime: SetHnd.Options.PreGameWaitTime,
+                        avoidPID: _aPID,
+                        monitorName: GameName
+                    );
+                else if (_running && LauncherURIMode) // URIs
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.LauncherURI, "",
                         avoidProcName: LauncherName,
@@ -150,7 +159,8 @@ namespace OriginSteamOverlayLauncher
                         SetHnd.Paths.GameArgs,
                         avoidProcName: LauncherName,
                         delayTime: SetHnd.Options.PreGameWaitTime,
-                        avoidPID: _aPID
+                        avoidPID: _aPID,
+                        monitorName: MonitorName
                     );
                 }
                 if (GamePL != null && (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch))
