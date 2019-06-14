@@ -59,46 +59,21 @@ namespace OriginSteamOverlayLauncher
                 avoidProcName: GameName
             );
 
-            if (LauncherPathValid)
-            {// if given a launcher path search for the process
-                if (ProcessUtils.OrdinalContains("EpicGamesLauncher", SetHnd.Paths.LauncherPath))
-                {// EGL specific workaround for launching through Steam (complete override)
-                    LauncherPL = new ProcessLauncher(
-                        SetHnd.Paths.LauncherPath,
-                        SetHnd.Paths.LauncherURI,
-                        delayTime: SetHnd.Options.PreGameWaitTime,
-                        avoidProcName: LauncherName,
-                        monitorName: MonitorName
-                    );
-                    await LauncherPL.Launch();
-                    GameMonitor = new ProcessMonitor(
-                        LauncherPL,
-                        SetHnd.Options.ProcessAcquisitionTimeout,
-                        SetHnd.Options.InterProcessAcquisitionTimeout
-                    );
-                    GameMonitor.ProcessAcquired += OnGameAcquired;
-                    GameMonitor.ProcessHardExit += OnGameExited;
-                    // ^ rely on OnGameExited delegate to clean up our launcher here
-                }
-                else
-                {// normal behavior
-                    if (!SetHnd.Options.SkipLauncher && SetHnd.Options.ReLaunch)
-                        await LauncherPL.Launch(); // launching the launcher is optional
+            if (!SetHnd.Options.SkipLauncher && SetHnd.Options.ReLaunch)
+                await LauncherPL.Launch(); // launching the launcher is optional
 
-                    LauncherMonitor = new ProcessMonitor(
-                        LauncherPL,
-                        SetHnd.Options.ProcessAcquisitionTimeout,
-                        SetHnd.Options.InterProcessAcquisitionTimeout
-                    );
-                    LauncherMonitor.ProcessHardExit += OnLauncherExited;
+            LauncherMonitor = new ProcessMonitor(
+                LauncherPL,
+                SetHnd.Options.ProcessAcquisitionTimeout,
+                SetHnd.Options.InterProcessAcquisitionTimeout
+            );
+            LauncherMonitor.ProcessHardExit += OnLauncherExited;
 
-                    // signal for manual game launch
-                    if (SetHnd.Options.SkipLauncher)
-                        OnLauncherAcquired(this, null);
-                    else
-                        LauncherMonitor.ProcessAcquired += OnLauncherAcquired;
-                }
-            }
+            // signal for manual game launch
+            if (SetHnd.Options.SkipLauncher)
+                OnLauncherAcquired(this, null);
+            else
+                LauncherMonitor.ProcessAcquired += OnLauncherAcquired;
 
             // wait for all running threads to exit
             while (!ExitRequested ||

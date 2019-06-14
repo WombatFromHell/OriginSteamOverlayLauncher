@@ -1,5 +1,6 @@
-* 692120f (HEAD -> staging) Implemented an alternate fix for EGL behavior
-* 80a84fc (origin/staging) Bump changelog again
+* 19ef8a0 (HEAD -> staging, origin/staging) Bump changelog for posterity
+* 692120f Implemented an alternate fix for EGL behavior
+* 80a84fc Bump changelog again
 * 58c1f75 Use EGL specific behavior to fix URI timeout bug
 * 56bfbda Bump the changelog
 * e3d9770 Just some INI defaults tweaks
