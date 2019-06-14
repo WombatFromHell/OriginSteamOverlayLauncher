@@ -57,16 +57,14 @@ namespace OriginSteamOverlayLauncher
 
         public static bool OrdinalContains(string match, string container)
         {// if container string contains match string, via valid index, then true
-            if (container.IndexOf(match, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                return true;
-            return false;
+            return !string.IsNullOrWhiteSpace(match) &&
+                !string.IsNullOrWhiteSpace(container) &&
+                container.IndexOf(match, StringComparison.InvariantCultureIgnoreCase) >= 0;
         }
 
         public static bool OrdinalEquals(string input, string comparator)
         {// support function for checking string equality using Ordinal comparison
-            if (string.Equals(input, comparator, StringComparison.OrdinalIgnoreCase))
-                return true;
-            return false;
+            return string.Equals(input, comparator, StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool FuzzyEquals(string input, string comparator)

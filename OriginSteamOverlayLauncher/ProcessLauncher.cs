@@ -7,16 +7,18 @@ namespace OriginSteamOverlayLauncher
     public class ProcessLauncher
     {
         public ProcessWrapper ProcWrapper { get; private set; }
-
-        private string ExecPath { get; set; }
-        private string ExecArgs { get; set; }
-        private int Delay { get; set; }
-        private bool Elevated { get; set; }
-        private int AvoidPID { get; set; }
         public string MonitorName { get; private set; }
         public int LaunchPID { get; private set; }
 
-        public ProcessLauncher(string procPath, string procArgs, int delayTime, bool elevate, int avoidPID = 0, string altName = "")
+        private string ExecPath { get; set; }
+        private string ExecArgs { get; set; }
+        private string AvoidProcName { get; set; }
+        private int AvoidPID { get; set; }
+        private int Delay { get; set; }
+        private bool Elevated { get; set; }
+
+        public ProcessLauncher(string procPath, string procArgs,  // required
+            int delayTime = 0, bool elevate = false, int avoidPID = 0, string altName = "", string avoidProcName = "")  // optional
         {
             ProcWrapper = new ProcessWrapper();
             ExecPath = procPath;
@@ -25,40 +27,10 @@ namespace OriginSteamOverlayLauncher
             Elevated = elevate;
             MonitorName = altName;
             AvoidPID = avoidPID;
-        }
+            AvoidProcName = avoidProcName;
 
-        // expose some alternate constructors
-        public ProcessLauncher(string procPath, string procArgs, int delayTime) :
-            this(procPath, procArgs, delayTime, false)
-        { }
-
-        public ProcessLauncher(string procPath, string procArgs, bool elevate) :
-            this(procPath, procArgs, 0, elevate)
-        { }
-
-        public ProcessLauncher(string procPath, string procArgs) :
-            this(procPath, procArgs, 0, false)
-        { }
-
-        public ProcessLauncher(string procPath, string procArgs, int delayTime, int avoidPID = 0, string altName = "") :
-            this(procPath, procArgs, delayTime, false, avoidPID, altName)
-        { }
-
-        public ProcessLauncher(string procPath, string procArgs, bool elevate, int avoidPID = 0, string altName = "") :
-            this(procPath, procArgs, 0, elevate, avoidPID, altName)
-        { }
-
-        public ProcessLauncher(string procPath, string procArgs, int avoidPID = 0, string altName = "") :
-            this(procPath, procArgs, 0, false, avoidPID, altName)
-        { }
-
-        /// <summary>
-        /// Returns the running Process if launching was successful
-        /// </summary>
-        /// <returns></returns>
-        public async Task<Process> Launch()
-        {
-            if (!SettingsData.ValidateURI(ExecPath) && SettingsData.ValidatePath(ExecPath) ||
+            // construct and save our ProcessWrapper
+            if (SettingsData.ValidatePath(ExecPath) ||
                 SettingsData.ValidateURI(ExecPath))
             {
                 Process _procObj = new Process();
@@ -69,23 +41,41 @@ namespace OriginSteamOverlayLauncher
                     _procObj.StartInfo.WorkingDirectory = Directory.GetParent(ExecPath).ToString();
                 if (Elevated)
                     _procObj.StartInfo.Verb = "runas";
+                // bind our process wrapper
+                ProcWrapper = new ProcessWrapper(_procObj,
+                    avoidPID: AvoidPID,
+                    altName: MonitorName,
+                    avoidProcName: AvoidProcName
+                );
+            }
+        }
+
+        /// <summary>
+        /// Returns the running Process if launching was successful
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Process> Launch()
+        {
+            if (ProcWrapper != null && !string.IsNullOrWhiteSpace(ProcWrapper.ProcessName))
+            {
+                string monitorStr = !string.IsNullOrWhiteSpace(MonitorName) ? $" @{MonitorName}.exe" : "";
 
                 if (Delay > 0)
                 {
-                    ProcessUtils.Logger("LAUNCHER", $"Launching process after {Delay}s: {ExecPath} {ExecArgs}");
+                    ProcessUtils.Logger("LAUNCHER", $"Launching process after {Delay}s via: {ExecPath} {ExecArgs}" + monitorStr);
                     await Task.Delay(Delay * 1000);
                 }
                 else
-                    ProcessUtils.Logger("LAUNCHER", $"Launching process: {ExecPath} {ExecArgs}");
+                    ProcessUtils.Logger("LAUNCHER", $"Launching process via: {ExecPath} {ExecArgs}" + monitorStr);
 
-                // bind our process wrapper
-                ProcWrapper = new ProcessWrapper(_procObj, avoidPID: AvoidPID, altName: MonitorName);
                 ProcWrapper.Proc.Start();
-                await Task.Delay(10); // spin up
-                if (ProcWrapper.IsRunning)
-                    LaunchPID = ProcWrapper.PID;
+                await Task.Delay(1000); // spin up
+                if (ProcWrapper.IsRunning())
+                    LaunchPID = ProcWrapper.Proc.Id;
+                return ProcWrapper.Proc;
             }
-            return ProcWrapper.Proc;
+            else
+                return null;
         }
     }
 }

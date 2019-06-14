@@ -6,6 +6,7 @@ using System.IO;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Linq;
+using System.Text;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -16,28 +17,31 @@ namespace OriginSteamOverlayLauncher
         public int PID { get; private set; }
         public int ProcessType { get; private set; }
 
-        public IntPtr Hwnd { get => GetHWND(Proc); }
-        public int ParentPID { get => NativeProcessUtils.GetParentPID(Proc.Handle); }
-        public bool IsRunning { get => GetIsRunning(); }
+        public IntPtr Hwnd { get => WindowUtils.GetHWND(Proc); }
+        public int ParentPID { get => NativeProcessUtils.GetParentPID(Proc?.Handle ?? IntPtr.Zero); }
 
         private int AvoidPID { get; set; }
+        private string AvoidProcName { get; set; }
         private string MonitorName { get; set; }
+        private string _ProcName { get; set; }
 
         /// <summary>
         /// Wrapper for Process objects that collects additional runtime information
         /// </summary>
         /// <param name="srcProc">Optional Process object to instantiate with</param>
-        public ProcessWrapper(Process srcProc = null, int avoidPID = 0, string altName = "")
+        public ProcessWrapper(Process srcProc = null, int avoidPID = 0, string altName = "", string avoidProcName = "")
         {// avoid returning null refs
             Proc = srcProc != null ? srcProc : new Process();
             ProcessName = Path.GetFileNameWithoutExtension(Proc.StartInfo.FileName);
             MonitorName = altName;
             AvoidPID = avoidPID;
+            AvoidProcName = avoidProcName;
+            _ProcName = !string.IsNullOrWhiteSpace(MonitorName) ? MonitorName : ProcessName;
         }
 
-        public List<Tuple<int, int, Process, int>> GetChildProcesses(int PID = 0)
+        public List<Tuple<int, int, Process>> GetChildProcesses(int PID = 0)
         {// a List of Tuples in the form of: { PPID, PID, Process, ProcessType }
-            var output = new List<Tuple<int, int, Process, int>>();
+            var output = new List<Tuple<int, int, Process>>();
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
                 $"SELECT * FROM Win32_Process WHERE ParentProcessId={(PID > 0 ? PID : Program.AssemblyPID)}"))
             using (ManagementObjectCollection processes = searcher.Get())
@@ -53,23 +57,21 @@ namespace OriginSteamOverlayLauncher
                         {
                             var curProcess = Process.GetProcessById(curPID);
                             int _ppid = NativeProcessUtils.GetParentPID(curProcess.Handle);
-                            int _type = WindowUtils.DetectWindowType(GetHWND(curProcess));
                             // use AvoidPID to avoid selecting an already filtered process
-                            if (ValidateWMIProc(curProcess) && (PID > 0 && curProcess.Id != AvoidPID || PID == 0))
-                                output.Add(new Tuple<int, int, Process, int>(_ppid, curPID, curProcess, _type));
+                            if (ValidateWMIProc(curProcess) || curProcess.HandleCount >= 600 && curProcess.Id != AvoidPID)
+                                output.Add(new Tuple<int, int, Process>(_ppid, curPID, curProcess));
                         }
                     }
                     catch (Win32Exception) { continue; }
                     catch (InvalidOperationException) { continue; }
                 }
             }
-            output.OrderBy(i => i.Item4); // order by detected window type
             return output;
         }
 
-        public List<KeyValuePair<Process, int>> GetProcessesByName(string exeName)
-        {// KVP in the form of: { Process, ProcessType }
-            var output = new List<KeyValuePair<Process, int>>();
+        public List<Process> GetProcessesByName(string exeName)
+        {
+            var output = new List<Process>();
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
                 $"SELECT * FROM Win32_Process where Name LIKE '{exeName}.exe'"))
             using (ManagementObjectCollection processes = searcher.Get())
@@ -83,9 +85,8 @@ namespace OriginSteamOverlayLauncher
                         if (_pidIsRunning)
                         {
                             var curProcess = Process.GetProcessById(curPID);
-                            int _type = WindowUtils.DetectWindowType(GetHWND(curProcess));
-                            if (ValidateWMIProc(curProcess) && curPID != AvoidPID)
-                                output.Add(new KeyValuePair<Process, int>(curProcess, _type));
+                            if (ValidateWMIProc(curProcess) || curProcess.HandleCount >= 600 && curPID != AvoidPID)
+                                output.Add(curProcess);
                         }
                     }
                     catch (Win32Exception) { continue; }
@@ -95,9 +96,9 @@ namespace OriginSteamOverlayLauncher
             return output;
         }
 
-        private List<Tuple<int, int, Process, int>> EnumerateDescendents()
+        private List<Tuple<int, int, Process>> EnumerateDescendents()
         {// abstraction of GetChildProcesses() for grandchild enumeration
-            var output = new List<Tuple<int, int, Process, int>>();
+            var output = new List<Tuple<int, int, Process>>();
             // retrieve all children of this assembly
             var procs = GetChildProcesses();
             output.AddRange(procs);
@@ -106,7 +107,7 @@ namespace OriginSteamOverlayLauncher
                 var _cProcs = GetChildProcesses(item.Item2);
                 output.AddRange(_cProcs);
                 foreach (var gcitem in _cProcs)
-                {// if our children have grandchildren process those as well
+                {// if our grandchildren have children process those as well
                     var _gcProcs = GetChildProcesses(gcitem.Item2);
                     if (_gcProcs.Count > 0)
                         output.AddRange(_gcProcs);
@@ -115,80 +116,88 @@ namespace OriginSteamOverlayLauncher
             return output;
         }
 
-        public bool GetIsRunning()
+        public bool IsRunning()
         {
-            // don't rely on Process() class' HasExited when cleaning up
-            if (Proc == null || !NativeProcessUtils.IsProcessAlive(PID))
+            try
             {
-                var enumResults = EnumerateDescendents();
-                if (enumResults.Count == 0)
-                {// switch to searching by name if assembly child enumeration fails
-                    var byNameResults = GetProcessesByName(MonitorName.Length > 0 ? MonitorName : ProcessName);
-                    for (int i = 0; i < byNameResults.Count; i++)
+                // don't rely on Process() class' HasExited when cleaning up
+                if (Proc == null || !NativeProcessUtils.IsProcessAlive(PID))
+                {
+                    var enumResults = EnumerateDescendents();
+                    // enumerate children and grandchildren of our assembly
+                    for (int i = enumResults.Count-1; i >= 0; i--)
                     {
-                        var curProc = byNameResults[i].Key;
-                        var curType = byNameResults[i].Value;
-                        if (curType > -1 && curProc.Id != AvoidPID)
-                        {// update our target if it's changed
-                            try
-                            {
-                                UpdateRefs(curProc, curType);
-                            }
-                            catch (InvalidOperationException) { continue; }
+                        var item = enumResults[i];
+                        var curProc = item.Item3;
+                        var curType = WindowUtils.DetectWindowType(curProc);
+                        var curName = NativeProcessUtils.GetProcessModuleName(item.Item2);
+#if DEBUG
+                        Debug.WriteLine($"enumResults item: [PPID={item.Item1},"+
+                            $"PID={item.Item2},Proc={curName}," + 
+                            $"Type={curType},Avoid={AvoidPID},AvoidName={AvoidProcName}]");
+#endif
+                        if (ValidateWMIProc(curProc) && curProc.Id != AvoidPID)
+                        {
+                            UpdateRefs(curProc, curType);
                             return true;
                         }
                     }
+                    // no match yet, so try resolving by name
+                    var byNameResults = GetProcessesByName(_ProcName);
+                    for (int i = byNameResults.Count - 1; i >= 0; i--)
+                    {// enumerate in reverse order (youngest to oldest)
+                        var item = byNameResults[i];
+                        var curProc = item;
+                        var curType = WindowUtils.DetectWindowType(curProc);
+                        var curName = NativeProcessUtils.GetProcessModuleName(curProc.Id);
+#if DEBUG
+                        Debug.WriteLine($"byNameResults item: [Proc={curName}," +
+                            $"Avoid={AvoidPID},AvoidName={AvoidProcName}]");
+#endif
+                        if (ValidateWMIProc(curProc) && curProc.Id != AvoidPID)
+                        {// update our target if it's changed
+                            UpdateRefs(curProc, curType);
+                            return true;
+                        }
+                    }
+                    return false; // both methods failed!
                 }
                 else
-                {// enumerate children and grandchildren of our assembly
-                    for (int i = 0; i < enumResults.Count; i++)
-                    {
-                        var curProc = enumResults[i].Item3;
-                        var curType = enumResults[i].Item4;
-                        if (curType > -1 && enumResults[i].Item2 != AvoidPID)
-                        {
-                            try
-                            {
-                                UpdateRefs(curProc, curType);
-                            }
-                            catch (InvalidOperationException) { continue; }
-                            return true;
-                        }
-                    }
-                }
-                return false; // both methods failed!
+                    return true; // return cached result
             }
-            else
-                return true; // return cached result
+            catch (Win32Exception e) {
+                // probably an access of MainModule caused this - use a rough check instead
+                ProcessUtils.Logger("WIN32EXCEPTION", e.Message);
+                return Proc == null || PID > 0 && !NativeProcessUtils.IsProcessAlive(PID);
+            }
+        }
 
-            void UpdateRefs(Process proc, int windowType)
-            {// only update if proc data has changed
-                if (PID != proc.Id)
-                {
-                    Proc = proc;
-                    PID = proc.Id;
-                    ProcessType = windowType;
-                    ProcessName = Path.GetFileNameWithoutExtension(proc.MainModule.ModuleName);
-                }
+        private void UpdateRefs(Process proc, int windowType)
+        {// only update if proc data has changed
+            string moduleName = NativeProcessUtils.GetProcessModuleName(proc.Id);
+#if DEBUG
+            Debug.WriteLine($"Monitor@{_ProcName} selected: [Proc={moduleName}@{proc.Id},Type={windowType}," +
+                $"Avoid={AvoidPID},AvoidName={AvoidProcName}]");
+#endif
+            if (PID != proc.Id)
+            {
+                Proc = proc;
+                PID = proc.Id;
+                ProcessType = windowType;
+                ProcessName = moduleName;
             }
         }
 
         public static bool IsRunningByName(string name)
         {
-            if (!string.IsNullOrWhiteSpace(name))
-                return Process.GetProcessesByName(name).Length > 0;
-            return false;
+            return Process.GetProcessesByName(name).Length > 0;
         }
 
         public static bool IsValidProcess(Process proc)
         {// rough approximation of a working Launcher/Game window
             try
             {
-                if (proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero &&
-                    proc.MainModule.ModuleName.Contains(".exe") &&
-                    WindowUtils.DetectWindowType(GetHWND(proc)) > -1)
-                    return true;
-                return false;
+                return proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero && proc.Id > 0;
             }
             catch (Exception) { return false; }
         }
@@ -197,24 +206,17 @@ namespace OriginSteamOverlayLauncher
         {
             try
             {
-                return IsValidProcess(procItem) &&
-                    ProcessUtils.OrdinalContains(MonitorName, procItem.MainModule.ModuleName) ||
-                    ProcessUtils.OrdinalContains(ProcessName, procItem.MainModule.ModuleName) ||
-                    ProcessUtils.OrdinalContains(ProcessName, procItem.ProcessName) || procItem.Id > 0;
+                string moduleName = NativeProcessUtils.GetProcessModuleName(procItem.Id);
+                bool isValid = IsValidProcess(procItem);
+                bool avoidMatches = ProcessUtils.OrdinalContains(AvoidProcName, moduleName);
+                bool nameMatches = ProcessUtils.OrdinalContains(MonitorName, moduleName) ||
+                    ProcessUtils.OrdinalContains(ProcessName, moduleName);
+                bool hasDetails = WindowUtils.DetectWindowType(procItem) > -1;
+                return (isValid && !avoidMatches && nameMatches && hasDetails) ||
+                    (isValid && !avoidMatches && nameMatches) ||
+                    (isValid && !avoidMatches && hasDetails);
             }
             catch { return false; }
-        }
-
-        public static IntPtr GetHWND(Process procHandle)
-        {// just a helper to return an hWnd from a given Process (if it has a window handle)
-            try
-            {
-                if (procHandle != null && !procHandle.HasExited &&
-                    procHandle.MainWindowHandle != IntPtr.Zero)
-                    return procHandle.MainWindowHandle;
-            }
-            catch (Exception) { }
-            return IntPtr.Zero;
         }
 
         public static void KillProcTreeByName(string procName)
@@ -260,6 +262,8 @@ namespace OriginSteamOverlayLauncher
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
+        [DllImport("psapi.dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        static extern uint GetModuleFileNameEx(IntPtr hProcess, IntPtr hModule, [Out] StringBuilder lpBaseName, uint nSize);
 
         [Flags]
         public enum ProcessAccessFlags : uint
@@ -305,7 +309,7 @@ namespace OriginSteamOverlayLauncher
             return pbi.InheritedFromUniqueProcessId.ToInt32();
         }
 
-        static public bool IsProcessAlive(int processId)
+        public static bool IsProcessAlive(int processId)
         {// https://stackoverflow.com/a/54727764
             IntPtr h = OpenProcess(ProcessAccessFlags.QueryInformation, true, processId);
             if (h == IntPtr.Zero)
@@ -317,6 +321,29 @@ namespace OriginSteamOverlayLauncher
             if (b)
                 b = (code == 259) /* STILL_ACTIVE  */;
             return b;
+        }
+
+        public static string GetProcessPath(int pid)
+        {
+            IntPtr handle = OpenProcess(
+                ProcessAccessFlags.QueryInformation |
+                ProcessAccessFlags.VirtualMemoryRead,
+                false, pid);
+            if (handle == null)
+                return "";
+            var output = new StringBuilder(2048);
+
+            StringBuilder strbld = new StringBuilder(2048);
+            // get only the main module's path
+            GetModuleFileNameEx(handle, IntPtr.Zero, strbld, (uint)(strbld.Capacity));
+            CloseHandle(handle);
+            return strbld.ToString();
+        }
+
+        public static string GetProcessModuleName(int pid)
+        {
+            var result = GetProcessPath(pid);
+            return Path.GetFileNameWithoutExtension(result);
         }
     }
 }

@@ -14,7 +14,9 @@ namespace OriginSteamOverlayLauncher
         private ProcessMonitor GameMonitor { get; set; }
 
         private string LauncherName { get; set; }
+        private string GameName { get; set; }
         private string MonitorPath { get; set; }
+        private string MonitorName { get; set; }
         private bool LauncherPathValid { get; set; }
         private bool LauncherURIMode { get; set; }
         private bool ExitRequested { get; set; }
@@ -25,8 +27,10 @@ namespace OriginSteamOverlayLauncher
         public LaunchLogic()
         {
             LauncherName = Path.GetFileNameWithoutExtension(SetHnd.Paths.LauncherPath);
+            GameName = Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath);
             MonitorPath = SettingsData.ValidatePath(SetHnd.Paths.MonitorPath) ?
                 SetHnd.Paths.MonitorPath : "";
+            MonitorName = Path.GetFileNameWithoutExtension(MonitorPath);
             LauncherPathValid = SettingsData.ValidatePath(SetHnd.Paths.LauncherPath);
             LauncherURIMode = SettingsData.ValidateURI(SetHnd.Paths.LauncherURI);
             TrayUtil = new TrayIconUtil();
@@ -45,85 +49,112 @@ namespace OriginSteamOverlayLauncher
             PreLauncherPL = new ProcessLauncher(
                 SetHnd.Paths.PreLaunchExecPath,
                 SetHnd.Paths.PreLaunchExecArgs,
-                SetHnd.Options.ElevateExternals
+                elevate: SetHnd.Options.ElevateExternals
             );
             await PreLauncherPL.Launch();
 
+            LauncherPL = new ProcessLauncher(
+                SetHnd.Paths.LauncherPath,
+                SetHnd.Paths.LauncherArgs,
+                avoidProcName: GameName
+            );
             if (!SetHnd.Options.SkipLauncher && SetHnd.Options.ReLaunch && LauncherPathValid)
-            {// launcher is optional
-                LauncherPL = new ProcessLauncher(
-                    SetHnd.Paths.LauncherPath,
-                    SetHnd.Paths.LauncherArgs
+                await LauncherPL.Launch(); // launching the launcher is optional
+
+            if (LauncherPathValid)
+            {// if given a launcher path search for the process
+                LauncherMonitor = new ProcessMonitor(
+                    LauncherPL,
+                    SetHnd.Options.ProcessAcquisitionTimeout,
+                    SetHnd.Options.InterProcessAcquisitionTimeout
                 );
-                await LauncherPL.Launch();
-                if (LauncherPL.ProcWrapper.Proc != null)
-                {
-                    LauncherMonitor = new ProcessMonitor(
-                        LauncherPL,
-                        SetHnd.Options.ProcessAcquisitionTimeout,
-                        SetHnd.Options.InterProcessAcquisitionTimeout
-                    );
+                LauncherMonitor.ProcessHardExit += OnLauncherExited;
+
+                // signal for manual game launch
+                if (SetHnd.Options.SkipLauncher)
+                    OnLauncherAcquired(this, null);
+                else
                     LauncherMonitor.ProcessAcquired += OnLauncherAcquired;
-                    LauncherMonitor.ProcessHardExit += OnLauncherExited;
-                }
             }
-            else
-                OnLauncherAcquired(this, null); // continuation
 
             // wait for all running threads to exit
             while (!ExitRequested ||
-                PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning ||
-                PostGamePL != null && PostGamePL.ProcWrapper.IsRunning ||
-                LauncherMonitor != null && LauncherMonitor.IsRunning() ||
-                GameMonitor != null && GameMonitor.IsRunning())
+                (bool)PreLauncherPL?.ProcWrapper?.IsRunning() ||
+                (bool)PostGamePL?.ProcWrapper?.IsRunning() ||
+                (bool)LauncherMonitor?.IsRunning() ||
+                (bool)GameMonitor?.IsRunning())
                 await Task.Delay(1000);
         }
 
         #region Event Delegates
         private async void OnLauncherAcquired(object sender, ProcessEventArgs e)
         {
+            // collect launcher information for collision avoidance
+            int _type = LauncherPL?.ProcWrapper?.ProcessType ?? -1;
+            bool _running = (bool)LauncherMonitor?.IsRunning();
+            int _aPID = e?.AvoidPID ?? 0;
+
             // MinimizeWindow after acquisition to prevent issues with ProcessType() fetch
-            if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning)
+            if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning())
                 WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
 
-            int _type = LauncherPL.ProcWrapper.ProcessType;
-            if (SetHnd.Options.ReLaunch && LauncherPathValid)
+            if (!SetHnd.Options.SkipLauncher && LauncherPathValid && LauncherPL != null)
             {// pause to let the launcher process stabilize after being hooked
                 ProcessUtils.Logger("OSOL",
                     $"Launcher detected (type {_type}), preparing to launch game in {SetHnd.Options.PreGameLauncherWaitTime}s...");
                 await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
             }
-            
-            bool _running = (bool)LauncherMonitor?.IsRunning();
-            int _aPID = e.AvoidPID > 0 ? e.AvoidPID : 0;
-            if (_running && LauncherURIMode)  // URIs/EGL
-                GamePL = new ProcessLauncher(
-                    SetHnd.Paths.LauncherURI, "",
-                    SetHnd.Options.PreGameWaitTime,
-                    avoidPID: _aPID,
-                    altName: Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath)
-                );
-            else if (_running && _type == 1) // Battle.net (relaunch LauncherArgs)
-                GamePL = new ProcessLauncher(
-                    SetHnd.Paths.LauncherPath,
-                    SetHnd.Paths.LauncherArgs,
-                    SetHnd.Options.PreGameWaitTime,
-                    avoidPID: _aPID,
-                    altName: Path.GetFileNameWithoutExtension(SetHnd.Paths.GamePath)
-                );
-            else if (LauncherPathValid && _running) // normal behavior
-            {
-                GamePL = new ProcessLauncher(
-                    SetHnd.Paths.GamePath,
-                    SetHnd.Paths.GameArgs,
-                    SetHnd.Options.PreGameWaitTime,
-                    avoidPID: _aPID
-                );
+
+            if (SetHnd.Options.SkipLauncher)
+            {// ignore AutoGameLaunch option explicitly here
+                if (LauncherURIMode)  // URI mode
+                    GamePL = new ProcessLauncher(
+                        SetHnd.Paths.LauncherURI, "",
+                        delayTime: SetHnd.Options.PreGameWaitTime,
+                        altName: GameName,
+                        avoidProcName: LauncherName
+                    );
+                else  // normal SkipLauncher behavior
+                    GamePL = new ProcessLauncher(
+                        SetHnd.Paths.GamePath,
+                        SetHnd.Paths.GameArgs,
+                        delayTime: SetHnd.Options.PreGameWaitTime,
+                        altName: MonitorName,
+                        avoidProcName: LauncherName
+                    );
+                await GamePL.Launch();
             }
-            if (GamePL != null && (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch))
-                await GamePL?.Launch(); // only launch if safe to do so
-            else if (LauncherPathValid && LauncherMonitor.IsRunning())
-                ProcessUtils.Logger("OSOL", "AutoGameLaunch is false, waiting for user to launch game before timing out...");
+            else
+            {
+                if (_running && LauncherURIMode) // URIs
+                    GamePL = new ProcessLauncher(
+                        SetHnd.Paths.LauncherURI, "",
+                        delayTime: SetHnd.Options.PreGameWaitTime,
+                        avoidPID: _aPID,
+                        altName: GameName
+                    );
+                else if (_running && _type == 1) // Battle.net (relaunch LauncherArgs)
+                    GamePL = new ProcessLauncher(
+                        SetHnd.Paths.LauncherPath,
+                        SetHnd.Paths.LauncherArgs,
+                        delayTime: SetHnd.Options.PreGameWaitTime,
+                        avoidPID: _aPID,
+                        altName: GameName
+                    );
+                else if (LauncherPathValid && _running) // normal behavior
+                {
+                    GamePL = new ProcessLauncher(
+                        SetHnd.Paths.GamePath,
+                        SetHnd.Paths.GameArgs,
+                        delayTime: SetHnd.Options.PreGameWaitTime,
+                        avoidPID: _aPID
+                    );
+                }
+                if (GamePL != null && (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch))
+                    await GamePL?.Launch(); // only launch if safe to do so
+                else if (LauncherPathValid && LauncherMonitor.IsRunning())
+                    ProcessUtils.Logger("OSOL", "AutoGameLaunch is false, waiting for user to launch game before timing out...");
+            }
 
             GameMonitor = new ProcessMonitor(
                 GamePL,
@@ -153,7 +184,7 @@ namespace OriginSteamOverlayLauncher
 
         private async void OnGameExited(object sender, ProcessEventArgs e)
         {
-            if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning)
+            if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning())
                 WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
 
             // run PostGameExecPath/Args after the game exits
@@ -171,7 +202,7 @@ namespace OriginSteamOverlayLauncher
                 ProcessUtils.Logger("OSOL", $"Game exited, cleaning up...");
             await Task.Delay(SetHnd.Options.PostGameWaitTime * 1000);
 
-            if (SetHnd.Options.CloseLauncher && LauncherPL.ProcWrapper.IsRunning)
+            if (SetHnd.Options.CloseLauncher && ProcessWrapper.IsRunningByName(LauncherName))
             {
                 ProcessUtils.Logger("OSOL", $"Found launcher still running, killing it...");
                 ProcessWrapper.KillProcTreeByName(LauncherName);

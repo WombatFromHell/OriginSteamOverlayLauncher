@@ -1,4 +1,5 @@
-* 3f9e66b (HEAD -> staging, origin/staging) Bump version number
+* 92f3728 (HEAD -> staging, origin/staging) Don't filter unknown processes during WMI querying
+* 3f9e66b Bump version number
 * cea4efe Bump changelog
 * 935c385 Bug fixes for launcher window detection
 * bbd3066 Preserve path data when updating new configs

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -37,6 +38,7 @@ namespace OriginSteamOverlayLauncher
         private Timer MonitorTimer { get; set; }
         private Timer SearchTimer { get; set; }
         private ProcessLauncher TargetLauncher { get; set; }
+        private string ProcessName { get; set; }
 
         private readonly int Interval = 1000; // tick interval
         private SemaphoreSlim MonitorLock { get; }
@@ -51,6 +53,8 @@ namespace OriginSteamOverlayLauncher
             TargetLauncher = procLauncher;
             GlobalTimeout = globalTimeout;
             InnerTimeout = innerTimeout;
+            ProcessName = !string.IsNullOrWhiteSpace(TargetLauncher.MonitorName) ?
+                TargetLauncher.MonitorName : TargetLauncher.ProcWrapper.ProcessName;
 
             MonitorLock = new SemaphoreSlim(1, 1);
             MonitorTimer = new Timer(MonitorProcess);
@@ -91,7 +95,7 @@ namespace OriginSteamOverlayLauncher
         public bool IsRunning()
         {
             return !TimeoutCancelled && TargetLauncher != null &&
-                TargetLauncher.ProcWrapper.IsRunning;
+                TargetLauncher.ProcWrapper.IsRunning();
         }
 
         public void Restart()
@@ -131,7 +135,7 @@ namespace OriginSteamOverlayLauncher
                     OnProcessAcquired(this, new ProcessEventArgs
                     {
                         TargetProcess = TargetLauncher.ProcWrapper.Proc,
-                        ProcessName = Path.GetFileNameWithoutExtension(TargetLauncher.ProcWrapper.Proc.MainModule.ModuleName),
+                        ProcessName = NativeProcessUtils.GetProcessModuleName(TargetLauncher.ProcWrapper.Proc.Id),
                         ProcessType = TargetLauncher.ProcWrapper.ProcessType,
                         Elapsed = elapsedTimer,
                         AvoidPID = TargetLauncher.ProcWrapper.Proc.Id
@@ -173,6 +177,7 @@ namespace OriginSteamOverlayLauncher
                 else
                     MonitorTimer.Change(Timeout.Infinite, Timeout.Infinite);
             }
+            catch (Win32Exception) { }
             finally
             {
                 MonitorLock.Release();
@@ -192,6 +197,7 @@ namespace OriginSteamOverlayLauncher
                 else
                     SearchTimer.Change(Timeout.Infinite, Timeout.Infinite);
             }
+            catch (Win32Exception) { }
             finally
             {
                 MonitorLock.Release();
@@ -202,7 +208,7 @@ namespace OriginSteamOverlayLauncher
         #region Event Handlers
         private void OnProcessAcquired(ProcessMonitor m, ProcessEventArgs e)
         {
-            ProcessUtils.Logger("MONITOR",
+            ProcessUtils.Logger($"MONITOR@{ProcessName}",
                 $"Process acquired in {ProcessUtils.ElapsedToString(e.Elapsed)}: {e.ProcessName}.exe [{e.TargetProcess.Id}]");
 
             HasAcquired = true;
@@ -214,9 +220,9 @@ namespace OriginSteamOverlayLauncher
         private void OnProcessSoftExit(ProcessMonitor m, ProcessEventArgs e)
         {// attempt to gracefully switch modes (monitor -> search)
             if (HasAcquired && !string.IsNullOrWhiteSpace(e.ProcessName))
-                ProcessUtils.Logger("MONITOR", $"Process exited, attempting to reacquire within {e.Timeout}s: {e.ProcessName}.exe");
+                ProcessUtils.Logger($"MONITOR@{ProcessName}", $"Process exited, attempting to reacquire within {e.Timeout}s: {e.ProcessName}.exe");
             else if (HasAcquired)  // can't get process details?
-                ProcessUtils.Logger("MONITOR", $"Process exited, attempting to reacquire within {e.Timeout}s");
+                ProcessUtils.Logger($"MONITOR@{ProcessName}", $"Process exited, attempting to reacquire within {e.Timeout}s");
 
             HasAcquired = false;
             // transition from monitoring -> searching
@@ -229,10 +235,10 @@ namespace OriginSteamOverlayLauncher
         private void OnProcessHardExit(ProcessMonitor m, ProcessEventArgs e)
         {
             if (e.TargetProcess != null)
-                ProcessUtils.Logger("MONITOR",
+                ProcessUtils.Logger($"MONITOR@{ProcessName}",
                     $"Timed out after {ProcessUtils.ElapsedToString(e.Elapsed)} searching for a matching process: {e.ProcessName}.exe");
             else
-                ProcessUtils.Logger("MONITOR",
+                ProcessUtils.Logger($"MONITOR@{ProcessName}",
                     $"Could not detect a running process after waiting {ProcessUtils.ElapsedToString(e.Elapsed)}...");
 
             Stop();

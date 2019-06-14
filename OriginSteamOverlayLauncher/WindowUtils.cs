@@ -1,7 +1,9 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -17,6 +19,9 @@ namespace OriginSteamOverlayLauncher
         static extern long GetClassName(IntPtr hwnd, StringBuilder lpClassName, long nMaxCount);
         [DllImport("User32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool IsWindow(IntPtr hWnd);
 
         // for BringToFront() support
         [DllImport("user32.dll")]
@@ -104,39 +109,55 @@ namespace OriginSteamOverlayLauncher
             return false;
         }
 
-        public static int GetWindowType(Process proc)
+        public static IntPtr GetHWND(Process proc)
         {
-            if (proc != null)
+            try
             {
-                var _hwnd = ProcessWrapper.GetHWND(proc);
-                var _result = DetectWindowType(_hwnd);
-                return _result;
+                if (proc != null && !proc.HasExited && proc.MainWindowHandle != IntPtr.Zero)
+                    return proc.MainWindowHandle;
+                return IntPtr.Zero;
             }
-            return -1;
+            catch (Exception) { return IntPtr.Zero; }
         }
 
-        public static int DetectWindowType(IntPtr hWnd)
-        {// case testing for window class and title matching
-            if (hWnd != IntPtr.Zero)
+        public static int DetectWindowType(Process proc)
+        {
+            int result = -1;
+            if (proc != null)
             {
-                // excluded windows
-                if (MatchWindowDetails("Blizzard Battle.net Login", "Qt5QWindowIcon", hWnd))
-                    return -1; // Battle.net Login Window
-                if (MatchWindowDetails("Uplay", "uplay_start", hWnd))
-                    return -1; // Uplay Startup/Login Window
+                var _hWnd = GetHWND(proc);
+                string haystack = NativeProcessUtils.GetProcessModuleName(proc.Id);
+                if (_hWnd != IntPtr.Zero)
+                {
+                    // excluded windows
+                    if (ProcessUtils.OrdinalContains("EasyAntiCheat_launcher", haystack))
+                        return -1;
 
-                if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", hWnd))
-                    return 4; // Epic Games Launcher [Type 4]
-                else if (MatchWindowDetails("Uplay", "uplay_main", hWnd))
-                    return 3; // Uplay [Type 3]
-                else if (MatchWindowDetails("Origin", "Qt5QWindowIcon", hWnd))
-                    return 2; // Origin [Type 2]
-                else if (MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", hWnd))
-                    return 1; // Blizzard Battle.net [Type 1]
-                else if (WindowHasDetails(hWnd))
-                    return 0; // all other valid foreground windows
+                    // initially try to resolve by looking up className and windowTitle
+                    if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", _hWnd))
+                        result = 4; // Epic Games Launcher [Type 4]
+                    else if (MatchWindowDetails("Uplay", "uplay_main", _hWnd))
+                        result = 3; // Uplay [Type 3]
+                    else if (MatchWindowDetails("Origin", "Qt5QWindowIcon", _hWnd))
+                        result = 2; // Origin [Type 2]
+                    else if (MatchWindowDetails("Blizzard Battle.net", "Qt5QWindowOwnDCIcon", _hWnd))
+                        result = 1; // Blizzard Battle.net [Type 1]
+                    else if (WindowHasDetails(_hWnd) || IsWindow(_hWnd))
+                        result = 0; // catch all other obvious windows
+                    if (result > -1)
+                        return result;
+                }
+                // fallback to detection by module name
+                if (ProcessUtils.OrdinalContains("EpicGamesLauncher", haystack))
+                    result = 4;
+                else if (ProcessUtils.OrdinalContains("upc", haystack))
+                    result = 3;
+                else if (ProcessUtils.OrdinalContains("Origin", haystack))
+                    result = 2;
+                else if (ProcessUtils.OrdinalContains("Battle.net", haystack))
+                    result = 1;
             }
-            return -1;
+            return result;
         }
 
         public static bool MessageSendKey(IntPtr hWnd, char key)
