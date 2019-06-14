@@ -43,7 +43,7 @@ namespace OriginSteamOverlayLauncher
             public int PreGameWaitTime { get; set; } = 0;
             public int PostGameWaitTime { get; set; } = 0;
             public int ProcessAcquisitionTimeout { get; set; } = 120;
-            public int InterProcessAcquisitionTimeout { get; set; } = 20;
+            public int InterProcessAcquisitionTimeout { get; set; } = 15;
 
             public long GameProcessAffinity { get; set; }
             public ProcessPriorityClass GameProcessPriority { get; set; } = ProcessPriorityClass.Normal;
