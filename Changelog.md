@@ -1,4 +1,5 @@
-* b9dda86 (HEAD -> staging, origin/staging) Relaxed process validation before enumerating
+* e3d9770 (HEAD -> staging) Just some INI defaults tweaks
+* b9dda86 (origin/staging) Relaxed process validation before enumerating
 * 7fde8e0 Fixed various bugs with process detection
 * 92f3728 Don't filter unknown processes during WMI querying
 * 3f9e66b Bump version number
