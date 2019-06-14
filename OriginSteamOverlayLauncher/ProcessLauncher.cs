@@ -17,17 +17,18 @@ namespace OriginSteamOverlayLauncher
         private int Delay { get; set; }
         private bool Elevated { get; set; }
 
-        public ProcessLauncher(string procPath, string procArgs,  // required
-            int delayTime = 0, bool elevate = false, int avoidPID = 0, string altName = "", string avoidProcName = "")  // optional
+        public ProcessLauncher(string procPath, string procArgs, // required
+            string avoidProcName = "", int delayTime = 0, bool elevate = false,
+            int avoidPID = 0, string monitorName = "") 
         {
             ProcWrapper = new ProcessWrapper();
             ExecPath = procPath;
             ExecArgs = procArgs;
+            AvoidProcName = avoidProcName;
             Delay = delayTime;
             Elevated = elevate;
-            MonitorName = altName;
+            MonitorName = monitorName;
             AvoidPID = avoidPID;
-            AvoidProcName = avoidProcName;
 
             // construct and save our ProcessWrapper
             if (SettingsData.ValidatePath(ExecPath) ||

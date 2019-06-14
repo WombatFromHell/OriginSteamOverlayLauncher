@@ -79,10 +79,10 @@ namespace OriginSteamOverlayLauncher
 
             // wait for all running threads to exit
             while (!ExitRequested ||
-                (bool)PreLauncherPL?.ProcWrapper?.IsRunning() ||
-                (bool)PostGamePL?.ProcWrapper?.IsRunning() ||
-                (bool)LauncherMonitor?.IsRunning() ||
-                (bool)GameMonitor?.IsRunning())
+                PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning() ||
+                PostGamePL != null && PostGamePL.ProcWrapper.IsRunning() ||
+                LauncherMonitor != null && LauncherMonitor.IsRunning() ||
+                GameMonitor != null && GameMonitor.IsRunning())
                 await Task.Delay(1000);
         }
 
@@ -110,17 +110,17 @@ namespace OriginSteamOverlayLauncher
                 if (LauncherURIMode)  // URI mode
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.LauncherURI, "",
+                        avoidProcName: LauncherName,
                         delayTime: SetHnd.Options.PreGameWaitTime,
-                        altName: GameName,
-                        avoidProcName: LauncherName
+                        monitorName: GameName
                     );
                 else  // normal SkipLauncher behavior
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.GamePath,
                         SetHnd.Paths.GameArgs,
+                        avoidProcName: LauncherName,
                         delayTime: SetHnd.Options.PreGameWaitTime,
-                        altName: MonitorName,
-                        avoidProcName: LauncherName
+                        monitorName: MonitorName
                     );
                 await GamePL.Launch();
             }
@@ -129,23 +129,26 @@ namespace OriginSteamOverlayLauncher
                 if (_running && LauncherURIMode) // URIs
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.LauncherURI, "",
+                        avoidProcName: LauncherName,
                         delayTime: SetHnd.Options.PreGameWaitTime,
                         avoidPID: _aPID,
-                        altName: GameName
+                        monitorName: GameName
                     );
                 else if (_running && _type == 1) // Battle.net (relaunch LauncherArgs)
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.LauncherPath,
                         SetHnd.Paths.LauncherArgs,
+                        avoidProcName: LauncherName,
                         delayTime: SetHnd.Options.PreGameWaitTime,
                         avoidPID: _aPID,
-                        altName: GameName
+                        monitorName: GameName
                     );
                 else if (LauncherPathValid && _running) // normal behavior
                 {
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.GamePath,
                         SetHnd.Paths.GameArgs,
+                        avoidProcName: LauncherName,
                         delayTime: SetHnd.Options.PreGameWaitTime,
                         avoidPID: _aPID
                     );
@@ -191,8 +194,8 @@ namespace OriginSteamOverlayLauncher
             PostGamePL = new ProcessLauncher(
                 SetHnd.Paths.PostGameExecPath,
                 SetHnd.Paths.PostGameExecArgs,
-                SetHnd.Options.PostGameWaitTime,
-                SetHnd.Options.ElevateExternals
+                elevate: SetHnd.Options.ElevateExternals,
+                delayTime: SetHnd.Options.PostGameWaitTime
             );
             await PostGamePL.Launch();
 

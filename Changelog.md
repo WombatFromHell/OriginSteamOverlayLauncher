@@ -1,4 +1,5 @@
-* 92f3728 (HEAD -> staging, origin/staging) Don't filter unknown processes during WMI querying
+* 7fde8e0 (HEAD -> staging, origin/staging) Fixed various bugs with process detection
+* 92f3728 Don't filter unknown processes during WMI querying
 * 3f9e66b Bump version number
 * cea4efe Bump changelog
 * 935c385 Bug fixes for launcher window detection

@@ -58,7 +58,7 @@ namespace OriginSteamOverlayLauncher
                             var curProcess = Process.GetProcessById(curPID);
                             int _ppid = NativeProcessUtils.GetParentPID(curProcess.Handle);
                             // use AvoidPID to avoid selecting an already filtered process
-                            if (ValidateWMIProc(curProcess) || curProcess.HandleCount >= 600 && curProcess.Id != AvoidPID)
+                            if (curProcess != null && !curProcess.HasExited)
                                 output.Add(new Tuple<int, int, Process>(_ppid, curPID, curProcess));
                         }
                     }
@@ -85,7 +85,7 @@ namespace OriginSteamOverlayLauncher
                         if (_pidIsRunning)
                         {
                             var curProcess = Process.GetProcessById(curPID);
-                            if (ValidateWMIProc(curProcess) || curProcess.HandleCount >= 600 && curPID != AvoidPID)
+                            if (curProcess != null && !curProcess.HasExited)
                                 output.Add(curProcess);
                         }
                     }
@@ -165,9 +165,8 @@ namespace OriginSteamOverlayLauncher
                 else
                     return true; // return cached result
             }
-            catch (Win32Exception e) {
-                // probably an access of MainModule caused this - use a rough check instead
-                ProcessUtils.Logger("WIN32EXCEPTION", e.Message);
+            catch (Exception) {
+                // rough check until the next iteration
                 return Proc == null || PID > 0 && !NativeProcessUtils.IsProcessAlive(PID);
             }
         }
