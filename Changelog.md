@@ -1,7 +1,8 @@
-* 95693db (HEAD -> staging) Bump the version number
+* a962c51 (HEAD -> staging, origin/staging) Bump the changelog
+* 95693db Bump the version number
 * 969dc68 Minor build tweaks in the project file
 * ca87983 Another attempt at fixing broken EGL behavior
-* 19ef8a0 (origin/staging) Bump changelog for posterity
+* 19ef8a0 Bump changelog for posterity
 * 692120f Implemented an alternate fix for EGL behavior
 * 80a84fc Bump changelog again
 * 58c1f75 Use EGL specific behavior to fix URI timeout bug
