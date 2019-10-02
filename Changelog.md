@@ -1,4 +1,5 @@
-* a962c51 (HEAD -> staging, origin/staging) Bump the changelog
+* 5d57c82 (HEAD -> master, origin/master, origin/HEAD, staging) Commit changelog before mainline merge
+* a962c51 (origin/staging) Bump the changelog
 * 95693db Bump the version number
 * 969dc68 Minor build tweaks in the project file
 * ca87983 Another attempt at fixing broken EGL behavior
@@ -31,7 +32,7 @@
 * 8a14908 Major rewrite of OSOL internals
 * f93714b Normalize line endings in WindowUtils
 * 39a9705 Implemented PreGameWaitTime option
-* 92f1195 (tag: v1.08d, origin/master, origin/HEAD, master) Bump the changelog and revision again
+* 92f1195 (tag: v1.08d) Bump the changelog and revision again
 * 68c0ffd Added pretty app icon and project file fixes
 * da67b54 Bump the changelog again
 * 54425b7 Fixed an exception in process handling during reacquisition

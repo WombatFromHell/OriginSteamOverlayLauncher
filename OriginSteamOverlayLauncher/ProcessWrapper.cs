@@ -207,9 +207,9 @@ namespace OriginSteamOverlayLauncher
             {
                 string moduleName = NativeProcessUtils.GetProcessModuleName(procItem.Id);
                 bool isValid = IsValidProcess(procItem);
-                bool avoidMatches = ProcessUtils.OrdinalContains(AvoidProcName, moduleName);
-                bool nameMatches = ProcessUtils.OrdinalContains(MonitorName, moduleName) ||
-                    ProcessUtils.OrdinalContains(ProcessName, moduleName);
+                bool avoidMatches = ProcessUtils.OrdinalEquals(AvoidProcName, moduleName);
+                bool nameMatches = ProcessUtils.OrdinalEquals(MonitorName, moduleName) ||
+                    ProcessUtils.OrdinalEquals(ProcessName, moduleName);
                 bool hasDetails = WindowUtils.DetectWindowType(procItem) > -1;
                 return (isValid && !avoidMatches && nameMatches && hasDetails) ||
                     (isValid && !avoidMatches && nameMatches) ||
