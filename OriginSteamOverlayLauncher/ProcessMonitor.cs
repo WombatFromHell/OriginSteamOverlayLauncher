@@ -53,8 +53,11 @@ namespace OriginSteamOverlayLauncher
             TargetLauncher = procLauncher;
             GlobalTimeout = globalTimeout;
             InnerTimeout = innerTimeout;
-            ProcessName = !string.IsNullOrWhiteSpace(TargetLauncher.MonitorName) ?
-                TargetLauncher.MonitorName : TargetLauncher.ProcWrapper.ProcessName;
+            if (TargetLauncher != null)
+                ProcessName = !string.IsNullOrWhiteSpace(TargetLauncher.MonitorName) ?
+                    TargetLauncher.MonitorName : TargetLauncher.ProcWrapper.ProcessName;
+            else
+                throw new ArgumentException("ProcessMonitor requires a valid ProcessLauncher instance!");
 
             MonitorLock = new SemaphoreSlim(1, 1);
             MonitorTimer = new Timer(MonitorProcess);

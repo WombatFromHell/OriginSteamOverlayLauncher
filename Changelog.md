@@ -1,4 +1,5 @@
-* 5d57c82 (HEAD -> master, origin/master, origin/HEAD, staging) Commit changelog before mainline merge
+* b79de81 (HEAD -> master) Fixed monitor behavior when tracking Electron
+* 5d57c82 (origin/master, origin/HEAD, staging) Commit changelog before mainline merge
 * a962c51 (origin/staging) Bump the changelog
 * 95693db Bump the version number
 * 969dc68 Minor build tweaks in the project file

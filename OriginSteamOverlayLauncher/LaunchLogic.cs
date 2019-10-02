@@ -53,26 +53,27 @@ namespace OriginSteamOverlayLauncher
             );
             await PreLauncherPL.Launch();
 
-            LauncherPL = new ProcessLauncher(
-                SetHnd.Paths.LauncherPath,
-                SetHnd.Paths.LauncherArgs,
-                avoidProcName: GameName
-            );
+            if (LauncherPathValid && !SetHnd.Options.SkipLauncher)
+            {
 
-            if (!SetHnd.Options.SkipLauncher && SetHnd.Options.ReLaunch)
+                LauncherPL = new ProcessLauncher(
+                    SetHnd.Paths.LauncherPath,
+                    SetHnd.Paths.LauncherArgs,
+                    avoidProcName: GameName
+                );
                 await LauncherPL.Launch(); // launching the launcher is optional
-
-            LauncherMonitor = new ProcessMonitor(
-                LauncherPL,
-                SetHnd.Options.ProcessAcquisitionTimeout,
-                SetHnd.Options.InterProcessAcquisitionTimeout
-            );
-            LauncherMonitor.ProcessHardExit += OnLauncherExited;
+                LauncherMonitor = new ProcessMonitor(
+                    LauncherPL,
+                    SetHnd.Options.ProcessAcquisitionTimeout,
+                    SetHnd.Options.InterProcessAcquisitionTimeout
+                );
+                LauncherMonitor.ProcessHardExit += OnLauncherExited;
+            }
 
             // signal for manual game launch
-            if (SetHnd.Options.SkipLauncher)
+            if (SetHnd.Options.SkipLauncher || LauncherMonitor == null)
                 OnLauncherAcquired(this, null);
-            else
+            else if (LauncherMonitor != null)
                 LauncherMonitor.ProcessAcquired += OnLauncherAcquired;
 
             // wait for all running threads to exit
@@ -87,20 +88,29 @@ namespace OriginSteamOverlayLauncher
         #region Event Delegates
         private async void OnLauncherAcquired(object sender, ProcessEventArgs e)
         {
-            // collect launcher information for collision avoidance
-            int _type = LauncherPL?.ProcWrapper?.ProcessType ?? -1;
-            bool _running = (bool)LauncherMonitor?.IsRunning();
-            int _aPID = e?.AvoidPID ?? 0;
+            int _type = -1;
+            bool _running = false;
+            int _aPID = 0;
+            if (LauncherPL != null && LauncherMonitor != null)
+            {// collect launcher information for collision avoidance
+                _type = LauncherPL?.ProcWrapper?.ProcessType ?? -1;
+                _running = LauncherMonitor.IsRunning();
+                _aPID = e?.AvoidPID ?? 0;
+            }
 
-            // MinimizeWindow after acquisition to prevent issues with ProcessType() fetch
-            if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning())
-                WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
+            if (LauncherPL != null && LauncherPL.ProcWrapper.IsRunning())
+            {
+                // MinimizeWindow after acquisition to prevent issues with ProcessType() fetch
+                if (SetHnd.Options.MinimizeLauncher)
+                    WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
 
-            if (!SetHnd.Options.SkipLauncher && LauncherPathValid && LauncherPL != null)
-            {// pause to let the launcher process stabilize after being hooked
-                ProcessUtils.Logger("OSOL",
-                    $"Launcher detected (type {_type}), preparing to launch game in {SetHnd.Options.PreGameLauncherWaitTime}s...");
-                await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
+                // pause to let the launcher process stabilize after being hooked
+                if (!SetHnd.Options.SkipLauncher)
+                {
+                    ProcessUtils.Logger("OSOL",
+                        $"Launcher detected (type {_type}), preparing to launch game in {SetHnd.Options.PreGameLauncherWaitTime}s...");
+                    await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
+                }
             }
 
             if (SetHnd.Options.SkipLauncher)
@@ -141,7 +151,7 @@ namespace OriginSteamOverlayLauncher
                         avoidPID: _aPID,
                         monitorName: GameName
                     );
-                else if (LauncherPathValid && _running) // normal behavior
+                else if (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch) // normal behavior
                 {
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.GamePath,
