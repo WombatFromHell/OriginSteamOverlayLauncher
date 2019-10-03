@@ -1,5 +1,6 @@
-* b79de81 (HEAD -> master) Fixed monitor behavior when tracking Electron
-* 5d57c82 (origin/master, origin/HEAD, staging) Commit changelog before mainline merge
+* 5bcc746 (HEAD -> master, origin/master, origin/HEAD) Fixed errant behavior when LauncherPath is invalid
+* b79de81 Fixed monitor behavior when tracking Electron
+* 5d57c82 (staging) Commit changelog before mainline merge
 * a962c51 (origin/staging) Bump the changelog
 * 95693db Bump the version number
 * 969dc68 Minor build tweaks in the project file

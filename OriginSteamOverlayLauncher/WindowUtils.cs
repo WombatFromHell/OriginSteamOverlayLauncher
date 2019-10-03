@@ -18,7 +18,7 @@ namespace OriginSteamOverlayLauncher
         [DllImport("User32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern long GetClassName(IntPtr hwnd, StringBuilder lpClassName, long nMaxCount);
         [DllImport("User32.dll", CharSet = CharSet.Unicode)]
-        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        private static extern IntPtr PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool IsWindow(IntPtr hWnd);
@@ -29,8 +29,8 @@ namespace OriginSteamOverlayLauncher
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hWnd);
         public const int SW_SHOWDEFAULT = 10, SW_MINIMIZE = 2, SW_SHOW = 5;
-        // for SendMessage support (use readonly to prevent IDE0044)
-        private readonly static uint WM_KEYDOWN = 0x100, WM_KEYUP = 0x101;
+        // for PostMessage support (use readonly to prevent IDE0044)
+        private readonly static uint WM_KEYDOWN = 0x0100, WM_KEYUP = 0x0101;
         public readonly static char KEY_ENTER = (char)13;
         #endregion
 
@@ -160,14 +160,13 @@ namespace OriginSteamOverlayLauncher
             return result;
         }
 
-        public static bool MessageSendKey(IntPtr hWnd, char key)
-        {// some windows don't take SendKeys so use the Window Message API instead
+        private static bool MessageSendKey(IntPtr hWnd, char key)
+        {// some windows don't take SendKeys so use the Async Window Message API instead
             try
             {
-                // we need to send two messages per key, KEYDOWN and KEYUP respectively
-                SendMessage(hWnd, WM_KEYDOWN, (IntPtr)key, IntPtr.Zero);
-                SendMessage(hWnd, WM_KEYUP, (IntPtr)key, IntPtr.Zero);
-
+                BringToFront(hWnd); // we need window focus for sending
+                PostMessage(hWnd, WM_KEYDOWN, (IntPtr)key, IntPtr.Zero);
+                PostMessage(hWnd, WM_KEYUP, (IntPtr)key, IntPtr.Zero);
                 return true;
             }
             catch (Exception ex)
@@ -175,6 +174,11 @@ namespace OriginSteamOverlayLauncher
                 ProcessUtils.Logger("WARNING", ex.Message);
                 return false;
             }
+        }
+
+        public static bool SendEnterToForeground(IntPtr hWnd)
+        {
+            return MessageSendKey(hWnd, KEY_ENTER);
         }
     }
 }

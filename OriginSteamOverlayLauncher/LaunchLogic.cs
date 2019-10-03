@@ -143,6 +143,7 @@ namespace OriginSteamOverlayLauncher
                         monitorName: GameName
                     );
                 else if (_running && _type == 1) // Battle.net (relaunch LauncherArgs)
+                {
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.LauncherPath,
                         SetHnd.Paths.LauncherArgs,
@@ -151,6 +152,10 @@ namespace OriginSteamOverlayLauncher
                         avoidPID: _aPID,
                         monitorName: GameName
                     );
+
+                    if (ProcessUtils.OrdinalContains("productcode=", SetHnd.Paths.LauncherArgs))
+                        WindowUtils.SendEnterToForeground(LauncherPL.ProcWrapper.Hwnd); // Battle.net v2
+                }
                 else if (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch) // normal behavior
                 {
                     GamePL = new ProcessLauncher(
