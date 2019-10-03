@@ -1,4 +1,6 @@
-* 5bcc746 (HEAD -> master, origin/master, origin/HEAD) Fixed errant behavior when LauncherPath is invalid
+* dfd18a3 (HEAD -> master, origin/master, origin/HEAD) Added an option to forcefully kill externals on exit
+* 1329e6b Improved Battle.net v2 launch behavior
+* 5bcc746 Fixed errant behavior when LauncherPath is invalid
 * b79de81 Fixed monitor behavior when tracking Electron
 * 5d57c82 (staging) Commit changelog before mainline merge
 * a962c51 (origin/staging) Bump the changelog

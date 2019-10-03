@@ -78,10 +78,10 @@ namespace OriginSteamOverlayLauncher
 
             // wait for all running threads to exit
             while (!ExitRequested ||
-                PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning() ||
-                PostGamePL != null && PostGamePL.ProcWrapper.IsRunning() ||
                 LauncherMonitor != null && LauncherMonitor.IsRunning() ||
-                GameMonitor != null && GameMonitor.IsRunning())
+                GameMonitor != null && GameMonitor.IsRunning() ||
+                PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning() ||
+                PostGamePL != null && PostGamePL.ProcWrapper.IsRunning())
                 await Task.Delay(1000);
         }
 
@@ -144,6 +144,7 @@ namespace OriginSteamOverlayLauncher
                     );
                 else if (_running && _type == 1) // Battle.net (relaunch LauncherArgs)
                 {
+                    // Battle.net v1
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.LauncherPath,
                         SetHnd.Paths.LauncherArgs,
@@ -153,8 +154,9 @@ namespace OriginSteamOverlayLauncher
                         monitorName: GameName
                     );
 
+                    // Battle.net v2 doesn't launch via LauncherArgs so send Enter to the launcher
                     if (ProcessUtils.OrdinalContains("productcode=", SetHnd.Paths.LauncherArgs))
-                        WindowUtils.SendEnterToForeground(LauncherPL.ProcWrapper.Hwnd); // Battle.net v2
+                        WindowUtils.SendEnterToForeground(LauncherPL.ProcWrapper.Hwnd);
                 }
                 else if (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch) // normal behavior
                 {
@@ -224,7 +226,6 @@ namespace OriginSteamOverlayLauncher
                 ProcessUtils.Logger("OSOL", $"Found launcher still running, killing it...");
                 ProcessWrapper.KillProcTreeByName(LauncherName);
             }
-
             OnClosing();
         }
 
@@ -243,6 +244,11 @@ namespace OriginSteamOverlayLauncher
                 LauncherMonitor.Stop();
             if (GameMonitor != null)
                 GameMonitor.Stop();
+            // forcefully kill externals on OSOL exit if requested
+            if (SetHnd.Options.ForceKillExternals && PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning())
+                ProcessWrapper.KillProcTreeByName(PreLauncherPL.ProcWrapper.ProcessName);
+            if (SetHnd.Options.ForceKillExternals && PostGamePL != null && PostGamePL.ProcWrapper.IsRunning())
+                ProcessWrapper.KillProcTreeByName(PostGamePL.ProcWrapper.ProcessName);
             // clean up system tray
             TrayUtil.RefreshTrayArea();
             // exit gracefully

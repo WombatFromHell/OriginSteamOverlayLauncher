@@ -38,6 +38,7 @@ namespace OriginSteamOverlayLauncher
             public bool AutoGameLaunch { get; set; } = true;
             public bool MinimizeLauncher { get; set; }
             public bool ElevateExternals { get; set; }
+            public bool ForceKillExternals { get; set; }
 
             public int PreGameLauncherWaitTime { get; set; } = 15;
             public int PreGameWaitTime { get; set; } = 0;
