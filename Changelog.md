@@ -1,4 +1,5 @@
-* dfd18a3 (HEAD -> master, origin/master, origin/HEAD) Added an option to forcefully kill externals on exit
+* 79fdfd1 (HEAD -> master) Update help dialog with new ini option
+* 4bb5c17 (origin/master, origin/HEAD) Added an option to forcefully kill externals on exit
 * 1329e6b Improved Battle.net v2 launch behavior
 * 5bcc746 Fixed errant behavior when LauncherPath is invalid
 * b79de81 Fixed monitor behavior when tracking Electron

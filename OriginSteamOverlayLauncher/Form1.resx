@@ -136,6 +136,7 @@ CloseLauncher=True                                    (kill LauncherPath after g
 AutoGameLaunch=True                                   (automatically launch GamePath)
 MinimizeLauncher=False                                (try to force LauncherPath window to minimize)
 ElevateExternals=False                                (prompt to elevate PreLaunchExec/PostGameExec)
+ForceKillExternals=False                              (forcefully close still running externals upon exit)
 PreGameLauncherWaitTime=12                            (controls wait time after launcher is detected)
 PreGameWaitTime=0                                     (controls wait time before game is launched)
 PostGameWaitTime=0                                    (controls wait time after game exits)
