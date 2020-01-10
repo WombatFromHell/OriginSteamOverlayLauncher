@@ -1,4 +1,5 @@
-* ef881fd (HEAD -> master, origin/master, origin/HEAD) Don't require GamePath for launch behavior
+* e6b8d52 (HEAD -> master, origin/master, origin/HEAD) Bump changelog
+* ef881fd Don't require GamePath for launch behavior
 * 1c22a48 Update help dialog with new ini option
 * 4bb5c17 Added an option to forcefully kill externals on exit
 * 1329e6b Improved Battle.net v2 launch behavior
