@@ -18,6 +18,7 @@ namespace OriginSteamOverlayLauncher
         private string MonitorPath { get; set; }
         private string MonitorName { get; set; }
         private bool LauncherPathValid { get; set; }
+        private bool GamePathValid { get; set; }
         private bool LauncherURIMode { get; set; }
         private bool ExitRequested { get; set; }
 
@@ -32,6 +33,7 @@ namespace OriginSteamOverlayLauncher
                 SetHnd.Paths.MonitorPath : "";
             MonitorName = Path.GetFileNameWithoutExtension(MonitorPath);
             LauncherPathValid = SettingsData.ValidatePath(SetHnd.Paths.LauncherPath);
+            GamePathValid = SettingsData.ValidatePath(SetHnd.Paths.GamePath);
             LauncherURIMode = SettingsData.ValidateURI(SetHnd.Paths.LauncherURI);
             TrayUtil = new TrayIconUtil();
         }
@@ -107,13 +109,17 @@ namespace OriginSteamOverlayLauncher
                 // pause to let the launcher process stabilize after being hooked
                 if (!SetHnd.Options.SkipLauncher)
                 {
-                    ProcessUtils.Logger("OSOL",
-                        $"Launcher detected (type {_type}), preparing to launch game in {SetHnd.Options.PreGameLauncherWaitTime}s...");
+                    if (GamePathValid && SetHnd.Options.AutoGameLaunch)
+                        ProcessUtils.Logger("OSOL",
+                            $"Launcher detected (type {_type}), preparing to launch game in {SetHnd.Options.PreGameLauncherWaitTime}s...");
+                    else
+                        ProcessUtils.Logger("OSOL",
+                            $"Launcher detected (type {_type}), skipping GamePath, monitoring...");
                     await Task.Delay(SetHnd.Options.PreGameLauncherWaitTime * 1000);
                 }
             }
 
-            if (SetHnd.Options.SkipLauncher)
+            if (SetHnd.Options.SkipLauncher && GamePathValid || LauncherURIMode)
             {// ignore AutoGameLaunch option explicitly here
                 if (LauncherURIMode)  // URI mode
                     GamePL = new ProcessLauncher(
@@ -130,7 +136,9 @@ namespace OriginSteamOverlayLauncher
                         delayTime: SetHnd.Options.PreGameWaitTime,
                         monitorName: MonitorName
                     );
-                await GamePL.Launch();
+
+                if (GamePL != null)
+                    await GamePL.Launch();
             }
             else
             {
@@ -158,7 +166,7 @@ namespace OriginSteamOverlayLauncher
                     if (ProcessUtils.OrdinalContains("productcode=", SetHnd.Paths.LauncherArgs))
                         WindowUtils.SendEnterToForeground(LauncherPL.ProcWrapper.Hwnd);
                 }
-                else if (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch) // normal behavior
+                else if (GamePathValid) // normal behavior
                 {
                     GamePL = new ProcessLauncher(
                         SetHnd.Paths.GamePath,
@@ -169,19 +177,30 @@ namespace OriginSteamOverlayLauncher
                         monitorName: MonitorName
                     );
                 }
-                if (GamePL != null && (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch))
-                    await GamePL?.Launch(); // only launch if safe to do so
+                else if (!_running)
+                { // edge case for !AutoGameLaunch while LauncherPathValid/GamePathValid
+                    ProcessUtils.Logger("FATAL", "Fell through all launch attempts, this should not happen!");
+                    Environment.Exit(0);
+                }
+
+                if (GamePL != null && GamePathValid && !SetHnd.Options.AutoGameLaunch)
+                    await GamePL?.Launch(NoLaunch: true); // monitor passively
+                else if (GamePL != null && (LauncherPathValid && _running || SetHnd.Options.AutoGameLaunch))
+                    await GamePL?.Launch(); // launch if safe to do so
                 else if (LauncherPathValid && LauncherMonitor.IsRunning())
-                    ProcessUtils.Logger("OSOL", "AutoGameLaunch is false, waiting for user to launch game before timing out...");
+                    ProcessUtils.Logger("OSOL", $"AutoGameLaunch is false, continuing to monitor existing processes...");
             }
 
-            GameMonitor = new ProcessMonitor(
-                GamePL,
-                SetHnd.Options.ProcessAcquisitionTimeout,
-                SetHnd.Options.InterProcessAcquisitionTimeout
-            );
-            GameMonitor.ProcessAcquired += OnGameAcquired;
-            GameMonitor.ProcessHardExit += OnGameExited;
+            if (GamePL != null)
+            { // monitor only if safe to do so
+                GameMonitor = new ProcessMonitor(
+                    GamePL,
+                    SetHnd.Options.ProcessAcquisitionTimeout,
+                    SetHnd.Options.InterProcessAcquisitionTimeout
+                );
+                GameMonitor.ProcessAcquired += OnGameAcquired;
+                GameMonitor.ProcessHardExit += OnGameExited;
+            }
         }
 
         private void OnGameAcquired(object sender, ProcessEventArgs e)

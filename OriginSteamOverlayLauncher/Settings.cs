@@ -32,6 +32,8 @@ namespace OriginSteamOverlayLauncher
                     CreateINIFromInstance();
                     PathChooser();
                 }
+                else
+                    PathChooser();
             }
             else if (!testable)
                 ParseToInstance();
@@ -117,20 +119,19 @@ namespace OriginSteamOverlayLauncher
         private void CreateINIFromInstance()
         {// convert data struct to list of keyval pairs
             List<string> serialized = InstanceToList();
-            if (File.Exists(Program.ConfigFile)) {
-                List<string> prevConfig = File.ReadAllLines(Program.ConfigFile, Encoding.UTF8).ToList();
-
-            }
             File.WriteAllText(Program.ConfigFile, ""); // overwrite ini
             File.WriteAllLines(Program.ConfigFile, serialized, Encoding.UTF8);
         }
 
         private bool CheckINI()
         {// return false if INI doesn't match our accessor list
-            if (CompareKeysToProps() && CheckVersion() &&
-                SettingsData.ValidatePath(ReadKey("GamePath", "Paths").Value ?? "", out string _sanitized) &&
-                File.Exists(_sanitized))
-                return true;
+            if (CompareKeysToProps() && CheckVersion())
+            {
+                SettingsData.ValidatePath(ReadKey("LauncherPath", "Paths").Value ?? "", out string _sanitizedLauncherPath);
+                SettingsData.ValidatePath(ReadKey("GamePath", "Paths").Value ?? "", out string _sanitizedGamePath);
+                if (File.Exists(_sanitizedGamePath) || File.Exists(_sanitizedLauncherPath))
+                    return true;
+            }
             return false;
         }
 
@@ -350,8 +351,6 @@ namespace OriginSteamOverlayLauncher
                 ParseToInstance(sourceConfig: freshConfig);
                 ProcessUtils.Logger("OSOL", "Old config file path data migrated to new version...");
                 File.WriteAllLines(Program.ConfigFile, freshConfig);
-                // use PathChooser() to validate our parsed Path variables and alert the user
-                PathChooser();
                 return true;
             }
             return false;
@@ -400,9 +399,10 @@ namespace OriginSteamOverlayLauncher
                 }
             }
 
-            if (!SettingsData.ValidatePath(Data.Paths.GamePath))
+            if (!SettingsData.ValidatePath(Data.Paths.LauncherPath) &&
+                !SettingsData.ValidatePath(Data.Paths.GamePath))
             {// sanity check in case of cancelling both path inputs
-                ProcessUtils.Logger("FATAL", "A valid GamePath is required to function!");
+                ProcessUtils.Logger("FATAL", "A valid LauncherPath or GamePath is required to function!");
                 Process.GetCurrentProcess().Kill(); // bail!
             }
 

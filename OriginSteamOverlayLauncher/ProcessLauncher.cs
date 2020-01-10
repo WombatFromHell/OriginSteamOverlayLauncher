@@ -55,7 +55,7 @@ namespace OriginSteamOverlayLauncher
         /// Returns the running Process if launching was successful
         /// </summary>
         /// <returns></returns>
-        public async Task<Process> Launch()
+        public async Task<Process> Launch(bool NoLaunch = false)
         {
             if (ProcWrapper != null && !string.IsNullOrWhiteSpace(ProcWrapper.ProcessName))
             {
@@ -69,7 +69,10 @@ namespace OriginSteamOverlayLauncher
                 else
                     ProcessUtils.Logger("LAUNCHER", $"Launching process via: {ExecPath} {ExecArgs}" + monitorStr);
 
-                ProcWrapper.Proc.Start();
+                // optional: launch by default
+                if (!NoLaunch)
+                    ProcWrapper.Proc.Start();
+
                 await Task.Delay(1000); // spin up
                 if (ProcWrapper.IsRunning())
                     LaunchPID = ProcWrapper.Proc.Id;
