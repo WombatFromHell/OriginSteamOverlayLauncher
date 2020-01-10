@@ -1,4 +1,5 @@
-* e6b8d52 (HEAD -> master, origin/master, origin/HEAD) Bump changelog
+* 4bc17ff (HEAD -> master) Fixed build process not including OSOL icon
+* e6b8d52 (origin/master, origin/HEAD) Bump changelog
 * ef881fd Don't require GamePath for launch behavior
 * 1c22a48 Update help dialog with new ini option
 * 4bb5c17 Added an option to forcefully kill externals on exit
