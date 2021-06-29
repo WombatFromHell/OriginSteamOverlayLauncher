@@ -1,12 +1,16 @@
-* 4bc17ff (HEAD -> master) Fixed build process not including OSOL icon
-* e6b8d52 (origin/master, origin/HEAD) Bump changelog
+* 9e404b1 (HEAD -> master) Grammar fix in README
+* 138c598 Small code cleanup in WMI validator
+* b6da235 (origin/master, origin/HEAD) Excluded GOG Notifications from hooked windows. (#69)
+* 3582e6f (tag: v1.09h, staging) Bump changelog for posterity
+* 4bc17ff Fixed build process not including OSOL icon
+* e6b8d52 Bump changelog
 * ef881fd Don't require GamePath for launch behavior
 * 1c22a48 Update help dialog with new ini option
 * 4bb5c17 Added an option to forcefully kill externals on exit
 * 1329e6b Improved Battle.net v2 launch behavior
 * 5bcc746 Fixed errant behavior when LauncherPath is invalid
 * b79de81 Fixed monitor behavior when tracking Electron
-* 5d57c82 (staging) Commit changelog before mainline merge
+* 5d57c82 Commit changelog before mainline merge
 * a962c51 (origin/staging) Bump the changelog
 * 95693db Bump the version number
 * 969dc68 Minor build tweaks in the project file
@@ -40,7 +44,7 @@
 * 8a14908 Major rewrite of OSOL internals
 * f93714b Normalize line endings in WindowUtils
 * 39a9705 Implemented PreGameWaitTime option
-* 92f1195 (tag: v1.08d) Bump the changelog and revision again
+* 92f1195 (tag: v1.09f, tag: v1.08d) Bump the changelog and revision again
 * 68c0ffd Added pretty app icon and project file fixes
 * da67b54 Bump the changelog again
 * 54425b7 Fixed an exception in process handling during reacquisition
@@ -67,7 +71,7 @@
 * 011d437 Shorten the default max process acquisition wait time
 * 69e7b2b Prevent exceptions when a rebound process is invalid
 * ae3bee2 (tag: v1.07g) Reimplemented process acquisition ... also added a user tuneable to allow customizing process wait timer
-* c43d031 (tag: v1.07f) Fixed some games not being detected if their launcher starts minimized
+* c43d031 Fixed some games not being detected if their launcher starts minimized
 * 5d2d665 Bumped version number for point release
 * 19f0797 Fixed Epic Games Launcher not being detected in URI mode
 * 9751f47 Code cleanup and abstraction from core Program class
@@ -76,14 +80,14 @@
 * 222a138 (tag: v1.07d) Update Changelog for v1.07d point release
 * 353f904 Improved process detection for hidden windows
 * 413eef6 Implemented SkipLauncher option and GameArgs for URI mode
-* e32b5b5 (tag: v1.07c) Unit tests for BitmaskExtensions and bug fixes
+* e32b5b5 Unit tests for BitmaskExtensions and bug fixes
 * 928f8de Some more unit tests for Program class
 * 2df305e Just list our options to be validated cleanly for readability
 * 67f72bd Remove a typo in validated INI options
 * 8a5f748 Implemented launcher type auto-detection
 * 23ee505 Implement some unit testing
 * 1a1265b Fixes for CommandlineProxy when detecting unix-style paths (UE4)
-* 929d56b (tag: v1.07b) Code cleanups for ProcessTracking
+* 929d56b Code cleanups for ProcessTracking
 * fd4b512 Fixes and a workaround for Battle.net launcher
 * 1c489b6 Fixes for parsing double-digit ints in affinity mask strings
 * c51e65b Help panel revisions to add new INI stubs
@@ -94,7 +98,7 @@
 * d99da19 Implemented CPU affinity and fixed launcher path validation
 * b500355 Added a note about the dot net redist
 * 6a7e344 Code cleanup in ValidateProcTree logic
-* ec98ddc (tag: v1.06l) Update Changelog for v1.06l
+* ec98ddc Update Changelog for v1.06l
 * 6324422 Make sure ValidateInt always returns a positive integer on parse
 * 92b2ee5 Removed redundant PreGameOverlayWaitTime option and improved wait logging
 * ae01ec8 Moved PreGameLauncherWaitTime outside of LauncherMode path
