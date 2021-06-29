@@ -132,6 +132,8 @@ namespace OriginSteamOverlayLauncher
                     // excluded windows
                     if (ProcessUtils.OrdinalContains("EasyAntiCheat_launcher", haystack))
                         return -1;
+                    else if (ProcessUtils.OrdinalContains("GOG Galaxy Notifications Renderer", haystack))
+                        return -1;
 
                     // initially try to resolve by looking up className and windowTitle
                     if (MatchWindowDetails("Epic Games Launcher", "UnrealWindow", _hWnd))
