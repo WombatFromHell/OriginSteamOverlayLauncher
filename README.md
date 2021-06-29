@@ -47,7 +47,7 @@ How To Compile
 ==============
 If you wish to compile this project from Github source, you'll need Visual Studio v14+ or Visual Studio Community (targetting the .NET Framework v4.7.1 for C#). There are no external libraries required except for the .NET v4.7.1 framework package. The source code can be modified freely under the MIT license as long as the contributers and creator are given credit.
 
-If you wish to contribute via pull-request please make sure to comment your code thoroughly and give plenty of time for your PR to be considered. Forks are acceptable as long as there is little additional code overlap between the fork and my project; if you're unsure feel free to open an issue ticket and we can discuss it if necessary.
+If you'd like to contribute please make sure to comment your code thoroughly and try to split major features up into their own PRs when possible.
 
 
 Credits
