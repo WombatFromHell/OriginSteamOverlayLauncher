@@ -196,7 +196,8 @@ namespace OriginSteamOverlayLauncher
         {// rough approximation of a working Launcher/Game window
             try
             {
-                return proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero && proc.Id > 0;
+                var assemblyPID = ProcessUtils.GetAssemblyPID();
+                return proc != null && !proc.HasExited && proc.Handle != IntPtr.Zero && proc.Id > 0 && assemblyPID != proc.Id;
             }
             catch (Exception) { return false; }
         }

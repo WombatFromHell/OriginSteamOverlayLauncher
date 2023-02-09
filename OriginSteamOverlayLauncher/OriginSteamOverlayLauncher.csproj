@@ -142,6 +142,7 @@ del /q $(TargetDir)OriginSteamOverlayLauncher.zip
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>cd $(SolutionDir)
+
 git log --oneline --decorate --graph &gt; $(SolutionDir)Changelog.md</PreBuildEvent>
   </PropertyGroup>
 </Project>

@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml.Linq;
 
 namespace OriginSteamOverlayLauncher
 {
@@ -80,6 +84,12 @@ namespace OriginSteamOverlayLauncher
             double tempMins = Convert.ToDouble(tempSecs / 60.0f);
             // return minutes or seconds (if applicable)
             return tempSecs > 60 ? $"{tempMins:0.##}m" : $"{tempSecs:0.##}s";
+        }
+
+        public static int GetAssemblyPID()
+        {
+            var assemblyProcess = Process.GetCurrentProcess();
+            return assemblyProcess.Id;
         }
     }
 }

@@ -1,7 +1,9 @@
-* 9e404b1 (HEAD -> master) Grammar fix in README
+* 81355bb (HEAD -> staging, origin/staging, origin/master, origin/HEAD, master) Update assembly version
+* af7eced Update changelog
+* 9e404b1 Grammar fix in README
 * 138c598 Small code cleanup in WMI validator
-* b6da235 (origin/master, origin/HEAD) Excluded GOG Notifications from hooked windows. (#69)
-* 3582e6f (tag: v1.09h, staging) Bump changelog for posterity
+* b6da235 Excluded GOG Notifications from hooked windows. (#69)
+* 3582e6f (tag: v1.09h) Bump changelog for posterity
 * 4bc17ff Fixed build process not including OSOL icon
 * e6b8d52 Bump changelog
 * ef881fd Don't require GamePath for launch behavior
@@ -11,7 +13,7 @@
 * 5bcc746 Fixed errant behavior when LauncherPath is invalid
 * b79de81 Fixed monitor behavior when tracking Electron
 * 5d57c82 Commit changelog before mainline merge
-* a962c51 (origin/staging) Bump the changelog
+* a962c51 Bump the changelog
 * 95693db Bump the version number
 * 969dc68 Minor build tweaks in the project file
 * ca87983 Another attempt at fixing broken EGL behavior
