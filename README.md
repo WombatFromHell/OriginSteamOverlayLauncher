@@ -57,6 +57,6 @@ Special thanks to CriticalComposer for his art/icon contribution to the OSOL pro
 Thanks to Dafzor and his bnetlauncher wrapper (http://madalien.com/stuff/bnetlauncher/) for giving me the idea to make this.
 
 
-Donations [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/JBrown749)
+Donations <a href="https://www.buymeacoffee.com/wombatfromhell" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="21" width="87"></a>
 =========
 If you find this project useful and you would like to donate toward on-going development you can use the link above. Any and all donations are much appreciated!
