@@ -1,4 +1,14 @@
-* 9e404b1 (HEAD -> master) Grammar fix in README
+* d1ca043 (HEAD -> staging, origin/staging) Fixed some edge cases involving quotes and exception logic in ProcessWrapper
+*   3b025f6 Merge branch 'master' into staging
+|\  
+| * 50a069c (origin/master, origin/HEAD, master) Update README.md
+| * 416f216 Update README.md
+* | 973b2e8 (tag: v1.09i) Update version and changelog
+* | c108990 Exclude assembly PID when validating child PIDs
+|/  
+* 81355bb Update assembly version
+* af7eced Update changelog
+* 9e404b1 Grammar fix in README
 * 138c598 Small code cleanup in WMI validator
 * b6da235 Excluded GOG Notifications from hooked windows. (#69)
 * 3582e6f (tag: v1.09h) Bump changelog for posterity
