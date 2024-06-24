@@ -18,6 +18,8 @@ namespace OriginSteamOverlayLauncher
         private string MonitorPath { get; set; }
         private string MonitorName { get; set; }
         private bool LauncherPathValid { get; set; }
+        private bool PreLaunchPathValid { get; set; }
+        private bool PostGamePathValid { get; set; }
         private bool GamePathValid { get; set; }
         private bool LauncherURIMode { get; set; }
         private bool ExitRequested { get; set; }
@@ -35,6 +37,8 @@ namespace OriginSteamOverlayLauncher
             LauncherPathValid = SettingsData.ValidatePath(SetHnd.Paths.LauncherPath);
             GamePathValid = SettingsData.ValidatePath(SetHnd.Paths.GamePath);
             LauncherURIMode = SettingsData.ValidateURI(SetHnd.Paths.LauncherURI);
+            PreLaunchPathValid = SettingsData.ValidatePath(SetHnd.Paths.PreLaunchExecPath);
+            PostGamePathValid = SettingsData.ValidatePath(SetHnd.Paths.PostGameExecPath);
             TrayUtil = new TrayIconUtil();
         }
 
@@ -47,13 +51,16 @@ namespace OriginSteamOverlayLauncher
                 ProcessWrapper.KillProcTreeByName(LauncherName);
             }
 
-            // run PreLaunchExecPath/Args before the launcher
-            PreLauncherPL = new ProcessLauncher(
-                SetHnd.Paths.PreLaunchExecPath,
-                SetHnd.Paths.PreLaunchExecArgs,
-                elevate: SetHnd.Options.ElevateExternals
-            );
-            await PreLauncherPL.Launch();
+            if (PreLaunchPathValid)
+            {
+                // run PreLaunchExecPath/Args before the launcher
+                PreLauncherPL = new ProcessLauncher(
+                    SetHnd.Paths.PreLaunchExecPath,
+                    SetHnd.Paths.PreLaunchExecArgs,
+                    elevate: SetHnd.Options.ElevateExternals
+                );
+                await PreLauncherPL.Launch();
+            }
 
             if (LauncherPathValid && !SetHnd.Options.SkipLauncher)
             {
@@ -79,11 +86,13 @@ namespace OriginSteamOverlayLauncher
                 LauncherMonitor.ProcessAcquired += OnLauncherAcquired;
 
             // wait for all running threads to exit
-            while (!ExitRequested ||
+            while (
+                PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning() ||
                 LauncherMonitor != null && LauncherMonitor.IsRunning() ||
                 GameMonitor != null && GameMonitor.IsRunning() ||
-                PreLauncherPL != null && PreLauncherPL.ProcWrapper.IsRunning() ||
-                PostGamePL != null && PostGamePL.ProcWrapper.IsRunning())
+                PostGamePL != null && PostGamePL.ProcWrapper.IsRunning() ||
+                !ExitRequested
+            )
                 await Task.Delay(1000);
         }
 
@@ -225,14 +234,17 @@ namespace OriginSteamOverlayLauncher
             if (SetHnd.Options.MinimizeLauncher && LauncherPL.ProcWrapper.IsRunning())
                 WindowUtils.MinimizeWindow(LauncherPL.ProcWrapper.Hwnd);
 
-            // run PostGameExecPath/Args after the game exits
-            PostGamePL = new ProcessLauncher(
-                SetHnd.Paths.PostGameExecPath,
-                SetHnd.Paths.PostGameExecArgs,
-                elevate: SetHnd.Options.ElevateExternals,
-                delayTime: SetHnd.Options.PostGameWaitTime
-            );
-            await PostGamePL.Launch();
+            if (PostGamePathValid)
+            {
+                // run PostGameExecPath/Args after the game exits
+                PostGamePL = new ProcessLauncher(
+                    SetHnd.Paths.PostGameExecPath,
+                    SetHnd.Paths.PostGameExecArgs,
+                    elevate: SetHnd.Options.ElevateExternals,
+                    delayTime: SetHnd.Options.PostGameWaitTime
+                );
+                await PostGamePL.Launch();
+            }
 
             if (SetHnd.Options.PostGameWaitTime > 0)
                 ProcessUtils.Logger("OSOL", $"Game exited, moving on to clean up after {SetHnd.Options.PostGameWaitTime}s...");

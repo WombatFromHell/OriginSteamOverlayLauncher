@@ -72,8 +72,12 @@ namespace OriginSteamOverlayLauncher
         public List<Process> GetProcessesByName(string exeName)
         {
             var output = new List<Process>();
-            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(
-                $"SELECT * FROM Win32_Process where Name LIKE '{exeName}.exe'"))
+            
+            // try to make sure single quotes are escaped
+            exeName = exeName.Replace("'", "''");
+            string query = $"SELECT * FROM Win32_Process WHERE Name LIKE '{exeName}.exe'";
+            
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(query))
             using (ManagementObjectCollection processes = searcher.Get())
             {
                 foreach (var process in processes)
@@ -89,6 +93,7 @@ namespace OriginSteamOverlayLauncher
                                 output.Add(curProcess);
                         }
                     }
+                    catch (ManagementException) { return output; }
                     catch (Win32Exception) { continue; }
                     catch (InvalidOperationException) { continue; }
                 }
@@ -167,7 +172,7 @@ namespace OriginSteamOverlayLauncher
             }
             catch (Exception) {
                 // rough check until the next iteration
-                return Proc == null || PID > 0 && !NativeProcessUtils.IsProcessAlive(PID);
+                return Proc != null && PID > 0 && NativeProcessUtils.IsProcessAlive(PID);
             }
         }
 
