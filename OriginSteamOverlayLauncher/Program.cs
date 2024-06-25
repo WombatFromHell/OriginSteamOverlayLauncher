@@ -5,9 +5,47 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
+using System.Drawing;
+using System.Threading.Tasks;
 
 namespace OriginSteamOverlayLauncher
 {
+    public class SystemTrayIcon : IDisposable
+    {
+        private NotifyIcon trayIcon;
+
+        public SystemTrayIcon()
+        {
+            trayIcon = new NotifyIcon()
+            {
+                Icon = Icon.FromHandle(new Bitmap(Properties.Resources.OSOL_tray).GetHicon()),
+                Visible = false
+            };
+
+            trayIcon.ContextMenu = new ContextMenu(new MenuItem[]
+            {
+            new MenuItem("Exit", Exit)
+            });
+        }
+
+        public void Display()
+        {
+            trayIcon.Visible = true;
+            trayIcon.Text = "OriginSteamOverlayLauncher";
+        }
+
+        private void Exit(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        public void Dispose()
+        {
+            trayIcon.Visible = false;
+            trayIcon.Dispose();
+        }
+    }
+
     public class Program
     {
         // make our config file location local to our assembly
@@ -32,52 +70,66 @@ namespace OriginSteamOverlayLauncher
             ProcessUtils.Logger("NOTE", $"OSOL is running as: {AppName}");
             CurSettings = new Settings();
 
-            // simple global mutex, courtesy of: https://stackoverflow.com/a/1213517
-            using (var mutex = new Mutex(false, mutexId))
+            /// begin real entry point
+            Application.EnableVisualStyles(); // enable DPI awareness
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            using (var systemTrayIcon = new SystemTrayIcon())
             {
-                try
+                systemTrayIcon.Display();
+
+                // simple global mutex, courtesy of: https://stackoverflow.com/a/1213517
+                using (var mutex = new Mutex(false, mutexId))
                 {
                     try
                     {
-                        if (!mutex.WaitOne(TimeSpan.FromSeconds(1), false))
-                            Environment.Exit(0);
-                    }
-                    catch (AbandonedMutexException)
-                    {
-                        ProcessUtils.Logger("MUTEX", "Mutex is held by another instance, but seems abandoned!");
-                        Environment.Exit(0);
-                    }
-
-                    /// begin real entry point
-                    Application.EnableVisualStyles(); // enable DPI awareness
-                    Application.SetCompatibleTextRenderingDefault(false);
-
-                    if (ProcessUtils.CliArgExists(args, "help") || ProcessUtils.CliArgExists(args, "?"))
-                    {// display an INI settings overview if run with /help or /?
-                        DisplayHelpDialog();
-                    }
-                    else
-                    {
                         try
                         {
-                            LaunchLogic procTrack = new LaunchLogic();
-                            procTrack.ProcessLauncher().Wait();
+                            if (!mutex.WaitOne(TimeSpan.FromSeconds(1), false))
+                                Environment.Exit(0);
                         }
-                        catch (AggregateException ae)
+                        catch (AbandonedMutexException)
                         {
-                            foreach (var ex in ae.InnerExceptions)
-                            {
-                                ProcessUtils.Logger("EXCEPTION", $"{ex.ToString()}: {ex.Message}");
-                            }
+                            ProcessUtils.Logger("MUTEX", "Mutex is held by another instance, but seems abandoned!");
+                            Environment.Exit(0);
                         }
+
+                        if (ProcessUtils.CliArgExists(args, "help") || ProcessUtils.CliArgExists(args, "?"))
+                        {
+                            // display an INI settings overview if run with /help or /?
+                            DisplayHelpDialog();
+                        }
+                        else
+                        {
+                            Task.Run(async () =>
+                            {
+                                await CoreLogic();
+                            });
+                        }
+
+                        Application.Run();
                     }
-                    /// end entry point
+                    finally
+                    {
+                        mutex.ReleaseMutex();
+                        ProcessUtils.Logger("OSOL", "Exiting...");
+                        Environment.Exit(0);
+                    }
                 }
-                finally
+            }
+        }
+
+        private static async Task CoreLogic() {
+            try
+            {
+                LaunchLogic procTrack = new LaunchLogic();
+                await procTrack.ProcessLauncher();
+            }
+            catch (AggregateException ae)
+            {
+                foreach (var ex in ae.InnerExceptions)
                 {
-                    mutex.ReleaseMutex();
-                    ProcessUtils.Logger("OSOL", "Exiting...");
-                    Environment.Exit(0);
+                    ProcessUtils.Logger("EXCEPTION", $"{ex.ToString()}: {ex.Message}");
                 }
             }
         }

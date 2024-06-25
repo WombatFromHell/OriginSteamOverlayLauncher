@@ -34,9 +34,8 @@ namespace OriginSteamOverlayLauncher
                 ).FirstOrDefault();
 
             if (singleFound != null)
-            {// ugly equality check here (compare using ordinality)
-                return OrdinalEquals(singleFound, _argType1)
-                || OrdinalEquals(singleFound, _argType2) ? true : false;
+            {
+                return true;
             }
 
             return false;

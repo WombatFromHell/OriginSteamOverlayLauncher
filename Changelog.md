@@ -1,7 +1,8 @@
-* d1ca043 (HEAD -> staging, origin/staging) Fixed some edge cases involving quotes and exception logic in ProcessWrapper
+* 720127c (HEAD -> staging, origin/staging, origin/master, origin/HEAD, master) Updated Changelog
+* d1ca043 Fixed some edge cases involving quotes and exception logic in ProcessWrapper
 *   3b025f6 Merge branch 'master' into staging
 |\  
-| * 50a069c (origin/master, origin/HEAD, master) Update README.md
+| * 50a069c Update README.md
 | * 416f216 Update README.md
 * | 973b2e8 (tag: v1.09i) Update version and changelog
 * | c108990 Exclude assembly PID when validating child PIDs
