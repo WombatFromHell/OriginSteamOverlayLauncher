@@ -1,4 +1,5 @@
-* 720127c (HEAD -> staging, origin/staging, origin/master, origin/HEAD, master) Updated Changelog
+* 6cd5446 (HEAD -> staging) Implemented a SysTray icon and async core logic
+* 720127c (origin/staging, origin/master, origin/HEAD, master) Updated Changelog
 * d1ca043 Fixed some edge cases involving quotes and exception logic in ProcessWrapper
 *   3b025f6 Merge branch 'master' into staging
 |\  
