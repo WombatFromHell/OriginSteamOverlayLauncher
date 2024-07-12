@@ -104,6 +104,7 @@ namespace OriginSteamOverlayLauncher
                             Task.Run(async () =>
                             {
                                 await CoreLogic();
+                                Application.Exit();
                             });
                         }
 
