@@ -1,4 +1,6 @@
-* 8c64309 (HEAD -> master, origin/staging, origin/master, origin/HEAD, staging) Updated Changelog
+* 1ef8217 (HEAD -> staging, origin/staging, master) Update the assembly version for posterity
+* b7ba5b5 Fixed OSOL not terminating during graceful shutdown
+* 8c64309 (origin/master, origin/HEAD) Updated Changelog
 * 6cd5446 Implemented a SysTray icon and async core logic
 * 720127c Updated Changelog
 * d1ca043 Fixed some edge cases involving quotes and exception logic in ProcessWrapper
